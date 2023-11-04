@@ -6,6 +6,8 @@ from mocks.http_session_mock import MockedResponse, MockHttpSession
 from support.live_agent_helper import ONLINE_ID, BUSY_ID, OFFLINE_ID
 from utils.http_client import HttpRequest
 
+ACCEPT_WORK_URL = "https://somewhere-chat.lightning.force.com/chat/rest/Presence/AcceptWork"
+
 
 class PresenceTests(BaseTest):
     body_captured: dict
@@ -73,7 +75,20 @@ class PresenceTests(BaseTest):
                                    "regex='^0Mw[a-zA-Z0-9]{12,15}'."
         )
 
-        self.accept_work(token)
+        mock = self.add_new_http_mock()
+        mock.add_post_response(
+            ACCEPT_WORK_URL,
+            status_code=400,
+            body={
+                'sfErrorCode': "This is an error."
+            }
+        )
+
+        self.accept_work(
+            token,
+            expected_status_code=502,
+            expected_error_message="SF call failed."
+        )
 
     def setUp(self) -> None:
         super().setUp()
@@ -114,7 +129,7 @@ class PresenceTests(BaseTest):
         if expected_status_code == 200:
             mock = self.add_new_http_mock()
             mock.add_post_response(
-                url="https://somewhere-chat.lightning.force.com/chat/rest/Presence/AcceptWork",
+                url=ACCEPT_WORK_URL,
                 status_code=200,
                 body="Some data"
             )

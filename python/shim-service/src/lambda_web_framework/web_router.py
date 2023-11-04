@@ -3,7 +3,9 @@ from enum import Enum
 from typing import Callable, Collection, Optional, List, Dict, Any
 
 from lambda_web_framework.request import LambdaHttpRequest, LambdaHttpResponse, BodyTransformer
+from lambda_web_framework.web_exceptions import LambdaHttpException
 from services.sfdc.live_agent.omnichannel_api import load_api
+from utils.http_client import HttpException
 from utils.path_utils import Path
 
 
@@ -61,8 +63,16 @@ class Route:
         if self.api_required:
             with load_api(request.get_session()) as api:
                 args.append(api)
-                return self.caller(*args, **params)
-
+                try:
+                    return self.caller(*args, **params)
+                except HttpException as ex:
+                    if self.api_required:
+                        body = {
+                            'statusCode': ex.get_status_code(),
+                            'body': ex.get_body_as_string()
+                        }
+                        raise LambdaHttpException(502, "SF call failed.", body=body)
+                    raise ex
         return self.caller(*args, **params)
 
 

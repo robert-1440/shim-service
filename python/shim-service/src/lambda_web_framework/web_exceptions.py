@@ -1,16 +1,18 @@
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 
 class LambdaHttpException(Exception):
     def __init__(self, status_code: int,
                  message: str,
                  headers: Dict[str, str] = None,
-                 error_code: str = None):
+                 error_code: str = None,
+                 body: Union[str, dict] = None):
         super(LambdaHttpException, self).__init__(message)
         self.status_code = status_code
         self.message = message
         self.headers = headers
         self.error_code = error_code
+        self.body = body
 
     def to_response(self) -> Dict[str, Any]:
         if self.error_code is not None:
@@ -21,6 +23,8 @@ class LambdaHttpException(Exception):
             }
         else:
             body = {"errorMessage": self.message}
+        if self.body is not None:
+            body['response'] = self.body
         result = {
             "statusCode": self.status_code,
             "body": body

@@ -90,7 +90,7 @@ class MockHttpSession:
                           url: str,
                           status_code: int,
                           headers: Dict[str, Union[str, List[str]]] = None,
-                          body: str = None,
+                          body: Union[dict, str] = None,
                           expected_content_type: str = None,
                           expected_headers: Optional[Headers] = None,
                           request_callback: RequestCallback = None
