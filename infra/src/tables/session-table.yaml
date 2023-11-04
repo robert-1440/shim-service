@@ -1,0 +1,18 @@
+type: dynamodb-table
+
+name: ShimServiceSession
+
+attributes:
+  - name: tenantId
+    type: N
+  - name: sessionId
+    type: S
+
+keys:
+  hash: tenantId
+  range: sessionId
+
+ttl-attribute: expireTime
+
+pay-per-request: true
+

@@ -1,0 +1,7 @@
+resource-type: tag
+
+name: session
+description: Calls related to service sessions.
+
+
+

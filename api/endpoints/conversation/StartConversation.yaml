@@ -1,0 +1,47 @@
+resource-type: api
+
+name: StartConversation
+title: Start a Conversation
+
+description: |
+  Used to start a conversation / work.
+
+
+tags:
+  - conversation
+
+request:
+  path: /conversations
+  method: POST
+
+  headers:
+    include: session-headers
+
+  body:
+    parameters:
+      requestId:
+        type: RequestId
+        required: true
+
+      message:
+        type: String
+        size: 8192
+        description: "Message to include."
+        required: true
+        example: "Can you take this?"
+
+
+response:
+
+  body:
+    parameters:
+      conversationId:
+        type: ConversationId
+
+  codes:
+    200: OK
+
+    400:
+      error-codes:
+        - InvalidParameter
+        - MissingRequiredParameter

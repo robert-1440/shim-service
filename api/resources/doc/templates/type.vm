@@ -1,0 +1,35 @@
+##
+## The template file for a complex type used by the service.
+##
+<!DOCTYPE html>
+<html>
+    #include ( "standard_header.vm" )
+    #parse ( "standard_navbar.vm" )
+    #parse ( "document_start.vm" )
+        <h1>Type $type.name</h1>
+        <p>$type.description</p>
+        <h3>Parameters</h3>
+        <$table_declare>
+            <colgroup>
+                <col width="10%"/>
+                <col width="10%"/>
+                <col width="40%"/>
+            </colgroup>
+            <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            </tr>
+            #foreach ( $param in $type.parameters )
+                <tr>
+                    <td style="$parameter_style" id="$param.name">$param.name</td>
+                    <td>$page.get_link_or_text($param.get_type_name_as_link())</td>
+                    #set ( $field = $param )
+                    #parse ( "call_detail_description.vm" )
+                </tr>
+            #end
+        </table>
+    #parse ( "document_end.vm" )
+    #parse ( "standard_footer.vm" )
+</html>
+

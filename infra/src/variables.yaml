@@ -1,0 +1,32 @@
+#
+# Note that variable types default to string
+#
+type: variables
+
+variables:
+
+  - name: web_lambda_memory_size
+    description: Memory size to allocate for web lambda (in megabytes)
+    export: true
+    default: 1024
+
+  - name: live_agent_poller_lambda_memory_size
+    description: Memory size to allocate for the live agent poller lambda (in megabytes)
+    export: true
+    default: 1024
+
+  - name: notification_publisher_lambda_memory_size
+    description: Memory size to allocate for the notification publisher lambda (in megabytes)
+    export: true
+    default: 1024
+
+  - name: domain_name
+    description: The domain name to use.
+    export: true
+
+  - name: cert_arn
+    description: The ARN of the ACM certificate to use for API Gateway.
+    export: true
+
+
+

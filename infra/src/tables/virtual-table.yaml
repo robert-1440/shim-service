@@ -1,0 +1,29 @@
+type: dynamodb-table
+
+# Allows storing "virtual" table rows
+# The hashKey will contain the "table type"
+
+name: ShimServiceVirtualTable
+
+attributes:
+  - name: hashKey
+    type: S
+
+  - name: sk
+    type: S
+
+
+keys:
+  hash: hashKey
+
+ttl-attribute: expireTime
+
+pay-per-request: true
+
+secondary-indexes:
+  # Used to be able to do a full "scan" on a table type
+  # sk = hash key, contains table type + partition id
+  scan-index:
+    projection: KEYS_ONLY
+    keys:
+      hash: sk

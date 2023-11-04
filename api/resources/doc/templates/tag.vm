@@ -1,0 +1,13 @@
+##
+## The template file for a tag.
+##
+<!DOCTYPE html>
+<html>
+    #parse ( "standard_header.vm" )
+    #parse ( "standard_navbar.vm" )
+    #parse ( "document_start.vm" )
+        <h1>Tag: $tag.name</h1>
+        <p>$tag.description</p>
+    #parse ( "document_end.vm" )
+    #parse ( "standard_footer.vm" )
+</html>

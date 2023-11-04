@@ -1,0 +1,12 @@
+resource-type: error-code
+
+name: SessionInFailedState
+description: The session is in a failed state and can no longer be used. A new session must be started.
+
+# Should be able to complete the sentence: "Exception thrown when ..."
+comment: there is an attempt to use a session that is in a failed state.
+
+# The default HTTP status code associated with this error
+status-code: 409
+
+

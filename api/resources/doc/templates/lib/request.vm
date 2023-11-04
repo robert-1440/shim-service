@@ -1,0 +1,119 @@
+##
+## The template file for the request part of an API call.
+##
+<p>$call.get_description()</p>
+
+#if ( $call.has_markdown_description() )
+    $_util.markdown_to_html( $call.markdown_description )
+#end
+
+#if ( $_util.is_not_none($call.oauth_action) )
+    <p><br></p>
+    <h2><strong>OAuth Action:</strong>  $call.oauth_action</h2>
+    <p><br></p>
+#end
+
+#set ( $s_tags = $call.tags)
+<h6>Tags</h6>
+#if ( $_util.is_not_empty($s_tags))
+    <ul>
+    #foreach ( $s_tag in $s_tags)
+        <li>$page.get_link_to($s_tag)</li>
+    #end
+    </ul>
+    <p><br></p>
+#end
+
+#set ( $request = $call.request )
+#set ( $body = $request.get_body() )
+
+<div class="highlight-javascript">
+	<div class="highlight">
+		<code style="$url_style">
+			<pre>$request.method $request.path</pre>
+		</code>
+    </div>
+</div>
+## <p style="$url_style">$request.method $request.path</p>
+
+#if ( $_util.is_not_empty($request.url_parameters) )
+<h2>URL Parameters</h2>
+<$table_declare>
+    <colgroup>
+        <col width="10%"/>
+        <col width="10%"/>
+        <col width="80%"/>
+    </colgroup>
+    <tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Description</th>
+    </tr>
+    #foreach ( $param in $request.url_parameters )
+        <tr>
+            <td style="$parameter_style" id="$param.name">$param.name</td>
+            <td>$param.get_type_name()</td>
+            #set ( $field = $param )
+            #parse ( "call_detail_description.vm" )
+        </tr>
+    #end
+</table>
+<br>
+#end
+
+#if ( $_util.is_not_empty($request.url_query_parameters) )
+<h2>Query Parameters</h2>
+<$table_declare>
+    <colgroup>
+        <col width="10%"/>
+        <col width="10%"/>
+        <col width="80%"/>
+    </colgroup>
+    <tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Description</th>
+    </tr>
+    #foreach ( $param in $request.url_query_parameters )
+        <tr>
+            <td style="$parameter_style" id="$param.name">$param.name</td>
+            <td>$param.get_type_name()</td>
+            #set ( $field = $param )
+            #parse ( "call_detail_description.vm" )
+        </tr>
+    #end
+</table>
+<br>
+#end
+
+#set ( $headers = $request.headers )
+#set ( $example_style = "font-family: courier ! important; font-size: 12px ! important;" )
+
+#if ( _util.is_not_empty($headers) )
+<h2>Request Headers</h2>
+<$table_declare>
+    <colgroup>
+        <col width="20%"/>
+        <col width="60%"/>
+        <col width="20%"/>
+    </colgroup>
+    <tr>
+    <th>Header</th>
+    <th>Description</th>
+    <th>Example</th>
+    </tr>
+    #foreach ( $header in $headers )
+        <tr>
+            <td style="$parameter_style">$header.name</td>
+            <td>$header.description</td>
+            <td style="$example_style">$header.example</td>
+        </tr>
+    #end
+</table>
+<br>
+#end
+
+#if ( $body )
+<h2>Request Parameters</h2>
+#parse ("body_parameters.vm")
+#end

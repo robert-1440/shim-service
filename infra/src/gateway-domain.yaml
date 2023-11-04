@@ -1,0 +1,16 @@
+#
+# Describes an AWS API Gateway domain.
+#
+# Will be referenced by rest apis
+#
+type: gateway-domain
+
+ignore: ${noGatewayDomain:false}
+
+name: shim-gateway
+
+endpoint-configuration: regional
+
+certificate-arn: ${var.cert_arn}
+
+domain-name: ${var.domain_name}

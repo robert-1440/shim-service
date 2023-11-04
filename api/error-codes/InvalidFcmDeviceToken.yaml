@@ -1,0 +1,11 @@
+resource-type: error-code
+
+name: InvalidFcmDeviceToken
+description: The given FCM device token failed validation.
+
+# Should be able to complete the sentence: "Exception thrown when ..."
+comment: an invalid FCM token was provided in a request
+
+# The default HTTP status code associated with this error
+status-code: 400
+

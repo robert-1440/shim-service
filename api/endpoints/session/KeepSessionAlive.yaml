@@ -1,0 +1,45 @@
+resource-type: api
+
+name: KeepSessionAlive
+title: Keep Session ALive
+
+description: |
+  Used to ensure the session does not time out.
+
+
+tags:
+  - session
+
+request:
+  path: /organizations/{orgId}/sessions/{sessionToken}/actions/keep-alive
+  method: POST
+
+  url-parameters:
+    orgId:
+      type: OrganizationId
+
+    sessionToken:
+      type: SessionToken
+
+response:
+  body:
+    parameters:
+      expirationTime:
+        type: EpochSeconds
+        description: Epoch timestamp (in seconds) that is the expected time the session will expire.
+        required: true
+
+  codes:
+    204: OK
+
+    400: Invalid session token.
+
+    409:
+      error-codes:
+        - SessionCreationInProgress
+        - SessionInFailedState
+
+    410: Session is already gone.
+
+
+

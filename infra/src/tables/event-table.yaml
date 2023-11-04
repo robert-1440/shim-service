@@ -1,0 +1,17 @@
+type: dynamodb-table
+
+name: ShimServiceEvent
+
+attributes:
+  - name: tenantId
+    type: N
+  - name: seqNo
+    type: N
+
+keys:
+  hash: tenantId
+  range: seqNo
+
+
+pay-per-request: true
+

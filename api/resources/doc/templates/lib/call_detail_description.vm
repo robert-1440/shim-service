@@ -1,0 +1,33 @@
+
+#set ( $exampleStyle = "font-weight: bold ! important; background-color:black ! important; color:#00ff00 ! important;" )
+<td>$field.get_description()
+	#if ( $field.is_enum_type() )
+		#set ( $enum_object = $field.get_enum_object() )
+		<p>
+		<table border="1" class="docutils">
+		<tr>
+		<th>$enum_object.name_header</th>
+		<th>$enum_object.value_header</th>
+		</tr>
+		#set ( $enum_fields = $enum_object.enum_fields )
+		#foreach ( $enum_field in $enum_fields )
+			<tr>
+			<td><strong>$enum_field.value</strong></td>
+			<td>$enum_field.description</td>
+			</tr>
+		#end
+		</table>
+	#else
+		#if ( _util.is_not_empty($field.get_type_details()) )
+			<p>
+			<table border="1" style="border-collapse:collapse;">
+			#foreach ( $detail in $field.get_type_details() )
+				<tr style="background-color:#ffffdd;">
+					<td style="border:none; padding:1px; font-style:italic; font-weight:bold; text-align:right;">$detail.name:</td>
+					<td style="border:none; padding:3px; font-family:Courier"><pre style="$exampleStyle">$detail.value</pre></td>
+				</tr>
+			#end
+			</table>
+		#end
+	#end
+</td>

@@ -1,0 +1,103 @@
+resource-type: api
+
+name: StartSession
+title: Start a Session
+
+vars:
+  exampleTimestamp: "$epochSeconds+1d"
+
+description: |
+  Used to start a session with the service.  If the user already has an active session it will be updated, otherwise
+  a new one will be created.
+
+
+tags:
+  - session
+
+request:
+  path: /organizations/{orgId}/sessions
+  method: PUT
+
+  headers:
+    values:
+      Prefer:
+        description: "Set to response-async in order to submit as an async request."
+        example: "response-async"
+
+
+  url-parameters:
+    orgId:
+      type: OrganizationId
+
+  body:
+    parameters:
+      userId:
+        type: UserId
+        required: true
+
+      instanceUrl:
+        type: String
+        size: 512
+        description: "The SFDC instance URL."
+        example: "https://lagoon-ocean-1014.scratch.lightning.force.com"
+        required: true
+
+      fcmDeviceToken:
+        type: FcmDeviceToken
+        required: true
+
+      accessToken:
+        type: String
+        size: 4096
+        description: "Access token for connecting to SFDC."
+        example: "00DHo0000015LL5!ARYAQF3I0oXJhT1ZuYbRAB.ArA68IRLB51B0iBaHDrtxg2ch1WjU2ke_9YReBfinhw9yYN5LCqIuWQne8cM2BAFaGabioxo0"
+        required: true
+
+      channelPlatformTypes:
+        type: ChannelPlatformTypeEnum[]
+        description: "The channel platforms the user is participating in."
+        required: true
+
+
+response:
+  rest-compliant: false
+
+  headers:
+    values:
+      ${sessionTokenHeader}:
+        description: "The existing session token if the response is 409."
+        example: ${exampleSessionToken}
+
+  body:
+    parameters:
+      sessionToken:
+        type: SessionToken
+        required: true
+
+      expirationTime:
+        type: EpochSeconds
+        description: |
+          Epoch timestamp (in seconds) that is the expected time the session will expire. It is expected that 
+          {@link calls/KeepSessionAlive:Keep Session Alive} will be called to extend the expiration time.
+        required: true
+
+
+  codes:
+    201: A new session was created
+
+    202: |
+      The request was accepted and a new session is being created, 
+      usually as a result of setting the Prefer header to response-async. 
+      Expect a push notification when session creation has completed.
+
+    200: An existing session for was updated.
+
+    400:
+      error-codes:
+        - InvalidParameter
+        - MissingRequiredParameter
+        - InvalidFcmDeviceToken
+
+    409:
+      error-codes:
+        - UserAlreadyLoggedIn

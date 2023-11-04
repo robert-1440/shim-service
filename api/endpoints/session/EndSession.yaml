@@ -1,0 +1,33 @@
+resource-type: api
+
+name: EndSession
+title: End a Session
+
+description: |
+  Used to end an existing session with the service.
+
+
+tags:
+  - session
+
+request:
+  path: /organizations/{orgId}/sessions/{sessionToken}
+  method: DELETE
+
+  url-parameters:
+    orgId:
+      type: OrganizationId
+
+    sessionToken:
+      type: SessionToken
+
+response:
+  codes:
+    204: Session ended (removed).
+
+    400: Invalid session id.
+
+    410: Session is gone.
+
+
+

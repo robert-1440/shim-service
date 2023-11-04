@@ -1,0 +1,10 @@
+resource-type: type-definition
+
+name: RequestId
+
+type: String
+size: 64
+pattern: "^[a-zA-Z0-9-]+$"
+description: |
+  A unique id (such as a UUID) that identifies this request. In the event that a retry is required, use the same request id.
+example: "b3af914c-969b-41a9-91d1-560a8560f2bf"

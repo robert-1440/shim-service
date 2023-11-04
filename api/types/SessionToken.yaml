@@ -1,0 +1,9 @@
+resource-type: type-definition
+
+name: SessionToken
+
+type: String
+size: 250
+description: Session token.
+example: "${exampleSessionToken}"
+

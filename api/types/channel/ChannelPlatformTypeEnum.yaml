@@ -1,0 +1,13 @@
+resource-type: type-definition
+
+name: ChannelPlatformTypeEnum
+description: Channel Platform Type
+type: String
+size: 20
+
+enum:
+  - omni = SFDC OmniChannel (LiveAgent)
+  - x1440 = 1440 Channels
+
+example: "omni"
+

@@ -1,0 +1,31 @@
+type: lambda-layer
+
+#
+# Name of our resource
+#
+name: requests-layer
+
+#
+# Name of the layer when deploying to AWS
+#
+layer-name: requests-shim
+
+#
+# Description of the layer as sent to AWS
+#
+description: Contains requests packages needed by shim-service.
+
+
+zip-file: "${lambda-layers-dir}/requests-layer.zip"
+
+architectures: [ "x86_64" ]
+
+
+#
+# Compatible runtimes
+# Options can be found here: https://docs.aws.amazon.com/lambda/latest/dg/API_PublishLayerVersion.html#SSS-PublishLayerVersion-request-CompatibleRuntimes
+#
+runtimes:
+  - python3.11
+
+

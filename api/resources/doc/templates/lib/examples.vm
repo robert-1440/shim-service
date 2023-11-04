@@ -1,0 +1,28 @@
+
+##
+## Generates examples.
+## Variables:
+## call = the API call we are working on
+## 
+
+<br>
+#set ( multiple = $_util.len($call.examples) > 1 )
+#if ( $multiple )
+    <h2>Examples</h2>
+#else
+    <h2>Example</h2>
+#end
+
+#foreach ( $example in $call.examples )
+    #if ( $multiple )
+        <h3>$example.description</h3>
+    #end
+    <h6>Request</h6>
+    #set ( $snippet = fixed($example.request) )
+    $snippet
+    <br>
+    <h6>Response</h6>
+    #set ( $snippet = fixed($example.response) )
+    $snippet
+    <br>
+#end

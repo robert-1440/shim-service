@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html>
+    #include ( "standard_header.vm" )
+    #parse ( "standard_navbar.vm" )
+    #parse ( "document_start.vm" )
+    $_util.markdown_to_html($general_page.get_content())
+    #parse ( "document_end.vm" )
+    #parse ( "standard_footer.vm" )
+</html>

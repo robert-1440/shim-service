@@ -1,0 +1,33 @@
+type: dynamodb-table
+
+# This table is for storing genera records that require a range key
+# The hash key will consist of a record type to allow for different virtual tables to use the same table
+
+name: ShimServiceVirtualRangeTable
+
+attributes:
+  - name: hashKey
+    type: S
+
+  - name: rangeKey
+    type: S
+
+  - name: sk
+    type: S
+
+
+keys:
+  hash: hashKey
+  range: rangeKey
+
+ttl-attribute: expireTime
+
+pay-per-request: true
+
+secondary-indexes:
+  # Used to be able to do a full "scan" on a table type
+  # sk = hash key, contains table type + partition id
+  scan-index:
+    projection: KEYS_ONLY
+    keys:
+      hash: sk

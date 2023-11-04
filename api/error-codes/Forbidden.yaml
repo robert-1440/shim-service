@@ -1,0 +1,12 @@
+resource-type: error-code
+
+name: Forbidden
+
+description: The request was forbidden (insufficient privileges).
+
+# Should be able to complete the sentence: "Exception thrown when ..."
+comment: there was an attempt to make a request for which the given credentials were not authorized.
+
+# The default HTTP status code associated with this error
+status-code: 403
+

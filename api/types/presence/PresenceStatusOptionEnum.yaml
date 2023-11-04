@@ -1,0 +1,13 @@
+resource-type: type-definition
+
+name: PresenceStatusOptionEnum
+description: Presence Status Option
+type: String
+size: 20
+
+enum:
+  - online = Online
+  - busy = Busy
+  - offline = Offline
+
+example: "online"

@@ -1,0 +1,85 @@
+#
+# Describes the Lambda Function
+#
+
+type: lambda-function
+
+name: ShimNotificationPublisher
+
+description: "Shim Service Notification Publisher"
+
+#
+# The zip file that contains the code.
+#
+zip-file: "${lambda-zips-dir}/notification-publisher.zip"
+
+runtime: python3.11
+
+handler: app.handler
+
+#
+# Memory size in megabytes
+#
+memory-size: var.notification_publisher_lambda_memory_size
+
+
+#
+# Ephemeral storage size in megabytes
+#
+ephemeral-storage: 512
+
+#
+# Time-out, in minutes:seconds, or seconds.
+# i.e.
+# "15:00" - 15 minutes.
+#      10 - 10 seconds.
+#
+timeout: 900
+
+#
+# Log retention for the log group, in days.
+#
+log-retention-days: 30
+
+layers:
+  - common-layer
+  - gcp-layer
+
+permissions:
+
+  topics:
+    - name: shim-error
+      actions:
+        - "sns:Publish"
+
+  dynamodb-tables:
+    - table: ShimServiceSession
+      actions:
+        - GetItem
+        - PutItem
+        - UpdateItem
+        - DeleteItem
+
+    - table: ShimServiceVirtualRangeTable
+      actions:
+        - GetItem
+        - BatchGetItem
+        - BatchWriteItem
+        - PutItem
+        - UpdateItem
+        - DeleteItem
+
+    - table: ShimServiceVirtualTable
+      actions:
+        - GetItem
+        - BatchGetItem
+        - BatchWriteItem
+        - PutItem
+        - UpdateItem
+        - DeleteItem
+
+    - table: ShimServiceEvent
+      actions:
+        - PutItem
+
+

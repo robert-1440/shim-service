@@ -1,0 +1,8 @@
+resource-type: type-definition
+
+name: MessageId
+description: "Message Id. @TODO: Apparently this can be a message id, sequence number, timestamp, etc. Good luck."
+
+type: String
+size: 250
+example: "abcdefghijk"

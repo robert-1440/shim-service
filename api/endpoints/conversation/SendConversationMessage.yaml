@@ -1,0 +1,59 @@
+resource-type: api
+
+vars:
+  messageTime: $isoTimestamp:hour+1d
+
+name: SendConversationMessage
+title: Send Conversation Message
+
+description: Used to send a message.
+
+
+tags:
+  - conversation
+
+request:
+  path: /conversations/{conversationId}/messages
+  method: POST
+
+  headers:
+    include: session-headers
+
+  url-parameters:
+    conversationId:
+      type: ConversationId
+
+  body:
+    parameters:
+      id:
+        type: MessageId
+        description: "Unique id for the message (UUID is a good idea)."
+        required: true
+
+      messageBody:
+        type: String
+        size: 16384
+        description: "The body of the message."
+        example: "Hey, you there?"
+        required: true
+
+      timestamp:
+        type: IsoTimestamp
+        description: "Timestamp for the message. Not required, only use if this is a queued message."
+        example: "${messageTime}"
+
+      attachments:
+        type: MessageAttachment[]
+        description: "Optional list of attachments."
+
+
+
+response:
+
+  codes:
+    204: OK
+
+    400:
+      error-codes:
+        - InvalidParameter
+        - MissingRequiredParameter

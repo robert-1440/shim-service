@@ -1,0 +1,30 @@
+#if ( _util.is_not_empty( $body.description ))
+    <br>
+    <p>$body.description<p>
+    <br>
+#end
+#if ( $body.has_parameters() )
+<$table_declare>
+    <colgroup>
+        <col width="10%"/>
+        <col width="10%"/>
+        <col width="5%"/>
+        <col width="40%"/>
+    </colgroup>
+    <tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Required</th>
+    <th>Description</th>
+    </tr>
+    #foreach ( $param in $body.parameters )
+        <tr>
+            <td style="$parameter_style" id="$param.name">$param.name</td>
+            <td>$page.get_link_or_text($param.get_type_name_as_link())</td>
+            <td style="text-align:center">$_util.yes_no($param.required)</td>
+            #set ( $field = $param )
+            #parse ( "call_detail_description.vm" )
+        </tr>
+    #end
+</table>
+#end

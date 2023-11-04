@@ -1,0 +1,30 @@
+resource-type: api
+
+name: GetPresenceStatuses
+title: Get Presence Statuses
+
+description: |
+  Used to retrieve a list of all available presence statuses.
+
+
+tags:
+  - presence
+
+request:
+  path: /presence-statuses
+  method: GET
+
+  headers:
+    include: session-headers
+
+
+response:
+  body:
+    parameters:
+      statuses:
+        type: PresenceStatus[]
+        description: "List of presence statuses."
+
+  codes:
+    200: OK
+

@@ -1,0 +1,43 @@
+resource-type: api
+
+name: PatchConversation
+title: Patch Conversation
+
+description: |
+  Used to accept or decline a conversation / work, or end a conversation.
+
+
+tags:
+  - conversation
+
+request:
+  path: /conversations/{conversationId}
+  method: PATCH
+
+  headers:
+    include: session-headers
+
+  url-parameters:
+    conversationId:
+      type: ConversationId
+
+  body:
+    parameters:
+      action:
+        type: String
+        enum:
+          - accept = Accept conversation
+          - decline = Decline conversation
+          - end = End conversation
+        description: Action to take.
+        example: accept
+
+response:
+
+  codes:
+    204: OK
+
+    400:
+      error-codes:
+        - InvalidParameter
+        - MissingRequiredParameter

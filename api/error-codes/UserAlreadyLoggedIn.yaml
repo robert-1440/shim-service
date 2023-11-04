@@ -1,0 +1,14 @@
+resource-type: error-code
+
+name: UserAlreadyLoggedIn
+description: |
+  The user is currently logged into the service with an active session and different device id.
+  The @nospell<<'${sessionTokenHeader}'>> header will contain the session token for the other session id.
+
+# Should be able to complete the sentence: "Exception thrown when ..."
+comment: there is an attempt to start a session for user that already has an active session.
+
+# The default HTTP status code associated with this error
+status-code: 409
+
+

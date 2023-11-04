@@ -1,0 +1,17 @@
+resource-type: error-code
+
+name: InvalidParameter
+description: A parameter in the request was invalid.
+
+# Should be able to complete the sentence: "Exception thrown when ..."
+comment: an invalid parameter was provided in a request.
+
+# The default HTTP status code associated with this error
+status-code: 400
+
+properties:
+  parameter:
+    type: String
+    size: 80
+    description: The parameter that was invalid.
+    example: userId

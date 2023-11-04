@@ -1,0 +1,14 @@
+type: topic
+
+name: shim-error
+
+topic-name: shim-service-error
+
+display-name: Shim Service Error
+
+env-name: ERROR_TOPIC_ARN
+
+#
+# Set to true if the service should be able to manage subscriptions to the topic
+#
+manage-subscriptions: true

@@ -1,0 +1,15 @@
+<html>
+    #parse ( "standard_header.vm" )
+    #parse ( "standard_navbar.vm" )
+    #parse ( "document_start.vm" )
+    <h1>Shim Service API version: $api.version<h1>
+    $_util.convert_markdown_from_file("index.md")
+    #parse ( "document_end.vm" )
+
+<div class="footer">
+	<div class="footer_nav">
+		API Version $api.version &copy; $_date.get_year()
+		<a href="http://1440.io">1440 LLC</a>, Park City, UT  USA
+	</div>
+</div>
+</html>

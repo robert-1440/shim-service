@@ -1,0 +1,18 @@
+resource-type: error-code
+
+name: MissingRequiredParameter
+description: A required parameter in the request was missing.
+
+# Should be able to complete the sentence: "Exception thrown when ..."
+comment: a required parameter in the request was missing.
+
+# The default HTTP status code associated with this error
+status-code: 400
+
+properties:
+  parameter:
+    type: String
+    size: 80
+    description: The required parameter that was missing.
+    example: userId
+

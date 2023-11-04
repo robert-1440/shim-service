@@ -1,0 +1,19 @@
+resource-type: type-definition
+
+name: MessageAttachment
+description: A message attachment.
+
+type: Object
+properties:
+  key:
+    type: String
+    size: 250
+    description: "Key @TODO: not sure what to call it."
+    example: "@TODO: no-clue"
+
+  value:
+    type: String
+    size: 8192
+    description: "Value @TODO: not sure what to call it."
+    example: "@TODO: No-clue, url Maybe?"
+

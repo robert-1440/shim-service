@@ -1,0 +1,9 @@
+resource-type: type-definition
+
+name: OrganizationId
+type: String
+description: Organization Id
+size: 15
+example: 00D6s000000ZeIc
+
+

@@ -1,0 +1,10 @@
+resource-type: header-set
+
+name: session-headers
+
+values:
+  ${sessionTokenHeader}:
+    description: The session token.
+    type: SessionToken
+    param-name: sessionToken
+    example: "${exampleSessionToken}"

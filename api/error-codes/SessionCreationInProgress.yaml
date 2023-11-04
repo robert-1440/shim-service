@@ -1,0 +1,12 @@
+resource-type: error-code
+
+name: SessionCreationInProgress
+description: The session is in the process of being created (from a previous request). Try again later.
+
+# Should be able to complete the sentence: "Exception thrown when ..."
+comment: there is an attempt to use a session that is in the process of being created.
+
+# The default HTTP status code associated with this error
+status-code: 409
+
+

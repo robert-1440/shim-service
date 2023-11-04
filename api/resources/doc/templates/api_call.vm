@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+    #include ( "standard_header.vm" )
+    #parse ( "standard_navbar.vm" )
+    #parse ( "document_start.vm" )
+    <h1><strong>$call.name:</strong> $call.title</h1>
+    #parse ( "request.vm" )
+    #parse ( "response.vm" )
+    #parse ( "examples.vm" )
+    #parse ( "document_end.vm" )
+    #parse ( "standard_footer.vm" )
+</html>

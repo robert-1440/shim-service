@@ -1,0 +1,14 @@
+##
+## Generats a navigation bar fo the top of the documentation files.
+##
+
+<div class="related relatedtop">		
+	<a><h3></h3></a>
+	<div id="site_nav">
+		<ul>
+			<li>
+				<a href="$page.get_path_to("index.html")">Home</a>
+			</li>
+		</ul>
+	</div>	
+</div>

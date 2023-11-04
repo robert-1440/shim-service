@@ -1,0 +1,13 @@
+resource-type: type-definition
+
+name: ChannelTypeEnum
+description: Channel Type
+type: String
+size: 20
+
+enum:
+  - liveAgentChat
+  - sms
+
+example: "sms"
+

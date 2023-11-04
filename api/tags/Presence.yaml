@@ -1,0 +1,7 @@
+resource-type: tag
+
+name: presence
+description: Calls related to presence.
+
+
+

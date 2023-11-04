@@ -1,0 +1,12 @@
+type: rest-api
+
+name: shim-service-requests
+
+description: "Shim Service"
+
+gateway-domain: ${gatewayDomainName:shim-gateway}
+
+api-spec: ${api-spec}
+
+lambda-function: ShimServiceWeb
+

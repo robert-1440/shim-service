@@ -1,0 +1,10 @@
+resource-type: type-definition
+
+name: UserId
+
+type: String
+size: 18
+pattern: "^005[a-zA-Z0-9]{15,18}"
+description: The Salesforce user id
+example: "005Hs00000AIDN5IAP"
+

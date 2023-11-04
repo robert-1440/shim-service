@@ -1,0 +1,14 @@
+#
+# Configuration to store terraform state in S3
+#
+type: s3backend
+
+bucket: ${infra-bucket:infra-terraform-1440}
+
+key: ${project}/terraform.tfstate
+
+# This is the region for the S3 bucket
+region: us-west-1
+
+workspace-key-prefix: envs
+

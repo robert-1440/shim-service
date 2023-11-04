@@ -1,0 +1,4 @@
+type: aws-config
+
+default-tags:
+  shim-1440: 1

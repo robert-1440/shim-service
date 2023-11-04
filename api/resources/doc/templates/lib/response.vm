@@ -1,0 +1,68 @@
+#set ( $response = $call.response )
+#set ( $body = $response.get_body() )
+
+<br>
+<h2>Response Codes</h2>
+<table border="1" class="docutils">
+    <tr>
+    <th>Code</th>
+    <th>Meaning</th>
+    </tr>
+
+#foreach ( $code in $response.codes )
+    <tr>
+        <td>$code.code</td>
+        <td>
+        #if ( $_util.is_not_empty($code.error_codes) )
+            <table border="1" class="docutils">
+            <tr>
+            <th>Error Code</th>
+            <th>Description</th>
+            </tr>
+            #foreach ( $error_code in $code.error_codes )
+                <tr>
+                <td>$page.get_link_to($error_code)</td>
+                <td>$error_code.description</td>
+                </tr>
+            #end
+            </table>
+        #else
+            $code.description
+        #end
+        </td>
+    </tr>    
+#end
+</table>
+
+#set ( $headers = $response.headers )
+#if ( _util.is_not_empty($headers) )
+<br>
+<h2>Response Headers</h2>
+<$table_declare>
+    <colgroup>
+        <col width="20%"/>
+        <col width="40%"/>
+        <col width="40%"/>
+    </colgroup>
+    <tr>
+    <th>Header</th>
+    <th>Description</th>
+    <th>Example</th>
+    </tr>
+    #foreach ( $header in $headers )
+        <tr>
+            <td style="$parameter_style">$header.name</td>
+            <td>$header.description</td>
+            <td>$header.example</td>
+        </tr>
+    #end
+</table>
+<br>
+#end
+
+
+#if ( body )
+<br>
+<h2>Response Body</h2>
+#parse ("body_parameters.vm")
+#end

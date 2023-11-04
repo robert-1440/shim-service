@@ -1,0 +1,64 @@
+##
+## Stuff on the sidebar
+##
+
+#set ( $s_tags = $instance.tags )
+#set ( $s_api_calls = $instance.api_calls )
+#set ( $s_types = _util.sort($instance.types, "name") )
+
+<div class="sphinxsidebar">
+	<div class="sphinxsidebarwrapper">
+		<h2>Table of Contents</h2>
+		<ul class="current">
+			<li class="toctree-l1">
+				<br>
+				<a class="reference internal">Endpoints Grouped by Tag</a>
+				<ul>
+				    <br>
+					#foreach ($s_tag in $instance.tags)
+						<li class="toctree-l1">$page.get_link_to($s_tag)</li>
+						#set ( s_calls_with_tag = _util.sort($instance.get_calls_by_tag($s_tag), "name") )
+						#if ( _util.is_not_empty($s_calls_with_tag) )
+							<ul>
+								#foreach ( $s_call in $s_calls_with_tag )
+									<li class="toctree-l2">$page.get_link_to($s_call, $s_call.name)</li>					
+								#end
+							</ul>
+						#end
+						<br>
+					#end
+				</ul>
+			</li>
+			<li class="toctree-l1">
+				<br>
+				<a class="reference internal">Types</a>
+				<ul>
+					#foreach ($s_type in $s_types)
+						<li class="toctree-l2">$page.get_link_to($s_type)</li>
+					#end
+				</ul>
+			</li>
+			<li class="toctree-l1">
+				<br>
+				<a class="reference internal">Error Codes</a>
+				<ul>
+					#set ( $sorted = _util.sort($instance.error_codes, "name"))
+					#foreach ($s_ec in $sorted)
+						<li class="toctree-l2">$page.get_link_to($s_ec)</li>
+					#end
+				</ul>
+			</li>
+			<li class="toctree-l1">
+				<br>
+				<a class="reference internal">All Endpoints</a>
+				<ul>
+					#set ( $sorted = $_util.sort($s_api_calls, "name") )
+					#foreach ($s_call in $sorted)
+						<li class="toctree-l2">$page.get_link_to($s_call, $s_call.name)</li>
+					#end
+				</ul>
+			</li>
+        </ul>
+	</div>
+</div>
+<div class="clearer"></div>

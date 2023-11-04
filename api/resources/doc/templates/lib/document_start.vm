@@ -1,0 +1,9 @@
+<body>
+   <div class="document">
+      <div class="documentwrapper">
+         <div class="bodywrapper">
+            <div class="body">
+               <div class="section">
+                  #if ( $api.is_beta() )
+                     <img src="$page.get_path_to('images/watermark-draft.png')" style="position: fixed; pointer-events: none">
+                  #end

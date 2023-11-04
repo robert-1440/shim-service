@@ -1,0 +1,46 @@
+PYTHON ?= python3
+
+PYTHON_UTILS_DIR ?= ../PythonUtils
+
+PROJECT ?= shim-service
+
+REGION ?= us-west-1
+
+OUTPUT_PATH=.
+
+OUR_DIR=${PWD}
+
+ACCOUNT ?= 433933949595
+
+TERRAFORM_DIR ?= ./terraform
+
+TERRAFORM=terraform -chdir=$(TERRAFORM_DIR)
+
+VARS_FILE ?= $(OUR_DIR)/values.tfvars
+
+TERRAFORM_VARS=-var="aws_region=$(REGION)" -var-file="${VARS_FILE}"
+
+TERRAFORM_INIT=$(TERRAFORM) init $(TERRAFORM_VARS)
+
+TERRAFORM_PLAN=$(TERRAFORM) plan $(TERRAFORM_VARS)
+
+TERRAFORM_APPLY=$(TERRAFORM) apply $(TERRAFORM_VARS)
+
+TERRAFORM_DESTROY=$(TERRAFORM) destroy $(TERRAFORM_VARS)
+
+
+verify_account:
+	@$(PYTHON) $(PYTHON_UTILS_DIR)/aws/tools/verify_account.py ${ACCOUNT}
+
+init: verify_account
+	@$(TERRAFORM_INIT)
+
+plan: verify_account
+	@$(TERRAFORM_PLAN)
+
+apply: verify_account
+	@$(TERRAFORM_APPLY)
+
+destroy: verify_account
+	@$(TERRAFORM_DESTROY)
+	

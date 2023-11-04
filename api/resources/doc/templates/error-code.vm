@@ -1,0 +1,39 @@
+##
+## The template file for an error-code
+##
+<!DOCTYPE html>
+<html>
+    #include ( "standard_header.vm" )
+    #parse ( "standard_navbar.vm" )
+    #parse ( "document_start.vm" )
+        <h1>Error Code: $error_code.name</h1>
+        <p>Error returned when $error_code.comment</p>
+        #if ( $_util.is_not_empty($error_code.status_code) )
+            <h2>Default status code: $error_code.status_code</h2>
+        #end
+        #if ( $_util.is_not_empty($error_code.properties) )
+            <h2>Properties Returned in Response</h2>
+            <$table_declare>
+                <colgroup>
+                    <col width="10%"/>
+                    <col width="10%"/>
+                    <col width="40%"/>
+                </colgroup>
+                <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Description</th>
+                </tr>
+                #foreach ( $param in $error_code.properties )
+                    <tr>
+                        <td style="$parameter_style" id="$param.name">$param.name</td>
+                        <td>$page.get_link_or_text($param.get_type_name_as_link())</td>
+                        <td>$param.get_description()</td>
+                    </tr>
+                #end
+            </table>
+        #end
+    #parse ( "document_end.vm" )
+    #parse ( "standard_footer.vm" )
+</html>
+

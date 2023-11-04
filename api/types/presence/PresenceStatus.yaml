@@ -1,0 +1,25 @@
+resource-type: type-definition
+
+name: PresenceStatus
+description: Presence Status
+
+type: Object
+properties:
+    id:
+      type: PresenceStatusId
+      required: true
+
+    label:
+      type: String
+      size: 250
+      description: Label for the status.
+      required: true
+      example: "Online"
+
+    statusOption:
+      type: PresenceStatusOptionEnum
+      required: true
+
+
+
+

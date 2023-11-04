@@ -1,0 +1,57 @@
+resource-type: type-definition
+
+vars:
+  messageTime: $isoTimestamp:hour+1d
+
+name: Message
+description: Message
+
+type: Object
+properties:
+  id:
+    type: MessageId
+    required: true
+
+  conversationId:
+    type: ConversationId
+    description: "The conversation id of the conversation this message belongs to."
+    required: true
+
+  messageBody:
+    type: String
+    size: 16384
+    description: "The body of the message."
+    example: "Hey, you there?"
+
+  timestamp:
+    type: IsoTimestamp
+    description: "Timestamp for the message.  @TODO: Only present if there was a timestamp (rather than returning a fake one)."
+    example: "${messageTime}"
+
+  entryType:
+    type: MessageEntryTypeEnum
+
+  actorType:
+    type: MessageActorTypeEnum
+
+  salesforcePayload:
+    type: String
+    size: 16384
+    description: "Salesforce payload. @TODO: Good luck."
+    example: "@TODO: blah blah blah"
+
+  sequence:
+    type: MessageSequence
+    required: true
+
+  participant:
+    type: Participant
+
+  attachments:
+    type: MessageAttachment[]
+    description: "Optional list of attachments."
+
+
+
+
+

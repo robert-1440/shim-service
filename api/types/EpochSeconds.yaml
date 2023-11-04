@@ -1,0 +1,9 @@
+resource-type: type-definition
+
+name: EpochSeconds
+type: Integer
+size: 12
+description: Epoch seconds (number of seconds since Jan 1, 1970) @nospell<<UTC>>
+example: 1697663397
+
+

@@ -1,0 +1,68 @@
+#
+# Contains global information about the service
+#
+resource-type: globals
+
+#
+# The title of the service
+#
+title: Shim Service
+
+#
+# The short name for the service. Used mainly for file generation.
+#
+service-name: shim-service
+
+#
+# The service name as it appears in the URL
+#
+base-path: /shim-service
+
+#
+# API spec version, not the service version
+#
+version: 0.1
+
+request:
+  #
+  # Common headers
+  #
+  headers:
+    X-Correlation-ID:
+      description: "Optional correlation id. This id will be included in any logging that happens during the request."
+      example: "a123aldkdfasdg"
+    Authorization:
+      description: The authorization token.
+      example: "1440-HMAC-SHA256-A abcdefabcabbacadfff"
+    Accept:
+      description: The type of content accepted
+      example: application/json
+
+    #
+    # The default media types supported
+    #
+
+  media-types:
+    - application/json
+
+
+response:
+  media-types:
+    - application/json
+
+  codes:
+    403:
+      description: Insufficient privileges
+      error-codes:
+        - Forbidden
+
+    401:
+      description: Unauthorized
+      error-codes:
+        - NotAuthorized
+
+
+global-variables:
+  sessionTokenHeader: "X-1440-Session-Token"
+  exampleSessionToken: "SGVsbG8uICBUaGlzIGlzIGEgc2FtcGxlIHNlc3Npb24gdG9rZW4uIE5vdCByZWFsbHkgZ29pbmcgdG8gbG9vayBsaWtlIHRoaXMgdGhvdWdoLg"
+

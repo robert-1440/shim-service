@@ -1,0 +1,7 @@
+<div class="footer">
+	<div class="footer_nav">
+		<a href="$page.get_index_path()">Home</a> | 
+		API Version $api.version &copy; $_date.get_year()
+		<a href="http://1440.io">1440 LLC</a>, Park City, UT  USA
+	</div>
+</div>

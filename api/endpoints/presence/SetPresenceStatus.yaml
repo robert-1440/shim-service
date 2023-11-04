@@ -1,0 +1,35 @@
+resource-type: api
+
+name: SetPresenceStatus
+title: Set Presence Status
+
+description: |
+  Used to set the presence status for the current user.
+
+
+tags:
+  - presence
+
+request:
+  path: /presence-statuses
+  method: POST
+
+  headers:
+    include: session-headers
+
+  body:
+    parameters:
+      id:
+        type: PresenceStatusId
+        description: "The id of the {@link types/PresenceStatus:Presence Status}"
+
+
+
+response:
+  codes:
+    204:
+
+    400:
+      error-codes:
+        - name: InvalidParameter
+          description: The presence status id is invalid.

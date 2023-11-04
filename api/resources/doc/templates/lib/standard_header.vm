@@ -1,0 +1,25 @@
+##
+## Contains header information common for all of our files.
+##
+
+
+##
+## Note that the use of fixed here is to ensure that no HTML encoding happens when it is expanded.
+##
+#set ( $table_declare = $fixed("table border='1' class='docutils'") )
+
+##
+## The style to use for a parameter name in a table
+##
+
+#set ( $parameter_style = $fixed("font-weight:bold; background-color: #eff5ff") )
+#set ( $url_style = $fixed("font-family: Courier; color: lightgrey; background-color: #23241f; font-weight:bold;") )
+
+#set ( $name = $page.title )
+
+    <head>
+        <title>${name}</title>
+        <link rel="stylesheet" href="${page.get_path_to("styles/apidoc.css")}" type="text/css">
+        <link rel="shortcut icon" href="${page.get_path_to("images/favicon.png")}">
+    </head>
+

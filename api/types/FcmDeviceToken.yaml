@@ -1,0 +1,10 @@
+resource-type: type-definition
+
+name: FcmDeviceToken
+
+type: String
+size: 512
+description: Firebase Cloud Messaging device token. Required in order to send push notifications.
+example: "ecqifEeT50Yjq50JrRu8LR:APA91bFZIMP0ds2fCsfzK-YCybMQKJNUEcyJyX6vV4fmB7qjebQB0iuRcT-hRlc_0HWcMkXOEXDqhq4K51Hr6F8lQiAb3W5DR1k5ZDRXNZg9YHivmEXm5gmNcbqCb3jRJH2TKN7CaGpM"
+
+
