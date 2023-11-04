@@ -6,8 +6,9 @@ from lambda_web_framework.web_exceptions import InvalidParameterException
 from lambda_web_framework.web_router import Method
 from services.sfdc.live_agent.omnichannel_api import OmniChannelApi
 from utils import collection_utils
+from utils.validation_utils import get_work_id, get_work_target_id
 
-presence = Resource(ROOT, "presence-statuses")
+presence = Resource(ROOT, "")
 
 
 class SetPresenceBody:
@@ -19,7 +20,7 @@ class SetPresenceBody:
         self.status_id: str = status_id
 
 
-@presence.route("",
+@presence.route("presence-statuses",
                 response_codes=(200,),
                 api_required=True,
                 no_instance=True,
@@ -32,4 +33,23 @@ def set_presence_status(status_body: SetPresenceBody, api: OmniChannelApi):
         raise InvalidParameterException("id", f"'{status_body.status_id}' is invalid.")
 
     api.set_presence_status(status_body.status_id)
+    return LambdaHttpResponse.ok()
+
+
+class AcceptWorkBody:
+    def __init__(self, request: LambdaHttpRequest):
+        record = from_json(request.body)
+        self.work_id = get_work_id(record)
+        self.work_target_id = get_work_target_id(record)
+        assert_empty(record)
+
+
+@presence.route("presence/actions/accept-work",
+                response_codes=(200,),
+                api_required=True,
+                no_instance=True,
+                body_transformer=AcceptWorkBody,
+                method=Method.POST)
+def accept_work(work_body: AcceptWorkBody, api: OmniChannelApi):
+    api.accept_work(work_body.work_id, work_body.work_target_id)
     return LambdaHttpResponse.ok()

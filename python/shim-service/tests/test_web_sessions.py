@@ -1,7 +1,7 @@
 from copy import copy
 from typing import Optional, List
 
-from base_test import DEFAULT_ORGANIZATION, GOOD_CREDS, NON_EXISTENT_CREDS, ALTERNATE_CREDS, AsyncMode
+from base_test import DEFAULT_ORGANIZATION, GOOD_CREDS, NON_EXISTENT_CREDS, ALTERNATE_CREDS
 from base_web_test import BaseWebTest
 from lambda_pkg import LambdaFunction
 from mocks.gcp.firebase_admin import messaging
@@ -13,7 +13,6 @@ class SessionsTest(BaseWebTest):
 
     def test_create(self):
         session_token = self.create_web_session()
-        sess = self.get_session_from_token(session_token)
 
         # Attempt again with the same parameters
         another = self.create_web_session(expected_status_code=200)
@@ -28,9 +27,6 @@ class SessionsTest(BaseWebTest):
 
         # Make sure it returned our session token
         self.assertEqual(session_token, resp.get_header("X-1440-Session-Token"))
-
-    def test_create_sync_connect(self):
-        self.create_web_session(async_mode=AsyncMode.NONE)
 
     def test_keepalive(self):
         now = get_system_time_in_seconds()
@@ -112,8 +108,8 @@ class SessionsTest(BaseWebTest):
         self.create_web_session(
             user_id='not-good',
             expected_status_code=400,
-            expected_error_message="Parameter value of 'not-good for parameter 'userId' "
-                                   "is malformed, regex='^005[a-zA-Z0-9]{15,18}'."
+            expected_error_message="'userId' is invalid: value 'not-good' is malformed - "
+                                   "regex='^005[a-zA-Z0-9]{15,18}'."
         )
 
         self.create_web_session(

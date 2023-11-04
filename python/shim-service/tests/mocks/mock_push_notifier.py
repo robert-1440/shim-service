@@ -3,7 +3,7 @@ from typing import Dict
 from push_notification import PushNotifier
 
 
-class MockPushNotifer(PushNotifier):
+class MockPushNotifier(PushNotifier):
     def _notify(self, token: str, data: Dict[str, str], dry_run: bool = False):
         pass
 

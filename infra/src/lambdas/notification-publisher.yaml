@@ -49,6 +49,12 @@ permissions:
 
   topics:
     - name: shim-error
+      manage: false
+      actions:
+        - "sns:Publish"
+
+    - name: shim-mock-push-notification
+      manage: false
       actions:
         - "sns:Publish"
 

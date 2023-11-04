@@ -1,0 +1,11 @@
+resource-type: type-definition
+
+name: WorkTargetId
+description: Work Target Id
+
+pattern: "^0Mw[a-zA-Z0-9]{12,15}"
+
+type: String
+size: 18
+example: "0MwHs0000011U8O"
+

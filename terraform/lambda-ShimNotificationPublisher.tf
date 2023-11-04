@@ -11,13 +11,13 @@ data "aws_iam_policy_document" "shim_notification_publisher" {
   statement {
     effect    = "Allow"
     resources = [ aws_sns_topic.shim_error.arn ]
-    actions   = [
-      "sns:Publish",
-      "sns:ListSubscriptionsByTopic",
-      "sns:GetSubscriptionAttributes",
-      "sns:Subscribe",
-      "sns:Unsubscribe"
-    ]
+    actions   = [ "sns:Publish" ]
+  }
+
+  statement {
+    effect    = "Allow"
+    resources = [ aws_sns_topic.shim_mock_push_notification.arn ]
+    actions   = [ "sns:Publish" ]
   }
 
   statement {
@@ -119,6 +119,7 @@ resource "aws_lambda_function" "shim_notification_publisher" {
       SHIM_SERVICE_PUSH_NOTIFIER          = "ShimPushNotifierGroup"
       SHIM_SERVICE_PUSH_NOTIFIER_ROLE_ARN = "${aws_iam_role.push_notifier_group.arn}"
       ERROR_TOPIC_ARN                     = "${aws_sns_topic.shim_error.arn}"
+      SNS_PUSH_TOPIC_ARN                  = "${aws_sns_topic.shim_mock_push_notification.arn}"
     }
   }
   depends_on = [ aws_iam_role_policy_attachment.shim_notification_publisher ]

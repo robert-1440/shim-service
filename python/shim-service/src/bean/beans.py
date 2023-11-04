@@ -83,7 +83,7 @@ class _BeanImpl(Bean):
                 self.__bean_type_flags = bt.value
             env_var = params.get('var')
             if env_var is not None:
-                if os.environ.get(env_var, 'false').lower() != 'true':
+                if len(os.environ.get(env_var, '')) == 0:
                     self.__disabled = True
 
         if not self.__disabled:

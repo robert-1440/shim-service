@@ -5,13 +5,17 @@ from typing import Dict, Any, Union
 
 from instance import Instance
 from lambda_web_framework.request import get_required_parameter
-from lambda_web_framework.web_exceptions import BadRequestException
+from lambda_web_framework.web_exceptions import BadRequestException, InvalidParameterException
 from lambda_web_framework.web_router import LambdaHttpRequest
 from utils import loghelper
 
 __REQUEST_ID_REGEX = re.compile(r"^[a-zA-Z0-9-]+$")
 
 __USER_ID_REGEX = re.compile(r'^005[a-zA-Z0-9]{15,18}')
+
+__WORK_ID_REGEX = re.compile(r'^0Bz[a-zA-Z0-9]{12,15}')
+
+__WORK_TARGET_ID_REGEX = re.compile(r'^0Mw[a-zA-Z0-9]{12,15}')
 
 logger = loghelper.get_logger(__name__)
 
@@ -25,10 +29,12 @@ def __get_with_regex(body: Dict[str, Any], key: str, regex: Union[str, Pattern],
                      max_length: int = None) -> str:
     value = get_required_parameter(body, key, str, remove=True)
     if re.match(regex, value) is None:
-        raise BadRequestException(
-            f"Parameter value of '{value} for parameter '{key}' is malformed, regex='{regex.pattern}'.")
+        raise InvalidParameterException(key,
+                                        f"value '{value}' is "
+                                        f"malformed - regex='{regex.pattern}'.")
     if max_length is not None and len(value) > max_length:
-        raise BadRequestException(f"{key} value of '{value}' exceeds the maximum allowed size of {max_length}.")
+        raise InvalidParameterException(key,
+                                        f"value '{value}' exceeds the maximum allowed size of {max_length}.")
     return value
 
 
@@ -46,6 +52,14 @@ def get_url(body: Dict[str, Any], key: str) -> str:
 
 def get_user_id(body: Dict[str, Any], key: str = "userId") -> str:
     return __get_with_regex(body, key, __USER_ID_REGEX)
+
+
+def get_work_id(body: Dict[str, Any], key: str = "workId") -> str:
+    return __get_with_regex(body, key, __WORK_ID_REGEX)
+
+
+def get_work_target_id(body: Dict[str, Any], key: str = "workTargetId") -> str:
+    return __get_with_regex(body, key, __WORK_TARGET_ID_REGEX)
 
 
 def get_tenant_id(instance: Instance, request: LambdaHttpRequest, org_id: str) -> int:

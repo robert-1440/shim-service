@@ -1,0 +1,11 @@
+resource-type: type-definition
+
+name: WorkId
+description: Work Id
+
+pattern: "^0Bz[a-zA-Z0-9]{12,15}"
+
+type: String
+size: 18
+example: "0BzHs000005aLv4"
+

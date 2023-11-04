@@ -9,6 +9,7 @@ from botomocks.lambda_mock import Invocation
 from config import DEFAULT_MAX_SESSION_RETRIES
 from lambda_web_framework.web_exceptions import NotAuthorizedException, ForbiddenException, GoneException, \
     ConflictException, LambdaHttpException
+from mocks.gcp.firebase_admin import messaging
 from pending_event import PendingEventType
 from platform_channels import OMNI_PLATFORM, X1440_PLATFORM
 from push_notification import PushNotificationContextSettings
@@ -21,6 +22,7 @@ from services.sfdc.live_agent import LiveAgentWebSettings, LiveAgentPollerSettin
 from services.sfdc.sfdc_session import load_with_context
 from session import manager, SessionToken, Session, SessionStatus, ContextType
 from session.exceptions import SessionNotActiveException
+from support import verification_utils
 from support.credentials import TestCredentials
 from utils import collection_utils
 from utils.date_utils import get_system_time_in_millis, get_system_time_in_seconds, EpochSeconds
@@ -65,6 +67,9 @@ class SessionManagerTest(BaseTest):
 
     def test_create(self):
         sess = self.create_session(async_conn=False)
+        # Make sure it verified the fcm token
+        verification_utils.verify_dry_run(messaging.pop_invocation())
+
         repo: AwsSessionContextsRepo = beans.get_bean_instance(BeanName.SESSION_CONTEXTS_REPO)
         ctx = repo.find_session_context(sess, ContextType.WEB)
         self.assertIsNotNone(ctx)

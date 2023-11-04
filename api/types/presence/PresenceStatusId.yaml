@@ -3,6 +3,8 @@ resource-type: type-definition
 name: PresenceStatusId
 description: Presence Status Id
 
+pattern: "^0N5[a-zA-Z0-9]{15,18}"
+
 type: String
 size: 18
 example: "0N5Hs000000TWb0KAG"

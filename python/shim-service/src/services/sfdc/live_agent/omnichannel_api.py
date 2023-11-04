@@ -10,7 +10,10 @@ from services.sfdc.live_agent import LiveAgentWebSettings, PresenceStatus
 from services.sfdc.live_agent.api import presence_status
 from services.sfdc.sfdc_session import SfdcSession, SfdcSessionAndContext, load_with_context
 from session import Session, SessionContext, ContextType
+from utils import loghelper
 from utils.http_client import HttpMethod
+
+logger = loghelper.get_logger(__name__)
 
 
 class OmniChannelApi(metaclass=abc.ABCMeta):
@@ -21,6 +24,10 @@ class OmniChannelApi(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def set_presence_status(self, status: str):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def accept_work(self, work_id: str, work_target_id: str):
         raise NotImplementedError()
 
 
@@ -37,6 +44,10 @@ class _OmniChannelApi(OmniChannelApi):
         self.initial_settings = copy(self.settings)
         self.resource_lock = resource_lock
 
+    @staticmethod
+    def build_presence_uri(resource_type: str):
+        return "rest/Presence/" + resource_type
+
     def get_presence_statuses(self) -> List[PresenceStatus]:
         return self.sfdc_session.get_presence_statuses()
 
@@ -46,9 +57,22 @@ class _OmniChannelApi(OmniChannelApi):
         else:
             resource_type = "Login"
 
-        uri = "rest/Presence/Presence" + resource_type
+        uri = self.build_presence_uri("Presence" + resource_type)
         body = presence_status.construct_set_presence_status_body(self.sfdc_session, status_id)
         self.sfdc_session.send_web_request(self.settings, HttpMethod.POST, uri, body)
+
+    def accept_work(self, work_id: str, work_target_id: str):
+        uri = self.build_presence_uri("AcceptWork")
+        resp = self.sfdc_session.send_web_request(
+            self.settings,
+            HttpMethod.POST,
+            uri,
+            {
+                'workId': work_id,
+                'workTargetId': work_target_id
+            }
+        )
+        logger.info(f"Response to accept work request: {resp.to_string()}")
 
     def __enter__(self):
         return self

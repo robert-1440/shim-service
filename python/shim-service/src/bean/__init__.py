@@ -60,7 +60,7 @@ class BeanName(Enum):
     PENDING_EVENTS_REPO = 35, ALL_PROFILES
     PUSH_NOTIFIER_PROCESSOR = 36, PUSH_NOTIFIER_PROFILE
     SNS_PUSH_NOTIFIER = 37, WEB_PROFILE | PUSH_NOTIFIER_PROFILE, {'type': BeanType.PUSH_NOTIFIER,
-                                                                  'var': 'SNS_NOTIFIER_ENABLED'}
+                                                                  'var': 'SNS_PUSH_TOPIC_ARN'}
     PUSH_NOTIFICATION_MANAGER = 38, WEB_PROFILE | PUSH_NOTIFIER_PROFILE
 
 

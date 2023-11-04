@@ -1,7 +1,8 @@
 import json
+from typing import Optional
 
-from base_test import BaseTest, AsyncMode
-from mocks.http_session_mock import MockedResponse
+from base_test import BaseTest, AsyncMode, DEFAULT_WORK_ID, DEFAULT_WORK_TARGET_ID
+from mocks.http_session_mock import MockedResponse, MockHttpSession
 from support.live_agent_helper import ONLINE_ID, BUSY_ID, OFFLINE_ID
 from utils.http_client import HttpRequest
 
@@ -53,6 +54,27 @@ class PresenceTests(BaseTest):
         # We called it 3 times (the first one was rejected by the service not SFDC)
         self.assertEqual(3, self.sequence_counter)
 
+    def test_accept_work(self):
+        token = self.create_web_session(async_mode=AsyncMode.NONE)
+        self.accept_work(
+            token,
+            "bad",
+            expected_status_code=400,
+            expected_error_code="InvalidParameter",
+            expected_error_message="'workId' is invalid: value 'bad' is malformed - regex='^0Bz[a-zA-Z0-9]{12,15}'."
+        )
+
+        self.accept_work(
+            token,
+            work_target_id="bad",
+            expected_status_code=400,
+            expected_error_code="InvalidParameter",
+            expected_error_message="'workTargetId' is invalid: value 'bad' is malformed - "
+                                   "regex='^0Mw[a-zA-Z0-9]{12,15}'."
+        )
+
+        self.accept_work(token)
+
     def setUp(self) -> None:
         super().setUp()
         self.sequence_counter = 0
@@ -77,6 +99,41 @@ class PresenceTests(BaseTest):
             return MockedResponse(400, body="Invalid status id")
         return None
 
+    def accept_work(self,
+                    session_token: str,
+                    work_id: Optional[str] = DEFAULT_WORK_ID,
+                    work_target_id: Optional[str] = DEFAULT_WORK_TARGET_ID,
+                    expected_status_code: int = 200,
+                    expected_error_message: str = None,
+                    expected_error_code: str = None,
+                    expected_message: str = None
+                    ) -> Optional[MockHttpSession]:
+        headers = {
+            'x-1440-session-token': session_token
+        }
+        if expected_status_code == 200:
+            mock = self.add_new_http_mock()
+            mock.add_post_response(
+                url="https://somewhere-chat.lightning.force.com/chat/rest/Presence/AcceptWork",
+                status_code=200,
+                body="Some data"
+            )
+        else:
+            mock = None
+        self.post(
+            "presence/actions/accept-work",
+            headers=headers,
+            body={
+                'workId': work_id,
+                'workTargetId': work_target_id
+            },
+            expected_status_code=expected_status_code,
+            expected_error_message=expected_error_message,
+            expected_message=expected_message,
+            expected_error_code=expected_error_code
+        )
+        return mock
+
     def set_presence_status(self,
                             session_token: str,
                             status_id: str,
@@ -98,4 +155,3 @@ class PresenceTests(BaseTest):
             expected_message=expected_message,
             expected_error_code=expected_error_code
         )
-        pass

@@ -1,0 +1,39 @@
+resource-type: api
+
+name: AcceptWork
+title: Accept a Work Item
+
+description: |
+  Used to accept work.
+
+
+tags:
+  - presence
+
+request:
+  path: /presence/actions/accept-work
+  method: POST
+
+  headers:
+    include: session-headers
+
+  body:
+    parameters:
+      workId:
+        type: WorkId
+        description: "The work id"
+        required: true
+
+      workTargetId:
+        type: WorkTargetId
+        description: "The work target id"
+        required: true
+
+
+response:
+  codes:
+    204:
+
+    400:
+      error-codes:
+        - InvalidParameter

@@ -11,7 +11,7 @@ from botomocks.scheduler_mock import MockSchedulerClient
 from botomocks.sm_mock import MockSecretsManagerClient
 from manual.mock_push_notifications_repo import MockPushNotificationsRepo
 from mocks.admin_client_mock import MockAdminClient
-from mocks.mock_push_notifier import MockPushNotifer
+from mocks.mock_push_notifier import MockPushNotifier
 from pending_event import PendingEventType
 from platform_channels import OMNI_PLATFORM, X1440_PLATFORM
 from repos.pending_event_repo import PendingEventsRepo
@@ -54,7 +54,7 @@ sm_client = MockSecretsManagerClient()
 beans.override_bean(BeanName.SECRETS_MANAGER_CLIENT, sm_client)
 setup_mock()
 
-push_notifier_mock = MockPushNotifer()
+push_notifier_mock = MockPushNotifier()
 beans.override_bean(BeanName.PUSH_NOTIFIER, push_notifier_mock)
 
 

@@ -35,12 +35,14 @@ ifeq ($(origin WORKSPACE), undefined)
 	GATEWAY_DOMAIN_NAME=null
 	NO_GATEWAY_DOMAIN=true
 	BT_ARGS=--var configServiceUrl=https://sswki1xsfd.execute-api.us-west-1.amazonaws.com
+	ALLOW_SNS_PUSH_NOTIFIER = true
 else
 	PROJECT = shim-service-$(WORKSPACE)
 	TERRAFORM_DIR=terraform-$(WORKSPACE)
 	GATEWAY_DOMAIN_NAME=shim-service-$(WORKSPACE).1440.io
 	NO_GATEWAY_DOMAIN=false
 	BT_ARGS=--var configServiceUrl=https://configuration.1440.io
+	ALLOW_SNS_PUSH_NOTIFIER = false
 endif
 
 
@@ -83,10 +85,17 @@ build-terraform bt: $(API_SPEC)
  			--var api-spec=$(API_SPEC) \
 			--var gatewayDomainName=$(GATEWAY_DOMAIN_NAME) \
 			--var noGatewayDomain=$(NO_GATEWAY_DOMAIN) \
+			--var mockPushNotificationsEnabled=$(ALLOW_SNS_PUSH_NOTIFIER) \
 			--var project=$(PROJECT) --create --path $(OUTPUT_PATH) --terraform-folder $(TERRAFORM_DIR) \
 			$(BT_ARGS) \
 			--aws ./infra/src
 
+.PHONY = package bp bt
+
+package:
+	@cd $(SERVICE_DIR); make package
+
+bp: package bt apply
 
 
 init:

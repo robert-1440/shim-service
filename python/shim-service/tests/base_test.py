@@ -16,6 +16,7 @@ from botomocks.dynamodb_mock import MockDynamoDbClient
 from botomocks.lambda_mock import MockLambdaClient
 from botomocks.scheduler_mock import MockSchedulerClient
 from botomocks.sm_mock import MockSecretsManagerClient
+from botomocks.sns_mock import MockSnsClient
 from config import Config
 from instance import Instance
 from lambda_pkg import LambdaFunction
@@ -42,7 +43,6 @@ os.environ['AWS_ACCESS_KEY_ID'] = "invalid"
 os.environ['AWS_SECRET_ACCESS_KEY'] = "invalid"
 os.environ['ERROR_TOPIC_ARN'] = 'error:topic:arn'
 os.environ['SHIM_SERVICE_PUSH_NOTIFIER_ROLE_ARN'] = 'push:role'
-os.environ['SNS_NOTIFIER_ENABLED'] = 'true'
 
 app.TESTING = True
 bean.beans.RESETTABLE = True
@@ -97,6 +97,8 @@ SECOND_USER_ID = "005Hs00000AIDN5IAQ"
 DEFAULT_INSTANCE_URL = "https://somewhere.salesforce.com"
 DEFAULT_FCM_DEVICE_TOKEN = "some-device-token"
 DEFAULT_ACCESS_TOKEN = "access-token"
+DEFAULT_WORK_ID = "0BzHs000005aLv4"
+DEFAULT_WORK_TARGET_ID = "0MwHs0000011U8O"
 
 DEFAULT_TENANT_ID = 12345
 ALTERNATE_TENANT_ID = 99999
@@ -218,6 +220,7 @@ class BaseTest(BetterTestCase):
         self.ddb_mock = MockDynamoDbClient()
         self.http_mock_session_list: List[ExtendedHttpMockSession] = []
         self.scheduler_mock = MockSchedulerClient()
+        self.sns_mock = MockSnsClient()
 
         install_gcp_cert(self.http_session_mock)
 
@@ -231,6 +234,8 @@ class BaseTest(BetterTestCase):
         beans.override_bean(BeanName.HTTP_CLIENT, self.create_http_client(self.http_session_mock))
         beans.override_bean(BeanName.DYNAMODB_CLIENT, self.ddb_mock)
         beans.override_bean(BeanName.SCHEDULER_CLIENT, self.scheduler_mock)
+        beans.override_bean(BeanName.SNS, self.sns_mock)
+
         setup_ddb(self.ddb_mock)
         self.dynamodb: DynamoDb = beans.get_bean_instance(BeanName.DYNAMODB)
         self.user_sessions_repo = beans.get_bean_instance(BeanName.USER_SESSIONS_REPO)

@@ -59,6 +59,7 @@ permissions:
       actions:
         - "sns:Publish"
 
+
   dynamodb-tables:
     - table: ShimServiceSession
       actions:
