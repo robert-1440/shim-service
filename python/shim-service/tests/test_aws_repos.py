@@ -1,10 +1,10 @@
 from aws.dynamodb import DynamoDb
 from better_test_case import BetterTestCase
 from botomocks.dynamodb_mock import MockDynamoDbClient
+from events import Event
 from events.event_types import EventType
 from repos.aws.aws_events import AwsEventsRepo
 from repos.aws.aws_user_sessions import AwsUserSessionsRepo
-from events import Event
 from session import UserSession
 
 
@@ -27,7 +27,7 @@ class RepoTest(BetterTestCase):
         self.assertEqual(user_session, found)
 
     def test_events(self):
-        repo = AwsEventsRepo(self.ddb)
+        repo = AwsEventsRepo(self.ddb, None)
 
         event = Event(
             tenant_id=1,
@@ -55,7 +55,7 @@ class RepoTest(BetterTestCase):
         self.assertEqual([event], result.rows)
 
     def test_query_events(self):
-        repo = AwsEventsRepo(self.ddb)
+        repo = AwsEventsRepo(self.ddb, None)
 
         def add_event(seq_no: int):
             event = Event(

@@ -11,6 +11,7 @@ from lambda_web_framework.web_router import Method
 from platform_channels import assert_valid_platform_channel
 from repos.sessions_repo import UserSessionExistsException
 from session import manager, SessionToken, Session
+from session.manager import CreateResult
 from utils import validation_utils
 from utils.date_utils import get_system_time_in_millis
 from utils.string_utils import uuid
@@ -60,7 +61,7 @@ def start_session(instance: Instance, request: LambdaHttpRequest, orgId: str):
     session = __build_session(instance, request, orgId)
     async_request = request.get_header('Prefer') == 'respond-async'
     try:
-        result = manager.create_session(session, async_request)
+        result: CreateResult = manager.create_session(session, async_request)
     except UserSessionExistsException as ex:
         token = SessionToken(session.tenant_id, ex.session_id, session.user_id).serialize(creds)
         raise LambdaHttpException(409, "User is logged into another session.",
@@ -72,11 +73,14 @@ def start_session(instance: Instance, request: LambdaHttpRequest, orgId: str):
     token = SessionToken(session.tenant_id, session.session_id, session.user_id)
 
     token_string = token.serialize(creds)
+    body = {'sessionToken': token_string}
     if result.created:
         code = 202 if async_request else 201
     else:
         code = 200
-    return LambdaHttpResponse(code, {'sessionToken': token_string})
+    if result.presence_statuses is not None:
+        body['presenceStatuses'] = list(map(lambda p: p.to_record(), result.presence_statuses))
+    return LambdaHttpResponse(code, body)
 
 
 @sessions.route("{sessionToken}/actions/keep-alive",

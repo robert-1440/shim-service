@@ -8,6 +8,7 @@ from events.event_types import EventType
 from lambda_web_framework.web_exceptions import InvalidParameterException
 from repos.resource_lock import ResourceLock, ResourceLockRepo
 from repos.session_contexts import SessionContextsRepo
+from repos.work_id_map_repo import WorkIdMapRepo
 from services.sfdc.live_agent import LiveAgentWebSettings, PresenceStatus, StatusOption
 from services.sfdc.live_agent.api import presence_status
 from services.sfdc.sfdc_session import SfdcSession, SfdcSessionAndContext, load_with_context
@@ -16,6 +17,43 @@ from utils import loghelper, collection_utils
 from utils.http_client import HttpMethod
 
 logger = loghelper.get_logger(__name__)
+
+
+class MessageAttachment:
+    def __init__(self, key: str, value: str):
+        self.key = key
+        self.value = value
+
+    def to_record(self) -> Dict[str, str]:
+        return {self.key: self.value}
+
+
+class WorkMessage:
+    def __init__(self,
+                 work_target_id: str,
+                 message_id: str,
+                 message_body: str,
+                 timestamp: str,
+                 attachments: Optional[List[MessageAttachment]]
+                 ):
+        self.work_target_id = work_target_id
+        self.message_id = message_id
+        self.message_body = message_body
+        self.timestamp = timestamp
+        self.attachments = attachments
+
+    def to_body(self, work_id: str) -> dict:
+        body: Dict[str, Any] = {
+            'channelType': 'lmagent',
+            'workId': work_id
+        }
+        if self.attachments is not None:
+            body['attachments'] = list(map(lambda a: a.to_record(), self.attachments))
+            body['text'] = None
+        else:
+            body['text'] = self.message_body
+            body['attachments'] = []
+        return body
 
 
 class OmniChannelApi(metaclass=abc.ABCMeta):
@@ -37,7 +75,11 @@ class OmniChannelApi(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def close_work(self, work_id: str):
+    def close_work(self, work_target_id: str):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def send_work_message(self, message: WorkMessage):
         raise NotImplementedError()
 
 
@@ -46,13 +88,16 @@ class _OmniChannelApi(OmniChannelApi):
                  sfdc_session: SfdcSession,
                  sfdc_context: SessionContext,
                  resource_lock: ResourceLock,
-                 repo: SessionContextsRepo):
+                 repo: SessionContextsRepo,
+                 work_id_repo: WorkIdMapRepo):
+        self.work_id_repo = work_id_repo
         self.repo = repo
         self.sfdc_session = sfdc_session
         self.sfdc_context = sfdc_context
         self.settings = LiveAgentWebSettings.deserialize(sfdc_context.session_data)
         self.initial_settings = copy(self.settings)
         self.resource_lock = resource_lock
+        self.work_id_repo = work_id_repo
 
     @staticmethod
     def build_presence_uri(resource_type: str):
@@ -105,15 +150,55 @@ class _OmniChannelApi(OmniChannelApi):
             event_data
         )
 
-    def close_work(self, work_id: str):
+    def __end_conversation(self, work_id: str):
+        self.__invoke_conversation_request(
+            "ConversationEnd",
+            {
+                'channelType': 'lmagent',
+                'workId': work_id
+            }
+        )
+
+    def __start_after_conversation_work(self, work_id: str):
+        uri = self.build_presence_uri("StartAfterConversationWork")
+        self.sfdc_session.send_web_request(
+            self.settings,
+            HttpMethod.POST,
+            uri,
+            body={'workId': work_id}
+        )
+
+    def __invoke_conversation_request(self,
+                                      action: str,
+                                      body: Dict[str, Any]):
+        uri = self.__build_conversation_uri(action)
+        self.sfdc_session.send_web_request(
+            self.settings,
+            HttpMethod.POST,
+            uri,
+            body=body
+        )
+
+    def __build_conversation_uri(self, action: str):
+        return "rest/Conversational/" + action
+
+    def close_work(self, work_target_id: str):
+        work_id = self.work_id_repo.get_work_id(self.sfdc_session.tenant_id, work_target_id)
+        if not work_target_id.startswith('a17'):
+            self.__end_conversation(work_id)
+            self.__start_after_conversation_work(work_id)
+
         event_data = {
-            'workId': work_id
+            'workId': work_id,
+            'workTargetId': work_target_id
         }
+        body = dict(event_data)
+        body['activeTime'] = 1440
         self.__invoke_presence_request(
             "CloseWork",
             EventType.WORK_CLOSED,
             event_data,
-            event_data
+            body
         )
 
     def __invoke_presence_request(self,
@@ -132,6 +217,20 @@ class _OmniChannelApi(OmniChannelApi):
         )
         logger.info(f"Response to {action} request: {resp.to_string()}")
 
+    def send_work_message(self, message: WorkMessage):
+        work_id = self.work_id_repo.get_work_id(self.sfdc_session.tenant_id, message.work_target_id)
+        body = message.to_body(work_id)
+        event_data = {'messageId': message.message_id}
+        self.sfdc_session.send_web_request_with_event(
+            EventType.MESSAGE_SENT,
+            event_data,
+            self.settings,
+            HttpMethod.POST,
+            "rest/Conversational/ConversationMessage",
+            body,
+            headers={'Content-Type': 'text/plain;charset=UTF-8'}
+        )
+
     def __enter__(self):
         return self
 
@@ -144,11 +243,12 @@ class _OmniChannelApi(OmniChannelApi):
             self.resource_lock.release()
 
 
-@inject(bean_instances=(BeanName.RESOURCE_LOCK_REPO, BeanName.SESSION_CONTEXTS_REPO))
+@inject(bean_instances=(BeanName.RESOURCE_LOCK_REPO, BeanName.SESSION_CONTEXTS_REPO, BeanName.WORK_ID_MAP_REPO))
 def load_api(
         session: Session,
         resource_lock_repo: ResourceLockRepo,
-        contexts_repo: SessionContextsRepo
+        contexts_repo: SessionContextsRepo,
+        work_id_map_repo: WorkIdMapRepo
 ) -> OmniChannelApi:
     lock_name = f"web-session/{session.tenant_id}/{session.session_id}"
     lock, sc = resource_lock_repo.acquire_and_execute(lock_name, 1, 30,
@@ -158,4 +258,5 @@ def load_api(
                                                  _OmniChannelApi(sc.session,
                                                                  sc.context,
                                                                  lock,
-                                                                 contexts_repo))
+                                                                 contexts_repo,
+                                                                 work_id_map_repo))

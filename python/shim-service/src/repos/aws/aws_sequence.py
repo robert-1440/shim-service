@@ -3,12 +3,12 @@ from typing import Optional, Any, List, Union, Dict
 from retry import retry
 
 from aws.dynamodb import DynamoDb, TransactionRequest
+from events import Event
 from events.event_types import EventType
 from repos import OptimisticLockException
 from repos.aws import SEQUENCE_TABLE
 from repos.aws.abstract_table_repo import AwsVirtualTableRepo
 from repos.aws.aws_events import AwsEventsRepo
-from events import Event
 from repos.sequences import SequenceRepo, SequenceCaller
 from utils import date_utils
 from utils.date_utils import get_system_time_in_seconds
@@ -85,11 +85,17 @@ class AwsSequenceRepo(AwsVirtualTableRepo, SequenceRepo):
             event_data
         )
 
+        additional_requests = self.events_repo.examine_event(event)
+
         def inner(seq_no: int):
+            nonlocal request_list
             event.seq_no = seq_no
             request_list.append(self.events_repo.create_put_item_request(event))
             if seq_no_listener is not None:
                 seq_no_listener(seq_no)
+            if additional_requests is not None:
+                request_list = list(request_list)
+                request_list.extend(additional_requests)
             return self.transact_write(request_list)
 
         return self.execute(tenant_id, 'EventSeq', max_lock_seconds, inner)

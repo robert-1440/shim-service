@@ -206,7 +206,8 @@ __BEANS: Dict[BeanName, _BeanImpl] = {
     BeanName.PENDING_EVENTS_REPO: _module(),
     BeanName.PUSH_NOTIFIER_PROCESSOR: _module(),
     BeanName.PUSH_NOTIFICATION_MANAGER: _module(),
-    BeanName.SNS_PUSH_NOTIFIER: _module()
+    BeanName.SNS_PUSH_NOTIFIER: _module(),
+    BeanName.WORK_ID_MAP_REPO: _module()
 }
 
 

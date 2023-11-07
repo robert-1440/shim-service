@@ -3,6 +3,7 @@ from typing import Optional, Any
 
 from base_test import BaseTest, AsyncMode, DEFAULT_WORK_ID, DEFAULT_WORK_TARGET_ID
 from events import EventType
+from mocks.extended_http_session_mock import ExtendedHttpMockSession
 from mocks.http_session_mock import MockedResponse, MockHttpSession
 from support.live_agent_helper import ONLINE_ID, BUSY_ID, OFFLINE_ID
 from utils.http_client import HttpRequest
@@ -11,6 +12,8 @@ from utils.validation_utils import MAX_DECLINE_REASON_LENGTH
 ACCEPT_WORK_URL = "https://somewhere-chat.lightning.force.com/chat/rest/Presence/AcceptWork"
 DECLINE_WORK_URL = "https://somewhere-chat.lightning.force.com/chat/rest/Presence/DeclineWork"
 CLOSE_WORK_URL = "https://somewhere-chat.lightning.force.com/chat/rest/Presence/CloseWork"
+CONVERSATION_END_URL = "https://somewhere-chat.lightning.force.com/chat/rest/Conversational/ConversationEnd"
+AFTER_CLOSE_WORK_URL = "https://somewhere-chat.lightning.force.com/chat/rest/Presence/StartAfterConversationWork"
 
 
 class PresenceTests(BaseTest):
@@ -93,8 +96,7 @@ class PresenceTests(BaseTest):
             work_target_id="bad",
             expected_status_code=400,
             expected_error_code="InvalidParameter",
-            expected_error_message="'workTargetId' is invalid: value 'bad' is malformed - "
-                                   "regex='^0Mw[a-zA-Z0-9]{12,15}'."
+            expected_error_message="'workTargetId' is invalid: value 'bad' has invalid length of 3, must be 15 or 18."
         )
 
         self.setup_mock_response(
@@ -157,13 +159,14 @@ class PresenceTests(BaseTest):
     def test_close_work(self):
         token = self.create_web_session(async_mode=AsyncMode.NONE)
         self.set_presence_status(token, ONLINE_ID)
+        self.__accept_work(token)
 
         self.__close_work(
             token,
             "bad",
             expected_status_code=400,
             expected_error_code="InvalidParameter",
-            expected_error_message="'workId' is invalid: value 'bad' is malformed - regex='^0Bz[a-zA-Z0-9]{12,15}'."
+            expected_error_message="'workTargetId' is invalid: value 'bad' has invalid length of 3, must be 15 or 18."
         )
         self.__close_work(token)
         events = self.query_events_by_token(token, EventType.WORK_CLOSED)
@@ -175,8 +178,9 @@ class PresenceTests(BaseTest):
         super().setUp()
         self.sequence_counter = 0
 
-    def setup_mock_response(self, url: str, status_code: int = 200, body: Any = None):
-        mock = self.add_new_http_mock()
+    def setup_mock_response(self, url: str, status_code: int = 200, body: Any = None,
+                            mock: Optional[ExtendedHttpMockSession] = None):
+        mock = self.add_new_http_mock() if mock is None else mock
         mock.add_post_response(
             url,
             status_code=status_code,
@@ -278,7 +282,7 @@ class PresenceTests(BaseTest):
 
     def __close_work(self,
                      session_token: str,
-                     work_id: Optional[str] = DEFAULT_WORK_ID,
+                     work_target_id: Optional[str] = DEFAULT_WORK_TARGET_ID,
                      expected_status_code: int = 204,
                      expected_error_message: str = None,
                      expected_error_code: str = None,
@@ -288,14 +292,30 @@ class PresenceTests(BaseTest):
             'x-1440-session-token': session_token
         }
         if expected_status_code == 204:
-            mock = self.setup_mock_response(
+            if not work_target_id.startswith("a17"):
+                mock = self.setup_mock_response(
+                    CONVERSATION_END_URL,
+                    200,
+                    body="some data"
+                )
+                self.setup_mock_response(
+                    AFTER_CLOSE_WORK_URL,
+                    200,
+                    body="some data",
+                    mock=mock
+                )
+            else:
+                mock = self.add_new_http_mock()
+
+            self.setup_mock_response(
                 url=CLOSE_WORK_URL,
                 status_code=200,
-                body="some data"
+                body="some data",
+                mock=mock
             )
         else:
             mock = None
-        body = {'workId': work_id}
+        body = {'workTargetId': work_target_id}
 
         self.post(
             "presence/actions/close-work",

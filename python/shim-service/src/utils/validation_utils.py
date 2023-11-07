@@ -15,8 +15,6 @@ __USER_ID_REGEX = re.compile(r'^005[a-zA-Z0-9]{15,18}')
 
 __WORK_ID_REGEX = re.compile(r'^0Bz[a-zA-Z0-9]{12,15}')
 
-__WORK_TARGET_ID_REGEX = re.compile(r'^0Mw[a-zA-Z0-9]{12,15}')
-
 MAX_DECLINE_REASON_LENGTH = 250
 
 logger = loghelper.get_logger(__name__)
@@ -61,7 +59,15 @@ def get_work_id(body: Dict[str, Any], key: str = "workId") -> str:
 
 
 def get_work_target_id(body: Dict[str, Any], key: str = "workTargetId") -> str:
-    return __get_with_regex(body, key, __WORK_TARGET_ID_REGEX)
+    value = get_required_parameter(body, key, str, remove=True)
+    validate_work_target_id(value, key)
+    return value
+
+
+def validate_work_target_id(value: str, key: str = "workTargetId"):
+    value_len = len(value)
+    if value_len != 15 and value_len != 18:
+        raise InvalidParameterException(key, f"value '{value}' has invalid length of {value_len}, must be 15 or 18.")
 
 
 def get_tenant_id(instance: Instance, request: LambdaHttpRequest, org_id: str) -> int:

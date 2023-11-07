@@ -4,10 +4,11 @@ from typing import Optional, Tuple, List, Union, Dict, Any
 
 from lambda_web_framework.web_exceptions import NotAuthorizedException, EntityExistsException
 from utils import hash_utils
+from utils.date_utils import EpochMilliseconds
 
 
 class ServiceKey:
-    def __init__(self, key_id: str, key: str, time_created: int):
+    def __init__(self, key_id: str, key: str, time_created: EpochMilliseconds):
         self.key_id = key_id
         self.key = key
         self.timeCreated = time_created
@@ -41,12 +42,15 @@ class ServiceKeys:
             keys.append(ServiceKey(key_id, value['key'], value['timeCreated']))
         return ServiceKeys(keys)
 
-    def to_json(self):
+    def to_json(self) -> str:
+        return json.dumps(self.to_record())
+
+    def to_record(self) -> Dict[str, Any]:
         keys = {}
         record = {"keys": keys}
         for key in self.keys:
             keys[key.key_id] = key.to_record()
-        return json.dumps(record)
+        return record
 
 
 class PushNotificationProviderCredentials:
@@ -80,4 +84,3 @@ class SecretsRepo(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def _create_service_keys(self, service_keys: ServiceKeys) -> bool:
         raise NotImplementedError()
-

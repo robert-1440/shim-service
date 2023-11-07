@@ -15,7 +15,7 @@ LAMBDA_ZIPS_DIR=$(DIST)lambda-zips/
 PROFILES = web pubsub-poller live-agent-poller notification-publisher
 LAYERS = requests common gcp crypto
 
-.PHONY: default qp fast-package package lambda-zips lambda-zip-files clean-lambda-zips layers clean build-all-layers
+.PHONY: default qp fast-package package lambda-zips lambda-zip-files clean-lambda-zips layers clean build-all-layers service-keys
 
 
 default: all-tests
@@ -40,6 +40,8 @@ $(LAMBDA_ZIPS_DIR):
 $(LAMBDA_ZIPS_DIR)%.zip:
 	@python3 archiver.py --profile $* $@
 
+service-keys:
+	@python3 src/tools/deploy_service_keys.py $(KEYS_TOKEN)
 
 tests: all-tests
 

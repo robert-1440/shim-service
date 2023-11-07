@@ -18,7 +18,10 @@ class Event:
         self.event_type = event_type
         self.event_id = event_id
         if data is not None and isinstance(data, dict):
+            self.data_record = data
             data = json.dumps(data)
+        else:
+            self.data_record = None
         self.event_data = data
         if created_time is None:
             created_time = get_system_time_in_millis()

@@ -19,6 +19,7 @@ class InvocableBean(metaclass=abc.ABCMeta):
 
 class BeanType(Enum):
     PUSH_NOTIFIER = 0x01
+    EVENT_LISTENER = 0x02
 
 
 class BeanName(Enum):
@@ -62,6 +63,7 @@ class BeanName(Enum):
     SNS_PUSH_NOTIFIER = 37, WEB_PROFILE | PUSH_NOTIFIER_PROFILE, {'type': BeanType.PUSH_NOTIFIER,
                                                                   'var': 'SNS_PUSH_TOPIC_ARN'}
     PUSH_NOTIFICATION_MANAGER = 38, WEB_PROFILE | PUSH_NOTIFIER_PROFILE
+    WORK_ID_MAP_REPO = 39, WEB_PROFILE, {'type': BeanType.EVENT_LISTENER}
 
 
 BeanSupplier = Supplier[T]

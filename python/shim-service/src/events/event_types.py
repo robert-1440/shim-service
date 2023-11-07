@@ -12,6 +12,7 @@ class EventType(ReverseLookupEnum):
     WORK_ACCEPTED = 'WA'
     WORK_DECLINED = 'WD'
     WORK_CLOSED = 'WC'
+    MESSAGE_SENT = 'MS'
 
     @classmethod
     def value_of(cls, string: str) -> 'EventType':

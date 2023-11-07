@@ -1,5 +1,3 @@
-import abc
-
 from controllers import ROOT
 from lambda_web_framework.request import LambdaHttpRequest, from_json, get_required_parameter, assert_empty, \
     LambdaHttpResponse, get_parameter
@@ -87,7 +85,7 @@ def decline_work(work_body: DeclineWorkBody, api: OmniChannelApi):
 class CloseWorkBody:
     def __init__(self, request: LambdaHttpRequest):
         record = from_json(request.body)
-        self.work_id = get_work_id(record)
+        self.work_target_id = get_work_target_id(record)
         assert_empty(record)
 
 
@@ -98,5 +96,5 @@ class CloseWorkBody:
                 body_transformer=CloseWorkBody,
                 method=Method.POST)
 def close_work(work_body: CloseWorkBody, api: OmniChannelApi):
-    api.close_work(work_body.work_id)
+    api.close_work(work_body.work_target_id)
     return LambdaHttpResponse.no_content()

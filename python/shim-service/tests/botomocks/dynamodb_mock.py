@@ -955,13 +955,18 @@ class MockDynamoDbClient:
             self.__update_callback = None
             c()
         current = t.find_by_example(key)
+        new_record = False
         if current is None:
             current = {}
+            new_record = True
 
         if condition_expr is not None:
             conditions = _parse_conditions(condition_expr)
             conditions.validate("UpdateItem", current, expr_attributes)
         current.update(updates)
+        if new_record:
+            current.update(key)
+            t.add(current)
 
         return {}
 
@@ -1063,8 +1068,10 @@ class MockDynamoDbClient:
                 params['Key'] = key
                 try:
                     result = self.get_item(**params)
-                    result_list = get_or_create(results, table_name, list)
-                    result_list.append(result['Item'])
+                    item = result.get("Item")
+                    if item is not None:
+                        result_list = get_or_create(results, table_name, list)
+                        result_list.append(item)
                 except ResourceNotFoundException:
                     pass
 

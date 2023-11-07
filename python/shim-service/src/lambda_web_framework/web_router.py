@@ -46,6 +46,8 @@ class Route:
         return self.match_path.matches(path, parts)
 
     def __invoke_api(self, request: LambdaHttpRequest, args: list, params: dict):
+        request.set_params(params)
+        params = {}
         with load_api(request.get_session()) as api:
             args.append(api)
             try:

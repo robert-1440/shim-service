@@ -12,6 +12,8 @@ ALL_PROFILES = WEB_PROFILE | PUBSUB_POLLER_PROFILE | LIVE_AGENT_PROCESSOR_PROFIL
 NON_WEB_PROFILES = ALL_PROFILES ^ WEB_PROFILE
 NON_PUSH_PROFILES = ALL_PROFILES ^ PUSH_NOTIFIER_PROFILE
 
+silent = False
+
 __profile_entries = {
     "web": WEB_PROFILE,
     "pubsub-poller": PUBSUB_POLLER_PROFILE,
@@ -24,6 +26,11 @@ _active_profiles: Optional[int] = None
 
 def is_profile_active(bit: int):
     return (get_active_profiles() & bit) != 0
+
+
+def set_active_profiles(profile_bits: int):
+    global _active_profiles
+    _active_profiles = profile_bits
 
 
 def get_active_profiles() -> int:

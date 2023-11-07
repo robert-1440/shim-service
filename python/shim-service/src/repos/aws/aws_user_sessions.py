@@ -1,6 +1,6 @@
-from typing import Optional, Dict, Any
+from typing import Optional
 
-from aws.dynamodb import DynamoDb, UpdateItemRequest
+from aws.dynamodb import DynamoDb
 from repos.aws import USER_SESSION_TABLE
 from repos.aws.abstract_range_table_repo import AwsVirtualRangeTableRepo
 from repos.user_sessions import UserSessionsRepo

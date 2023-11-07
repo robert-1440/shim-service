@@ -19,9 +19,9 @@ request:
 
   body:
     parameters:
-      workId:
-        type: WorkId
-        description: "The work id"
+      workTargetId:
+        type: WorkTargetId
+        description: "The work target id"
         required: true
 
 

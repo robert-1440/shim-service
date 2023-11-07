@@ -90,7 +90,7 @@ build-terraform bt: $(API_SPEC)
 			$(BT_ARGS) \
 			--aws ./infra/src
 
-.PHONY = package bp bt
+.PHONY = package bp bt service-keys
 
 package:
 	@cd $(SERVICE_DIR); make package
@@ -111,3 +111,5 @@ destroy:
 	@$(MAKE_TERRAFORM) destroy
 
 
+service-keys:
+	cd $(SERVICE_DIR); make KEYS_TOKEN=$(KEYS_TOKEN) AWS_PROFILE=$(AWS_PROFILE) service-keys

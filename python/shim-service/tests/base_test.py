@@ -423,7 +423,8 @@ class BaseTest(BetterTestCase):
                            expected_status_code: int = 202,
                            expected_error_message: str = None,
                            expected_error_code: str = None,
-                           expected_message: str = None
+                           expected_message: str = None,
+                           return_full_response: bool = False,
                            ) -> Optional[Union[str, InvokeResponse]]:
         body = {}
         set_if_not_none(body, "instanceUrl", instance_url)
@@ -440,7 +441,7 @@ class BaseTest(BetterTestCase):
             headers['Prefer'] = 'respond-async'
         else:
             self.prepare_sfdc_connection()
-            expected_status_code = 201
+            expected_status_code = 201 if expected_status_code == 202 else expected_status_code
 
         resp = self.post(
             f"organizations/{org_id}/sessions",
@@ -452,10 +453,11 @@ class BaseTest(BetterTestCase):
             expected_error_code=expected_error_code,
             expected_message=expected_message
         )
-        if resp.status_code // 100 == 2:
-            if async_mode == AsyncMode.ASYNC_WAIT:
-                self.lambda_mock.wait_for_completion()
-            return resp.body['sessionToken']
+        if not return_full_response:
+            if resp.status_code // 100 == 2:
+                if async_mode == AsyncMode.ASYNC_WAIT:
+                    self.lambda_mock.wait_for_completion()
+                return resp.body['sessionToken']
 
         return resp
 

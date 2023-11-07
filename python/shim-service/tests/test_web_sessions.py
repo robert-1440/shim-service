@@ -1,11 +1,12 @@
 from copy import copy
-from typing import Optional, List
+from typing import Optional, List, Any, Dict
 
-from base_test import DEFAULT_ORGANIZATION, GOOD_CREDS, NON_EXISTENT_CREDS, ALTERNATE_CREDS
+from base_test import DEFAULT_ORGANIZATION, GOOD_CREDS, NON_EXISTENT_CREDS, ALTERNATE_CREDS, AsyncMode, InvokeResponse
 from base_web_test import BaseWebTest
 from lambda_pkg import LambdaFunction
 from mocks.gcp.firebase_admin import messaging
 from support.credentials import TestCredentials
+from support.live_agent_helper import ONLINE_ID, BUSY_ID, OFFLINE_ID
 from utils.date_utils import get_system_time_in_seconds
 
 
@@ -27,6 +28,34 @@ class SessionsTest(BaseWebTest):
 
         # Make sure it returned our session token
         self.assertEqual(session_token, resp.get_header("X-1440-Session-Token"))
+
+    def test_create_with_statuses(self):
+        resp: InvokeResponse = self.create_web_session(async_mode=AsyncMode.NONE, return_full_response=True)
+        self.assertIsNotNone(resp.body['sessionToken'])
+        statuses: List[Dict[str, Any]] = resp.body['presenceStatuses']
+        self.assertHasLength(3, statuses)
+        status = statuses[0]
+        self.assertEqual(ONLINE_ID, status['id'])
+        self.assertEqual('Online', status['label'])
+        self.assertEqual('online', status['statusOption'])
+
+        status = statuses[1]
+        self.assertEqual(BUSY_ID, status['id'])
+        self.assertEqual('Busy', status['label'])
+        self.assertEqual('busy', status['statusOption'])
+
+        status = statuses[2]
+        self.assertEqual(OFFLINE_ID, status['id'])
+        self.assertEqual('Offline', status['label'])
+        self.assertEqual('offline', status['statusOption'])
+
+        resp = self.create_web_session(
+            async_mode=AsyncMode.NONE,
+            return_full_response=True,
+            expected_status_code=200
+        )
+        statuses: List[Dict[str, Any]] = resp.body['presenceStatuses']
+
 
     def test_keepalive(self):
         now = get_system_time_in_seconds()

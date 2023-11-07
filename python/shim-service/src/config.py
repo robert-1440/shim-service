@@ -28,6 +28,11 @@ DEFAULT_SESSIONS_PER_LA_POLL_PROCESSOR = 10
 #
 DEFAULT_LA_POLL_SESSION_TIME = 60
 
+#
+# Max seconds a work id map record should live
+#
+DEFAULT_MAX_WORK_ID_MAP_SECONDS = 3600 * 24 * 10
+
 
 class Config:
     """
@@ -41,7 +46,8 @@ class Config:
                  max_polling_seconds: int = DEFAULT_MAX_POLLING_SECONDS,
                  idle_polling_seconds: int = DEFAULT_IDLE_POLLING_SECONDS,
                  sessions_per_live_agent_poll_processor=DEFAULT_SESSIONS_PER_LA_POLL_PROCESSOR,
-                 live_agent_poll_session_seconds = DEFAULT_LA_POLL_SESSION_TIME
+                 live_agent_poll_session_seconds=DEFAULT_LA_POLL_SESSION_TIME,
+                 max_work_id_map_seconds=DEFAULT_MAX_WORK_ID_MAP_SECONDS
                  ):
         self.session_expiration_seconds = session_expiration_seconds
         self.worker_timeout_seconds = worker_timeout_seconds
@@ -50,3 +56,4 @@ class Config:
         self.idle_polling_seconds = idle_polling_seconds
         self.sessions_per_live_agent_poll_processor = sessions_per_live_agent_poll_processor
         self.live_agent_poll_session_seconds = live_agent_poll_session_seconds
+        self.max_work_id_map_seconds = max_work_id_map_seconds

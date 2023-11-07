@@ -1,4 +1,5 @@
 from copy import copy
+from typing import List, Optional
 
 from retry import retry
 
@@ -16,8 +17,8 @@ from repos import OptimisticLockException
 from repos.session_contexts import SessionContextsRepo
 from repos.sessions_repo import SessionsRepo, UserSessionExistsException, CreateSessionRequest
 from repos.user_sessions import UserSessionsRepo
-from services.sfdc.live_agent import LiveAgentWebSettings
-from services.sfdc.sfdc_session import create_sfdc_session_from_session
+from services.sfdc.live_agent import LiveAgentWebSettings, PresenceStatus
+from services.sfdc.sfdc_session import create_sfdc_session_from_session, SfdcSession, load_with_context
 from session import SessionToken, Session, SessionStatus, verify_session_status, ContextType, SessionContext
 from utils import loghelper, exception_utils
 
@@ -25,9 +26,10 @@ logger = loghelper.get_logger(__name__)
 
 
 class CreateResult:
-    def __init__(self, session: Session, created: bool):
+    def __init__(self, session: Session, created: bool, presence_statuses: Optional[List[PresenceStatus]]):
         self.session = session
         self.created = created
+        self.presence_statuses = presence_statuses
 
 
 class RetryCounter:
@@ -132,7 +134,7 @@ def __construct_push_notification_context(session: Session):
 @inject(bean_instances=(BeanName.LIVE_AGENT_POLLER_PLATFORM, BeanName.SESSION_CONTEXTS_REPO, BeanName.LAMBDA_INVOKER))
 def __connect_to_sfdc(session: Session, live_agent_platform: PollingPlatform,
                       contexts_repo: SessionContextsRepo,
-                      lambda_invoker: LambdaInvoker):
+                      lambda_invoker: LambdaInvoker) -> SfdcSession:
     sfdc_sess = create_sfdc_session_from_session(session)
     # Create the required session contexts
     contexts = [__construct_web_context(session), __construct_push_notification_context(session)]
@@ -142,6 +144,7 @@ def __connect_to_sfdc(session: Session, live_agent_platform: PollingPlatform,
         raise OptimisticLockException()
     if session.has_live_agent_polling():
         lambda_invoker.invoke_live_agent_poller()
+    return sfdc_sess
 
 
 @inject(bean_instances=BeanName.SESSIONS_REPO)
@@ -186,12 +189,19 @@ def create_session(session: Session,
     counter = RetryCounter(instance.config.max_create_session_retries)
     session_request = __build_request(instance, session)
     result_session = __create_session(sessions_repo, session_request, counter)
+    presence_statuses: Optional[List[PresenceStatus]] = None
     if counter.created:
         if async_connect:
             __connect_session_async(result_session, sessions_repo)
         else:
-            __connect_to_sfdc(session)
-    return CreateResult(result_session, counter.created)
+            sfdc_sess: SfdcSession = __connect_to_sfdc(session)
+            presence_statuses = sfdc_sess.get_presence_statuses()
+    elif result_session.status == SessionStatus.ACTIVE:
+        sac = load_with_context(result_session, ContextType.WEB)
+        if sac is not None:
+            presence_statuses = sac.session.get_presence_statuses()
+
+    return CreateResult(result_session, counter.created, presence_statuses)
 
 
 @inject(bean_instances=BeanName.SESSIONS_REPO)

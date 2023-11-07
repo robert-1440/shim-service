@@ -100,6 +100,16 @@ class LambdaHttpRequest:
         assert callable(v)
         return v(*args)
 
+    def set_params(self, params: dict):
+        self.set_attribute("params", params)
+
+    def get_params(self) -> dict:
+        v = self.get_attribute("params")
+        return v or {}
+
+    def get_url_parameter(self, name: str) -> str:
+        return self.get_params().get(name)
+
 
 BodyTransformer = Callable[[LambdaHttpRequest], Any]
 

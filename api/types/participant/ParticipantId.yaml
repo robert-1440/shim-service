@@ -1,9 +1,0 @@
-resource-type: type-definition
-
-name: ParticipantId
-
-type: String
-size: 18
-description: The id
-example: "xx5Hs00000AIDN5IAP"
-

@@ -81,6 +81,11 @@ response:
           {@link calls/KeepSessionAlive:Keep Session Alive} will be called to extend the expiration time.
         required: true
 
+      presenceStatuses:
+        type: PresenceStatus[]
+        description: "List of presence statuses. Only returned if respond-async header was not set."
+        required: false
+
 
   codes:
     201: A new session was created

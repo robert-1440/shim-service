@@ -24,4 +24,10 @@ around the 14.5 minute mark)
 
 
 
+# Deploying Service Keys
+Service keys for the service need to be deployed before it can be used.  Use `cs` to generate the service keys with the `--gen-token` option.  Then with that token:
+```
+make KEYS_TOKEN=<token> service-keys
+```
+
 

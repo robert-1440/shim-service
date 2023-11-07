@@ -3,7 +3,7 @@ resource-type: api
 vars:
   messageTime: $isoTimestamp:hour+1d
 
-name: SendConversationMessage
+name: SendWorkMessage
 title: Send Conversation Message
 
 description: Used to send a message.
@@ -13,15 +13,15 @@ tags:
   - conversation
 
 request:
-  path: /conversations/{conversationId}/messages
+  path: /work-conversations/{workTargetId}/messages
   method: POST
 
   headers:
     include: session-headers
 
   url-parameters:
-    conversationId:
-      type: ConversationId
+    workTargetId:
+      type: WorkTargetId
 
   body:
     parameters:
@@ -35,7 +35,7 @@ request:
         size: 16384
         description: "The body of the message."
         example: "Hey, you there?"
-        required: true
+        required: false
 
       timestamp:
         type: IsoTimestamp
@@ -45,7 +45,7 @@ request:
       attachments:
         type: MessageAttachment[]
         description: "Optional list of attachments."
-
+        required: false
 
 
 response:

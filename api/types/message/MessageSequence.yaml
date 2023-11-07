@@ -1,8 +1,0 @@
-resource-type: type-definition
-
-name: MessageSequence
-description: "Some sort of sequence. @TODO: Apparently this can be a random string, sequence number, timestamp, etc. Good luck."
-
-type: String
-size: 250
-example: "someid"

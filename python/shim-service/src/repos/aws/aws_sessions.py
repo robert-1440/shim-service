@@ -1,7 +1,6 @@
 from typing import Optional, List, Dict, Any
 
 from aws.dynamodb import DynamoDb, TransactionRequest, GetItemRequest
-from events import Event
 from events.event_types import EventType
 from lambda_web_framework.web_exceptions import EntityExistsException
 from repos.aws import SHIM_SERVICE_SESSION_TABLE
@@ -110,6 +109,7 @@ class AwsSessionsRepo(SessionsRepo, AbstractAwsRepo):
                                                                          must_exist=True),
             self.sfdc_sessions_repo.create_patch_request(key.tenant_id, key.session_id, patch)
         )
+        
         error_request: TransactionRequest = self.sequence_repo.execute_with_event(
             key.tenant_id,
             request_list,

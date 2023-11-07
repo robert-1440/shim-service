@@ -54,7 +54,8 @@ class SfdcSession(SessionKey, metaclass=abc.ABCMeta):
                          method: HttpMethod,
                          uri: str,
                          body: Union[dict, str] = None,
-                         response_on_error: bool = False) -> HttpResponse:
+                         response_on_error: bool = False,
+                         headers: Dict[str, str] = None) -> HttpResponse:
         raise NotImplementedError()
 
     def send_web_request_with_event(self,
@@ -63,7 +64,8 @@ class SfdcSession(SessionKey, metaclass=abc.ABCMeta):
                                     web_settings: LiveAgentWebSettings,
                                     method: HttpMethod,
                                     uri: str,
-                                    body: Union[dict, str] = None) -> HttpResponse:
+                                    body: Union[dict, str] = None,
+                                    headers: Dict[str, str] = None) -> HttpResponse:
         resp = self.send_web_request(
             web_settings,
             method,
@@ -166,8 +168,11 @@ class _SfdcSessionImpl(SfdcSession):
                          method: HttpMethod,
                          uri: str,
                          body: Union[dict, str] = None,
-                         response_on_error: bool = False) -> HttpResponse:
+                         response_on_error: bool = False,
+                         headers: Dict[str, str] = None) -> HttpResponse:
         rb = RequestBuilder(method, uri).allow_response_on_error(response_on_error)
+        if headers is not None:
+            rb.headers(headers)
         self.live_agent.session.add_headers(rb)
         web_settings.add_headers(rb)
 

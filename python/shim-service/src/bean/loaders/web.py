@@ -1,11 +1,11 @@
 from typing import Dict, Any
 
-from controllers import web_sessions, web_presence
+from controllers import web_sessions, web_presence, web_conversations
 from lambda_web_framework import WebRequestProcessor, router
 from lambda_web_framework.request import LambdaHttpRequest
 from utils import loghelper
 
-__MODULES = (web_sessions, web_presence)
+__MODULES = (web_sessions, web_presence, web_conversations)
 
 logger = loghelper.get_logger(__name__)
 
