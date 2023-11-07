@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional, Iterable
 
 from aws.dynamodb import DynamoDb, not_exists_filter, TransactionRequest
-from events import event_types
+from events.event_types import EventType
 from lambda_pkg import LambdaInvoker
 from lambda_web_framework.web_exceptions import ConflictException
 from push_notification import SessionPushNotification
@@ -136,7 +136,7 @@ class AwsPushNotificationsRepo(AwsVirtualRangeTableRepo, SessionPushNotification
         bad_event: TransactionRequest = self.sequence_repo.execute_with_event(
             context.tenant_id,
             request_list,
-            event_types.PUSH_NOTIFICATION,
+            EventType.PUSH_NOTIFICATION,
             event_data={
                 'sessionId': context.session_id,
                 'userId': context.user_id,

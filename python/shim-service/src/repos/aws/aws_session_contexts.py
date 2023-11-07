@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from aws.dynamodb import DynamoDb, TransactionRequest, UpdateItemRequest
 from bean import BeanSupplier
-from events import event_types
+from events.event_types import EventType
 from pending_event import PendingEventType, PendingEvent
 from repos import Serializable
 from repos.aws import SESSION_CONTEXT_TABLE
@@ -80,7 +80,7 @@ class AwsSessionContextsRepo(AwsVirtualRangeTableRepo, SessionContextsRepo):
         bad_req: TransactionRequest = self.sequence_repo.execute_with_event(
             session.tenant_id,
             requests,
-            event_types.SESSION_ACTIVATED,
+            EventType.SESSION_ACTIVATED,
             event_data={
                 'sessionId': session.session_id,
                 'userId': session.user_id,

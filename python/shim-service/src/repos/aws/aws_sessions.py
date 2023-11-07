@@ -1,7 +1,8 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from aws.dynamodb import DynamoDb, TransactionRequest, GetItemRequest
-from events import event_types
+from events import Event
+from events.event_types import EventType
 from lambda_web_framework.web_exceptions import EntityExistsException
 from repos.aws import SHIM_SERVICE_SESSION_TABLE
 from repos.aws.abstract_repo import AbstractAwsRepo
@@ -55,7 +56,7 @@ class AwsSessionsRepo(SessionsRepo, AbstractAwsRepo):
         bad_request: TransactionRequest = self.sequence_repo.execute_with_event(
             request.session.tenant_id,
             requests,
-            event_types.SESSION_CREATED,
+            EventType.SESSION_CREATED,
             event_data={
                 'sessionId': request.session.session_id,
                 'userId': request.session.user_id
@@ -80,7 +81,7 @@ class AwsSessionsRepo(SessionsRepo, AbstractAwsRepo):
         bad_request = self.sequence_repo.execute_with_event(
             session.tenant_id,
             requests,
-            event_types.SESSION_UPDATED,
+            EventType.SESSION_UPDATED,
             event_data={
                 'sessionId': session.session_id,
                 'userId': session.user_id
@@ -88,28 +89,35 @@ class AwsSessionsRepo(SessionsRepo, AbstractAwsRepo):
         )
         return bad_request is None
 
-    def touch(self, session: Session) -> Optional[int]:
-        expiration_time = get_system_time_in_seconds() + session.expiration_seconds
+    def touch_with_event(self,
+                         key: SessionKey,
+                         user_id: str,
+                         expiration_seconds: int,
+                         event_type: EventType = EventType.SESSION_TOUCHED,
+                         event_data: Optional[Dict[str, Any]] = None):
+        expiration_time = get_system_time_in_seconds() + expiration_seconds
         patch = {'expireTime': expiration_time}
+        event_data = dict(event_data) if event_data is not None else {}
+        event_data.update({
+            'sessionId': key.session_id,
+            'userId': user_id
+        })
 
         request_list = to_flat_list(
-            self.create_update_item_request_from_args(patch, session.tenant_id, session.session_id,
+            self.create_update_item_request_from_args(patch, key.tenant_id, key.session_id,
                                                       must_exist=True),
-            self.user_sessions_repo.create_update_item_request_from_session(session, patch, must_exist=True),
-            self.sfdc_sessions_repo.create_patch_request(session.tenant_id, session.session_id, patch)
+            self.user_sessions_repo.create_update_item_request_from_args(patch, key.tenant_id, user_id,
+                                                                         must_exist=True),
+            self.sfdc_sessions_repo.create_patch_request(key.tenant_id, key.session_id, patch)
         )
         error_request: TransactionRequest = self.sequence_repo.execute_with_event(
-            session.tenant_id,
+            key.tenant_id,
             request_list,
-            event_types.SESSION_TOUCHED,
-            event_data={
-                'sessionId': session.session_id,
-                'userId': session.user_id
-            }
+            event_type,
+            event_data
         )
         if error_request is not None:
-            logger.warning(f"Error executing touch for tenant_id={session.tenant_id}, session_id={session.session_id}:"
-                           f" '{error_request.describe()}")
+            logger.warning(f"Error executing touch for {key}: '{error_request.describe()}")
             return None
         return expiration_time
 
@@ -126,7 +134,7 @@ class AwsSessionsRepo(SessionsRepo, AbstractAwsRepo):
         error_request = self.sequence_repo.execute_with_event(
             session.tenant_id,
             to_flat_list(session_request, user_session_request),
-            event_types.SESSION_DELETED,
+            EventType.SESSION_DELETED,
             event_data={
                 'sessionId': session.session_id,
                 'userId': session.user_id

@@ -2,7 +2,8 @@ from aws.dynamodb import DynamoDb
 from repos import QueryResult
 from repos.aws import SHIM_SERVICE_EVENT_TABLE
 from repos.aws.abstract_repo import AbstractAwsRepo
-from repos.events import Event, EventsRepo
+from repos.events import EventsRepo
+from events import Event
 
 
 class AwsEventsRepo(AbstractAwsRepo, EventsRepo):

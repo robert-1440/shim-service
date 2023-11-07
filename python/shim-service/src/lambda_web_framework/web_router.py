@@ -45,6 +45,18 @@ class Route:
     def path_matches(self, path: str, parts: Optional[List[str]] = None) -> Dict[str, str]:
         return self.match_path.matches(path, parts)
 
+    def __invoke_api(self, request: LambdaHttpRequest, args: list, params: dict):
+        with load_api(request.get_session()) as api:
+            args.append(api)
+            try:
+                return self.caller(*args, **params)
+            except HttpException as ex:
+                body = {
+                    'statusCode': ex.get_status_code(),
+                    'body': ex.get_body_as_string()
+                }
+                raise LambdaHttpException(502, "SF call failed.", body=body)
+
     def invoke(self, instance: Any,
                request: LambdaHttpRequest,
                params: Dict[str, Any]) -> LambdaHttpResponse:
@@ -61,18 +73,8 @@ class Route:
             args.append(request.get_session())
 
         if self.api_required:
-            with load_api(request.get_session()) as api:
-                args.append(api)
-                try:
-                    return self.caller(*args, **params)
-                except HttpException as ex:
-                    if self.api_required:
-                        body = {
-                            'statusCode': ex.get_status_code(),
-                            'body': ex.get_body_as_string()
-                        }
-                        raise LambdaHttpException(502, "SF call failed.", body=body)
-                    raise ex
+            return self.__invoke_api(request, args, params)
+
         return self.caller(*args, **params)
 
 

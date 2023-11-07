@@ -1,16 +1,18 @@
 import abc
 from copy import copy
-from typing import List
+from typing import List, Optional, Any, Dict
 
 from bean import BeanName
 from bean.beans import inject
+from events.event_types import EventType
+from lambda_web_framework.web_exceptions import InvalidParameterException
 from repos.resource_lock import ResourceLock, ResourceLockRepo
 from repos.session_contexts import SessionContextsRepo
-from services.sfdc.live_agent import LiveAgentWebSettings, PresenceStatus
+from services.sfdc.live_agent import LiveAgentWebSettings, PresenceStatus, StatusOption
 from services.sfdc.live_agent.api import presence_status
 from services.sfdc.sfdc_session import SfdcSession, SfdcSessionAndContext, load_with_context
 from session import Session, SessionContext, ContextType
-from utils import loghelper
+from utils import loghelper, collection_utils
 from utils.http_client import HttpMethod
 
 logger = loghelper.get_logger(__name__)
@@ -28,6 +30,14 @@ class OmniChannelApi(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def accept_work(self, work_id: str, work_target_id: str):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def decline_work(self, work_id: str, decline_reason: Optional[str]):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def close_work(self, work_id: str):
         raise NotImplementedError()
 
 
@@ -52,27 +62,75 @@ class _OmniChannelApi(OmniChannelApi):
         return self.sfdc_session.get_presence_statuses()
 
     def set_presence_status(self, status_id: str):
-        if len(status_id) == 0:
+        match: PresenceStatus = collection_utils.find_first_match(self.sfdc_session.get_presence_statuses(),
+                                                                  lambda m: m.id == status_id)
+        if match is None:
+            raise InvalidParameterException("id", f"'{status_id}' is invalid.")
+
+        if match.status_option == StatusOption.OFFLINE:
             resource_type = "Logout"
         else:
             resource_type = "Login"
 
-        uri = self.build_presence_uri("Presence" + resource_type)
-        body = presence_status.construct_set_presence_status_body(self.sfdc_session, status_id)
-        self.sfdc_session.send_web_request(self.settings, HttpMethod.POST, uri, body)
+        body = presence_status.construct_set_presence_status_body(self.sfdc_session, match.id)
+        self.__invoke_presence_request(
+            "Presence" + resource_type,
+            EventType.PRESENCE_STATUS_SET,
+            {'status': match.status_option.name},
+            body
+        )
 
     def accept_work(self, work_id: str, work_target_id: str):
-        uri = self.build_presence_uri("AcceptWork")
-        resp = self.sfdc_session.send_web_request(
+        event_data = {
+            'workId': work_id,
+            'workTargetId': work_target_id
+        }
+        self.__invoke_presence_request(
+            "AcceptWork",
+            EventType.WORK_ACCEPTED,
+            event_data,
+            event_data
+        )
+
+    def decline_work(self, work_id: str, decline_reason: Optional[str]):
+        event_data = {
+            'workId': work_id
+        }
+        if decline_reason is not None:
+            event_data['declineReason'] = decline_reason
+        self.__invoke_presence_request(
+            "DeclineWork",
+            EventType.WORK_DECLINED,
+            event_data,
+            event_data
+        )
+
+    def close_work(self, work_id: str):
+        event_data = {
+            'workId': work_id
+        }
+        self.__invoke_presence_request(
+            "CloseWork",
+            EventType.WORK_CLOSED,
+            event_data,
+            event_data
+        )
+
+    def __invoke_presence_request(self,
+                                  action: str,
+                                  event_type: EventType,
+                                  event_data: Optional[Dict[str, Any]],
+                                  body: Dict[str, Any]):
+        uri = self.build_presence_uri(action)
+        resp = self.sfdc_session.send_web_request_with_event(
+            event_type,
+            event_data,
             self.settings,
             HttpMethod.POST,
             uri,
-            {
-                'workId': work_id,
-                'workTargetId': work_target_id
-            }
+            body
         )
-        logger.info(f"Response to accept work request: {resp.to_string()}")
+        logger.info(f"Response to {action} request: {resp.to_string()}")
 
     def __enter__(self):
         return self

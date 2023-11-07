@@ -64,6 +64,10 @@ class HttpResponse:
             self.body = body
             self.raw_body = raw_body
             self.is_redirect = status_code // 100 == 3
+        self.__response = resp
+
+    def check_exception(self):
+        _examine(self.__response)
 
     def to_string(self) -> str:
         io = StringIO()
@@ -304,10 +308,6 @@ def _examine(r):
     if not r.ok:
         if r.status_code >= 500:
             raise HttpServerException(r)
-        if r.status_code == 403:
-            amzn = r.headers.get("x-amzn-ErrorType")
-            if amzn is not None and amzn == "IncompleteSignatureException":
-                r.status_code = 404
         raise HttpClientException(r)
 
 

@@ -86,7 +86,7 @@ class AwsSfdcSessionsRepo(AwsVirtualRangeTableRepo, SfdcSessionsRepo):
             session_key.tenant_id,
             session_key.session_id,
             consistent=consistent,
-            attributes_to_get=['sessionStatus']
+            attributes_to_get=['sessionStatus', 'expirationSeconds']
         )
 
         our_req = self.create_get_item_request_from_args(
@@ -112,6 +112,7 @@ class AwsSfdcSessionsRepo(AwsVirtualRangeTableRepo, SfdcSessionsRepo):
         context_record: SessionContext = result.get_next_entry()
 
         return SfdcSessionDataAndContext(
+            sess_item['expirationSeconds'],
             decompress(our_record.session_data),
             context_record
         )

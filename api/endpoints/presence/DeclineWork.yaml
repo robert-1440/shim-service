@@ -1,0 +1,41 @@
+resource-type: api
+
+name: DeclineWork
+title: Decline a Work Item
+
+description: |
+  Used to decline work.
+
+
+tags:
+  - presence
+
+request:
+  path: /presence/actions/decline-work
+  method: POST
+
+  headers:
+    include: session-headers
+
+  body:
+    parameters:
+      workId:
+        type: WorkId
+        description: "The work id"
+        required: true
+
+      declineReason:
+        type: String
+        size: 250
+        description: Optional reason for declining the work.
+        example: "Status Mistake"
+
+
+
+response:
+  codes:
+    204:
+
+    400:
+      error-codes:
+        - InvalidParameter

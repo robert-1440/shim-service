@@ -72,6 +72,12 @@ data "aws_iam_policy_document" "shim_service_web" {
     resources = [ "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:shim-service/*" ]
     actions   = [ "secretsmanager:GetSecretValue" ]
   }
+
+  statement {
+    effect    = "Allow"
+    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceWeb" ]
+    actions   = [ "lambda:Invoke" ]
+  }
 }
 
 resource "aws_iam_policy" "shim_service_web" {

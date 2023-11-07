@@ -5,9 +5,10 @@ from session import ContextType, SessionContext, SessionKey
 
 
 class SfdcSessionDataAndContext:
-    def __init__(self, data: bytes, context: SessionContext):
+    def __init__(self, expiration_seconds: int, data: bytes, context: SessionContext):
         self.data = data
         self.context = context
+        self.expiration_seconds = expiration_seconds
 
 
 class SfdcSessionsRepo(metaclass=abc.ABCMeta):

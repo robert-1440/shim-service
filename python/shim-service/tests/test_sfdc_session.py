@@ -20,7 +20,7 @@ class SfdcSessionTestSuite(BaseTest):
     def test_serialize(self):
         sfdc_sess = self.create_sfdc_session()
         data = sfdc_sess.serialize()
-        sfdc_sess2 = deserialize(sfdc_sess, data)
+        sfdc_sess2 = deserialize(sfdc_sess, sfdc_sess.user_id, data, 10)
         self.assertEqual(sfdc_sess, sfdc_sess2)
 
     def create_sfdc_session(self, authenticator: SfdcAuthenticator = None) -> SfdcSession:

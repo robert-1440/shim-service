@@ -5,6 +5,8 @@ from typing import Optional, List, Dict, Any, Union
 
 from bean import BeanName
 from bean.beans import inject
+from events.event_types import EventType
+from repos.sessions_repo import store_event
 from repos.sfdc_sessions_repo import SfdcSessionsRepo
 from services.sfdc import SfdcAuthenticator, create_authenticator
 from services.sfdc.live_agent import PresenceStatus, LiveAgentPollerSettings, LiveAgentWebSettings
@@ -29,6 +31,7 @@ class SfdcSession(SessionKey, metaclass=abc.ABCMeta):
     user_id: str
     organization_id: str
     lightning_domain: str
+    expiration_seconds: int
 
     @abc.abstractmethod
     def get_presence_statuses(self) -> List[PresenceStatus]:
@@ -50,8 +53,37 @@ class SfdcSession(SessionKey, metaclass=abc.ABCMeta):
     def send_web_request(self, web_settings: LiveAgentWebSettings,
                          method: HttpMethod,
                          uri: str,
-                         body: Union[dict, str] = None) -> HttpResponse:
+                         body: Union[dict, str] = None,
+                         response_on_error: bool = False) -> HttpResponse:
         raise NotImplementedError()
+
+    def send_web_request_with_event(self,
+                                    event_type: EventType,
+                                    event_data: Dict[str, Any],
+                                    web_settings: LiveAgentWebSettings,
+                                    method: HttpMethod,
+                                    uri: str,
+                                    body: Union[dict, str] = None) -> HttpResponse:
+        resp = self.send_web_request(
+            web_settings,
+            method,
+            uri,
+            body=body,
+            response_on_error=True
+        )
+        event_data = dict(event_data) if event_data is not None else {}
+        event_data['sfdcResponse'] = resp.status_code
+
+        store_event(
+            self,
+            self.user_id,
+            self.expiration_seconds,
+            event_type,
+            event_data
+        )
+        if not resp.is_2xx():
+            resp.check_exception()
+        return resp
 
     def describe(self) -> str:
         return f"{self.tenant_id}#{self.session_id}"
@@ -93,6 +125,8 @@ class _SfdcSessionImpl(SfdcSession):
         self.session_id: Optional[str] = None
         self.conn: Optional[SfdcConnection] = None
         self.live_agent: Optional[LiveAgent] = None
+        self.expiration_seconds: Optional[int] = None
+        self.user_id: Optional[str] = None
 
     def get_presence_statuses(self) -> List[PresenceStatus]:
         return list(map(lambda o: o.to_presence_status(), self.live_agent.status_options))
@@ -131,8 +165,9 @@ class _SfdcSessionImpl(SfdcSession):
     def send_web_request(self, web_settings: LiveAgentWebSettings,
                          method: HttpMethod,
                          uri: str,
-                         body: Union[dict, str] = None) -> HttpResponse:
-        rb = RequestBuilder(method, uri)
+                         body: Union[dict, str] = None,
+                         response_on_error: bool = False) -> HttpResponse:
+        rb = RequestBuilder(method, uri).allow_response_on_error(response_on_error)
         self.live_agent.session.add_headers(rb)
         web_settings.add_headers(rb)
 
@@ -174,16 +209,19 @@ def create_sfdc_session(authenticator: SfdcAuthenticator) -> SfdcSession:
     impl.session_id = authenticator.session_id
     impl.conn = create_new_connection(authenticator)
     impl.live_agent = impl.conn.load_live_agent()
+    impl.expiration_seconds = authenticator.expiration_seconds
     return impl
 
 
-def deserialize(key: SessionKey, data: bytes) -> SfdcSession:
+def deserialize(key: SessionKey, user_id: str, data: bytes, expiration_seconds: int) -> SfdcSession:
     impl = _SfdcSessionImpl()
     impl.tenant_id = key.tenant_id
     impl.session_id = key.session_id
+    impl.user_id = user_id
     blob: _Blob = pickle.loads(data)
     impl.conn = deserialize_conn(blob.conn_data)
     impl.live_agent = pickle.loads(blob.live_agent_bytes)
+    impl.expiration_seconds = expiration_seconds
     return impl
 
 
@@ -196,6 +234,6 @@ def load_with_context(
     if result is None:
         return None
     return SfdcSessionAndContext(
-        deserialize(key, result.data),
+        deserialize(key, result.context.user_id, result.data, result.expiration_seconds),
         result.context
     )

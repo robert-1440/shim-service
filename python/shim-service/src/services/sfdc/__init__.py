@@ -13,6 +13,7 @@ class SfdcAuthenticator(metaclass=abc.ABCMeta):
         self.__tenant_id = session.tenant_id
         self.__session_id = session.session_id
         self.__user_id = session.user_id
+        self.__expiration_seconds = session.expiration_seconds
         self.__instance_uri = Uri.parse(session.instance_url)
 
     @property
@@ -27,9 +28,13 @@ class SfdcAuthenticator(metaclass=abc.ABCMeta):
     def session_id(self) -> str:
         return self.__session_id
 
+    def expiration_seconds(self) -> int:
+        return self.__expiration_seconds
+
     @abc.abstractmethod
     def get_access_token(self) -> str:
         raise NotImplementedError()
+
 
 
 class _SfdcAuthenticatorImpl(SfdcAuthenticator):

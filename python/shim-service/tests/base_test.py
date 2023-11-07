@@ -18,6 +18,7 @@ from botomocks.scheduler_mock import MockSchedulerClient
 from botomocks.sm_mock import MockSecretsManagerClient
 from botomocks.sns_mock import MockSnsClient
 from config import Config
+from events import EventType, Event
 from instance import Instance
 from lambda_pkg import LambdaFunction
 from mocks.extended_http_session_mock import ExtendedHttpMockSession
@@ -25,10 +26,11 @@ from mocks.gcp import install_gcp_cert
 from mocks.gcp.firebase_admin import messaging
 from mocks.mock_session import MockSession
 from mocks.session_repo_mock import MockAwsSessionsRepo
+from repos.events import EventsRepo
 from repos.secrets import ServiceKeys, ServiceKey, SecretsRepo
 from services.sfdc import create_authenticator
 from services.sfdc.sfdc_connection import create_new_connection, SfdcConnection
-from session import SessionToken, Session
+from session import SessionToken, Session, SessionKey
 from support.credentials import TestCredentials
 from support.live_agent_helper import prepare_live_agent
 from support.preload_actions_helper import prepare_preload_actions
@@ -583,3 +585,27 @@ class BaseTest(BetterTestCase):
             return capture.getvalue()
         finally:
             loghelper.INFO_LOGGING_HOOK = None
+
+    def query_events_by_token(self, token: str, event_type: EventType) -> List[Event]:
+        sess = self.get_session_from_token(token)
+        return self.query_events(sess, event_type)
+
+    @staticmethod
+    def query_events(session_key: SessionKey, event_type: EventType) -> List[Event]:
+        events_repo: EventsRepo = beans.get_bean_instance(BeanName.EVENTS_REPO)
+        last_seq_no = None
+        events = []
+        while True:
+            result = events_repo.query_events(
+                session_key.tenant_id,
+                last_seq_no=last_seq_no
+            )
+
+            events.extend(
+                filter(lambda e: json.loads(e.event_data)[
+                                     'sessionId'] == session_key.session_id and e.event_type == event_type,
+                       result.rows))
+
+            if result.next_token is None:
+                break
+        return events

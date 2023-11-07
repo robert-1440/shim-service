@@ -1,0 +1,35 @@
+resource-type: api
+
+name: CloseWork
+title: Close a Work Item
+
+description: |
+  Used to close work.
+
+
+tags:
+  - presence
+
+request:
+  path: /presence/actions/close-work
+  method: POST
+
+  headers:
+    include: session-headers
+
+  body:
+    parameters:
+      workId:
+        type: WorkId
+        description: "The work id"
+        required: true
+
+
+
+response:
+  codes:
+    204:
+
+    400:
+      error-codes:
+        - InvalidParameter

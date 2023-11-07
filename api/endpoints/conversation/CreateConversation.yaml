@@ -1,10 +1,10 @@
 resource-type: api
 
-name: StartConversation
-title: Start a Conversation
+name: CreateConversation
+title: Create a Conversation
 
 description: |
-  Used to start a conversation / work.
+  Used to create a conversation.
 
 
 tags:
@@ -19,16 +19,11 @@ request:
 
   body:
     parameters:
-      requestId:
-        type: RequestId
-        required: true
+      workId:
+        type: WorkId
 
-      message:
-        type: String
-        size: 8192
-        description: "Message to include."
-        required: true
-        example: "Can you take this?"
+      targetWorkId:
+        type: TargetWorkId
 
 
 response:

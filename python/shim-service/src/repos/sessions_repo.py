@@ -1,6 +1,9 @@
 import abc
-from typing import Optional
+from typing import Optional, Any, Dict
 
+from bean import BeanName
+from bean.beans import inject
+from events import EventType
 from lambda_web_framework.web_exceptions import BadRequestException, GoneException
 from session import Session, SessionStatus, verify_session_status, SessionKey
 from utils.date_utils import EpochSeconds
@@ -42,7 +45,6 @@ class SessionsRepo(metaclass=abc.ABCMeta):
     def find_session(self, session_key: SessionKey) -> Optional[Session]:
         raise NotImplementedError()
 
-    @abc.abstractmethod
     def touch(self, session: Session) -> Optional[EpochSeconds]:
         """
         Attempt to update the update time for the given session.
@@ -50,6 +52,19 @@ class SessionsRepo(metaclass=abc.ABCMeta):
         :param session: the session to update.
         :return: Non None = the expiration time, None if not found.
         """
+        return self.touch_with_event(
+            session,
+            session.user_id,
+            session.expiration_seconds
+        )
+
+    @abc.abstractmethod
+    def touch_with_event(self,
+                         key: SessionKey,
+                         user_id: str,
+                         expiration_seconds: int,
+                         event_type: EventType = EventType.SESSION_TOUCHED,
+                         event_data: Optional[Dict[str, Any]] = None):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -75,3 +90,20 @@ class SessionsRepo(metaclass=abc.ABCMeta):
 
     def delete_session(self, session: Session):
         raise NotImplementedError()
+
+
+@inject(bean_instances=BeanName.SESSIONS_REPO)
+def store_event(
+        session_key: SessionKey,
+        user_id: str,
+        expiration_seconds: int,
+        event_type: EventType,
+        event_data: Optional[Dict[str, Any]],
+        repo: SessionsRepo) -> bool:
+    return repo.touch_with_event(
+        session_key,
+        user_id,
+        expiration_seconds,
+        event_type,
+        event_data
+    )

@@ -1,9 +1,10 @@
 from aws.dynamodb import DynamoDb
 from better_test_case import BetterTestCase
 from botomocks.dynamodb_mock import MockDynamoDbClient
+from events.event_types import EventType
 from repos.aws.aws_events import AwsEventsRepo
 from repos.aws.aws_user_sessions import AwsUserSessionsRepo
-from repos.events import Event
+from events import Event
 from session import UserSession
 
 
@@ -31,7 +32,7 @@ class RepoTest(BetterTestCase):
         event = Event(
             tenant_id=1,
             seq_no=1,
-            event_type='sc',
+            event_type=EventType.SESSION_CREATED,
             event_id='event1',
             data={'one': 1}
         )
@@ -43,7 +44,7 @@ class RepoTest(BetterTestCase):
         event2 = Event(
             tenant_id=1,
             seq_no=2,
-            event_type='sc',
+            event_type=EventType.SESSION_CREATED,
             event_id='event1',
             data={'one': 1}
         )
@@ -60,7 +61,7 @@ class RepoTest(BetterTestCase):
             event = Event(
                 tenant_id=1,
                 seq_no=seq_no,
-                event_type='sc',
+                event_type=EventType.SESSION_CREATED,
                 event_id=f'event-{seq_no}',
                 data={'seq': seq_no}
             )

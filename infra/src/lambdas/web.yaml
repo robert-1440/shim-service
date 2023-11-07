@@ -49,6 +49,9 @@ layers:
 
 permissions:
 
+  lambdas:
+    - self
+
   secrets:
     - name: shim-service/*
       actions:

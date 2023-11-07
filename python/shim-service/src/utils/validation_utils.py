@@ -4,7 +4,7 @@ from re import Pattern
 from typing import Dict, Any, Union
 
 from instance import Instance
-from lambda_web_framework.request import get_required_parameter
+from lambda_web_framework.request import get_required_parameter, get_parameter
 from lambda_web_framework.web_exceptions import BadRequestException, InvalidParameterException
 from lambda_web_framework.web_router import LambdaHttpRequest
 from utils import loghelper
@@ -16,6 +16,8 @@ __USER_ID_REGEX = re.compile(r'^005[a-zA-Z0-9]{15,18}')
 __WORK_ID_REGEX = re.compile(r'^0Bz[a-zA-Z0-9]{12,15}')
 
 __WORK_TARGET_ID_REGEX = re.compile(r'^0Mw[a-zA-Z0-9]{12,15}')
+
+MAX_DECLINE_REASON_LENGTH = 250
 
 logger = loghelper.get_logger(__name__)
 
@@ -66,3 +68,14 @@ def get_tenant_id(instance: Instance, request: LambdaHttpRequest, org_id: str) -
     tenant_id = instance.get_tenant_id(org_id)
     request.get_credentials().assert_tenant_access(tenant_id)
     return tenant_id
+
+
+def get_decline_reason(record: Dict[str, Any], key: str = "declineReason"):
+    return get_parameter(
+        record,
+        key,
+        str,
+        remove=True,
+        none_if_empty=True,
+        max_length=MAX_DECLINE_REASON_LENGTH
+    )

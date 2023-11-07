@@ -10,3 +10,4 @@ class MockSession:
         self.session_id = session_id
         self.user_id = user_id
         self.access_token = access_token
+        self.expiration_seconds = 10
