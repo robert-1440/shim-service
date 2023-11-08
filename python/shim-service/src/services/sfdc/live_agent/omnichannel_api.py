@@ -1,6 +1,6 @@
 import abc
 from copy import copy
-from typing import List, Optional, Any, Dict
+from typing import List, Optional, Any, Dict, Union
 
 from bean import BeanName
 from bean.beans import inject
@@ -14,7 +14,7 @@ from services.sfdc.live_agent.api import presence_status
 from services.sfdc.sfdc_session import SfdcSession, SfdcSessionAndContext, load_with_context
 from session import Session, SessionContext, ContextType
 from utils import loghelper, collection_utils
-from utils.http_client import HttpMethod
+from utils.http_client import HttpMethod, HttpResponse
 
 logger = loghelper.get_logger(__name__)
 
@@ -33,19 +33,19 @@ class WorkMessage:
                  work_target_id: str,
                  message_id: str,
                  message_body: str,
-                 timestamp: str,
                  attachments: Optional[List[MessageAttachment]]
                  ):
         self.work_target_id = work_target_id
         self.message_id = message_id
         self.message_body = message_body
-        self.timestamp = timestamp
         self.attachments = attachments
 
     def to_body(self, work_id: str) -> dict:
         body: Dict[str, Any] = {
             'channelType': 'lmagent',
-            'workId': work_id
+            'workId': work_id,
+            'intent': 'HUMAN_AGENT',
+            'messageId': self.message_id
         }
         if self.attachments is not None:
             body['attachments'] = list(map(lambda a: a.to_record(), self.attachments))
@@ -53,6 +53,7 @@ class WorkMessage:
         else:
             body['text'] = self.message_body
             body['attachments'] = []
+
         return body
 
 
@@ -159,11 +160,34 @@ class _OmniChannelApi(OmniChannelApi):
             }
         )
 
+    def __post(self, uri: str,
+               body: Union[str, Dict[str, Any]],
+               response_on_error=False,
+               headers: Dict[str, str] = None) -> HttpResponse:
+        return self.__send_web_request(
+            uri,
+            HttpMethod.POST,
+            body,
+            response_on_error,
+            headers
+        )
+
+    def __send_web_request(self, uri: str,
+                           method: HttpMethod,
+                           body: Union[str, Dict[str, Any]],
+                           response_on_error=False,
+                           headers: Dict[str, str] = None) -> HttpResponse:
+        return self.sfdc_session.send_web_request(
+            self.settings,
+            method,
+            uri,
+            body,
+            response_on_error=response_on_error,
+            headers=headers)
+
     def __start_after_conversation_work(self, work_id: str):
         uri = self.build_presence_uri("StartAfterConversationWork")
-        self.sfdc_session.send_web_request(
-            self.settings,
-            HttpMethod.POST,
+        self.__post(
             uri,
             body={'workId': work_id}
         )
@@ -172,18 +196,21 @@ class _OmniChannelApi(OmniChannelApi):
                                       action: str,
                                       body: Dict[str, Any]):
         uri = self.__build_conversation_uri(action)
-        self.sfdc_session.send_web_request(
-            self.settings,
-            HttpMethod.POST,
+        self.__post(
             uri,
             body=body
         )
 
-    def __build_conversation_uri(self, action: str):
+    @staticmethod
+    def __build_conversation_uri(action: str):
         return "rest/Conversational/" + action
 
     def close_work(self, work_target_id: str):
-        work_id = self.work_id_repo.get_work_id(self.sfdc_session.tenant_id, work_target_id)
+        work_id = self.work_id_repo.get_work_id(
+            self.sfdc_session.tenant_id,
+            self.sfdc_session.user_id,
+            work_target_id
+        )
         if not work_target_id.startswith('a17'):
             self.__end_conversation(work_id)
             self.__start_after_conversation_work(work_id)
@@ -218,7 +245,12 @@ class _OmniChannelApi(OmniChannelApi):
         logger.info(f"Response to {action} request: {resp.to_string()}")
 
     def send_work_message(self, message: WorkMessage):
-        work_id = self.work_id_repo.get_work_id(self.sfdc_session.tenant_id, message.work_target_id)
+        work_id = self.work_id_repo.get_work_id(
+            self.sfdc_session.tenant_id,
+            self.sfdc_session.user_id,
+            message.work_target_id,
+            in_path=True
+        )
         body = message.to_body(work_id)
         event_data = {'messageId': message.message_id}
         self.sfdc_session.send_web_request_with_event(

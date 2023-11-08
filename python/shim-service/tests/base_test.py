@@ -31,6 +31,7 @@ from repos.secrets import ServiceKeys, ServiceKey, SecretsRepo
 from services.sfdc import create_authenticator
 from services.sfdc.sfdc_connection import create_new_connection, SfdcConnection
 from session import SessionToken, Session, SessionKey
+from support import secrets
 from support.credentials import TestCredentials
 from support.live_agent_helper import prepare_live_agent
 from support.preload_actions_helper import prepare_preload_actions
@@ -101,6 +102,8 @@ DEFAULT_FCM_DEVICE_TOKEN = "some-device-token"
 DEFAULT_ACCESS_TOKEN = "access-token"
 DEFAULT_WORK_ID = "0BzHs000005aLv4"
 DEFAULT_WORK_TARGET_ID = "0MwHs0000011U8O"
+ANOTHER_WORK_TARGET_ID = "0MwHs0000011U8A"
+
 
 DEFAULT_TENANT_ID = 12345
 ALTERNATE_TENANT_ID = 99999
@@ -218,7 +221,7 @@ class BaseTest(BetterTestCase):
     def setUp(self) -> None:
         beans.reset()
         self.http_session_mock = ExtendedHttpMockSession()
-        self.sm_mock = MockSecretsManagerClient()
+        secrets.install(self.http_session_mock)
         self.ddb_mock = MockDynamoDbClient()
         self.http_mock_session_list: List[ExtendedHttpMockSession] = []
         self.scheduler_mock = MockSchedulerClient()
@@ -232,7 +235,6 @@ class BaseTest(BetterTestCase):
             return self.create_http_client()
 
         beans.override_bean(BeanName.HTTP_CLIENT_BUILDER, lambda: client_builder)
-        beans.override_bean(BeanName.SECRETS_MANAGER_CLIENT, self.sm_mock)
         beans.override_bean(BeanName.HTTP_CLIENT, self.create_http_client(self.http_session_mock))
         beans.override_bean(BeanName.DYNAMODB_CLIENT, self.ddb_mock)
         beans.override_bean(BeanName.SCHEDULER_CLIENT, self.scheduler_mock)
@@ -253,8 +255,6 @@ class BaseTest(BetterTestCase):
         self.http_session_mock.add_credentials(GOOD_CREDS)
         self.http_session_mock.add_credentials(ALTERNATE_CREDS)
 
-        self.__setup_service_keys()
-
         self.instance = get_bean_instance(BeanName.INSTANCE)
         self.config = beans.get_bean_instance(BeanName.CONFIG)
         self.put_organization()
@@ -263,20 +263,6 @@ class BaseTest(BetterTestCase):
 
     def _test_initialized(self):
         pass
-
-    def __setup_service_keys(self):
-        now = get_system_time_in_millis()
-        service_keys = ServiceKeys([
-            ServiceKey('key1', "key-value1", now),
-            ServiceKey('key2', "key-value2", now),
-            ServiceKey('key3', "key-value3", now),
-        ])
-
-        self.http_session_mock.set_service_keys(service_keys)
-
-        repo: SecretsRepo = beans.get_bean_instance(BeanName.SECRETS_REPO)
-
-        repo.create_service_keys(service_keys)
 
     @staticmethod
     def invoke_event(event: Dict[str, Any]):

@@ -185,7 +185,7 @@ class MockHttpSession:
             headers,
             body=data,
             follow_redirects=allow_redirects,
-        timeout_seconds=kwargs.pop('timeout', None))
+            timeout_seconds=kwargs.pop('timeout', None))
         self.requests_seen.append(req)
         if self.capture_only:
             return SimulatedResponse(MockedResponse(200))

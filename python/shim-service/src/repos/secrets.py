@@ -2,7 +2,7 @@ import abc
 import json
 from typing import Optional, Tuple, List, Union, Dict, Any
 
-from lambda_web_framework.web_exceptions import NotAuthorizedException, EntityExistsException
+from lambda_web_framework.web_exceptions import NotAuthorizedException
 from utils import hash_utils
 from utils.date_utils import EpochMilliseconds
 
@@ -77,10 +77,3 @@ class SecretsRepo(metaclass=abc.ABCMeta):
             raise NotAuthorizedException("No service keys.")
         return keys
 
-    def create_service_keys(self, service_keys: ServiceKeys):
-        if not self._create_service_keys(service_keys):
-            raise EntityExistsException("Service keys already deployed.")
-
-    @abc.abstractmethod
-    def _create_service_keys(self, service_keys: ServiceKeys) -> bool:
-        raise NotImplementedError()

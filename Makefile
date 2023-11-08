@@ -112,4 +112,4 @@ destroy:
 
 
 service-keys:
-	cd $(SERVICE_DIR); make KEYS_TOKEN=$(KEYS_TOKEN) AWS_PROFILE=$(AWS_PROFILE) service-keys
+	cd $(SERVICE_DIR); make KEYS_TOKEN=$(KEYS_TOKEN) AWS_PROFILE=$(AWS_PROFILE) KEYS_OPTIONS=$(KEYS_OPTIONS) service-keys

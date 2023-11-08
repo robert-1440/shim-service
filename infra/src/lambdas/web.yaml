@@ -51,6 +51,7 @@ permissions:
 
   lambdas:
     - self
+    - ShimLiveAgentPoller
 
   secrets:
     - name: shim-service/*

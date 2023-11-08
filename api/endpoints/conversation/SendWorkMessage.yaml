@@ -37,11 +37,6 @@ request:
         example: "Hey, you there?"
         required: false
 
-      timestamp:
-        type: IsoTimestamp
-        description: "Timestamp for the message. Not required, only use if this is a queued message."
-        example: "${messageTime}"
-
       attachments:
         type: MessageAttachment[]
         description: "Optional list of attachments."

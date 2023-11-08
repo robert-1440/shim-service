@@ -41,7 +41,7 @@ $(LAMBDA_ZIPS_DIR)%.zip:
 	@python3 archiver.py --profile $* $@
 
 service-keys:
-	@python3 src/tools/deploy_service_keys.py $(KEYS_TOKEN)
+	@python3 src/tools/deploy_service_keys.py $(KEYS_TOKEN) $(KEYS_OPTIONS)
 
 tests: all-tests
 

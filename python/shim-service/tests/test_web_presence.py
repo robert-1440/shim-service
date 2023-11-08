@@ -1,12 +1,13 @@
 import json
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 
-from base_test import BaseTest, AsyncMode, DEFAULT_WORK_ID, DEFAULT_WORK_TARGET_ID
+from base_test import BaseTest, AsyncMode, DEFAULT_WORK_ID, DEFAULT_WORK_TARGET_ID, ANOTHER_WORK_TARGET_ID
 from events import EventType
 from mocks.extended_http_session_mock import ExtendedHttpMockSession
 from mocks.http_session_mock import MockedResponse, MockHttpSession
 from support.live_agent_helper import ONLINE_ID, BUSY_ID, OFFLINE_ID
 from utils.http_client import HttpRequest
+from utils.string_utils import uuid
 from utils.validation_utils import MAX_DECLINE_REASON_LENGTH
 
 ACCEPT_WORK_URL = "https://somewhere-chat.lightning.force.com/chat/rest/Presence/AcceptWork"
@@ -14,6 +15,7 @@ DECLINE_WORK_URL = "https://somewhere-chat.lightning.force.com/chat/rest/Presenc
 CLOSE_WORK_URL = "https://somewhere-chat.lightning.force.com/chat/rest/Presence/CloseWork"
 CONVERSATION_END_URL = "https://somewhere-chat.lightning.force.com/chat/rest/Conversational/ConversationEnd"
 AFTER_CLOSE_WORK_URL = "https://somewhere-chat.lightning.force.com/chat/rest/Presence/StartAfterConversationWork"
+CONVERSATION_MESSAGE_URL = "https://somewhere-chat.lightning.force.com/chat/rest/Conversational/ConversationMessage"
 
 
 class PresenceTests(BaseTest):
@@ -113,8 +115,6 @@ class PresenceTests(BaseTest):
             expected_error_message="SF call failed."
         )
 
-        self.setup_mock_response(ACCEPT_WORK_URL)
-
         self.__accept_work(token)
         events = self.query_events_by_token(token, EventType.WORK_ACCEPTED)
         self.assertHasLength(2, events)
@@ -123,6 +123,122 @@ class PresenceTests(BaseTest):
         self.assertEqual(200, event.get_event_key('sfdcResponse'))
         self.assertEqual(DEFAULT_WORK_ID, event.get_event_key('workId'))
         self.assertEqual(DEFAULT_WORK_TARGET_ID, event.get_event_key('workTargetId'))
+
+    def test_send_message_invalid_args(self):
+        token = self.create_web_session(async_mode=AsyncMode.NONE)
+        self.set_presence_status(
+            token,
+            status_id=ONLINE_ID
+        )
+        self.__accept_work(token)
+
+        self.__send_work_message(
+            token,
+            work_target_id="bad",
+            expected_status_code=404,
+            expected_error_message="Resource Not Found: Unable to find specified workTargetId."
+        )
+
+        self.__send_work_message(
+            token,
+            message="Hello",
+            work_target_id=ANOTHER_WORK_TARGET_ID,
+            expected_status_code=404,
+            expected_error_message="Resource Not Found: Unable to find specified workTargetId."
+        )
+
+        self.__send_work_message(
+            token,
+            expected_status_code=400,
+            expected_error_message="Either messageBody or attachments must be specified."
+        )
+
+        self.__send_work_message(
+            token,
+            message="Hello",
+            message_id="",
+            expected_status_code=400,
+            expected_error_message="Missing parameter 'id'."
+        )
+
+        self.__send_work_message(
+            token,
+            message="Hello",
+            raw_attachments="none",
+            expected_status_code=400,
+            expected_error_message="'attachments' is invalid: invalid type."
+        )
+
+        self.__send_work_message(
+            token,
+            message="Hello",
+            raw_attachments=['foo'],
+            expected_status_code=400,
+            expected_error_message="'attachments[0]' is invalid: invalid type."
+        )
+
+        self.__send_work_message(
+            token,
+            message="Hello",
+            raw_attachments=[{'a': 1}],
+            expected_status_code=400,
+            expected_error_message="'attachments[0]' is invalid: Missing 'key'."
+        )
+
+        self.__send_work_message(
+            token,
+            message="Hello",
+            raw_attachments=[{'key': 1}],
+            expected_status_code=400,
+            expected_error_message="'attachments[0]' is invalid: 'key' must be a string."
+        )
+
+        self.__send_work_message(
+            token,
+            message="Hello",
+            raw_attachments=[{'key': 'key1'}],
+            expected_status_code=400,
+            expected_error_message="'attachments[0]' is invalid: Missing 'value'."
+        )
+
+        self.__send_work_message(
+            token,
+            message="Hello",
+            raw_attachments=[{'key': 'key1', 'value': 100}],
+            expected_status_code=400,
+            expected_error_message="'attachments[0]' is invalid: 'value' must be a string."
+        )
+
+    def test_send_message(self):
+        token = self.create_web_session(async_mode=AsyncMode.NONE)
+        self.set_presence_status(
+            token,
+            status_id=ONLINE_ID
+        )
+        self.__accept_work(token)
+
+        message_id = uuid()
+        mock = self.__send_work_message(token, "Hello", message_id=message_id)
+        req = mock.pop_request()
+        body = json.loads(req.body)
+        self.assertEqual('lmagent', body['channelType'])
+        self.assertEqual(DEFAULT_WORK_ID, body['workId'])
+        self.assertEqual("Hello", body['text'])
+        self.assertHasLength(0, body['attachments'])
+        self.assertEqual('HUMAN_AGENT', body['intent'])
+        self.assertEqual(message_id, body['messageId'])
+
+        message_id = uuid()
+        mock = self.__send_work_message(
+            token,
+            message="Hello",
+            attachments={'key': 'value', 'key2': 'value2'},
+            message_id=message_id)
+        req = mock.pop_request()
+        body = json.loads(req.body)
+        # According to Dart code, you cannot send both text and attachments
+        self.assertIsNone(body.get('text'))
+        self.assertEqual([{'key': 'value'}, {'key2': 'value2'}], body['attachments'])
 
     def test_decline_work(self):
         token = self.create_web_session(async_mode=AsyncMode.NONE)
@@ -210,6 +326,62 @@ class PresenceTests(BaseTest):
         seq = req.get_header("X-Liveagent-Sequence")
         self.assertIsNotNone(seq)
         self.assertEqual(self.sequence_counter, int(seq))
+
+    def __send_work_message(self,
+                            session_token: str,
+                            message: Optional[str] = None,
+                            work_target_id: Optional[str] = DEFAULT_WORK_TARGET_ID,
+                            message_id: Optional[str] = None,
+                            attachments: Dict[str, str] = None,
+                            raw_attachments: Any = None,
+                            expected_status_code: int = 204,
+                            expected_error_message: str = None,
+                            expected_error_code: str = None,
+                            expected_message: str = None
+                            ):
+        headers = {
+            'x-1440-session-token': session_token
+        }
+        path = f"work-conversations/{work_target_id}/messages"
+        if message_id is None:
+            message_id = uuid()
+        elif len(message_id) == 0:
+            message_id = None
+
+        if expected_status_code == 204:
+            mock = self.setup_mock_response(
+                CONVERSATION_MESSAGE_URL,
+                status_code=200,
+                body="Some data"
+            )
+        else:
+            mock = None
+
+        body = {
+            'id': message_id
+        }
+
+        if message is not None:
+            body['messageBody'] = message
+
+        if attachments is not None:
+            att = []
+            body['attachments'] = att
+            for key, value in attachments.items():
+                att.append({'key': key, 'value': value})
+        elif raw_attachments is not None:
+            body['attachments'] = raw_attachments
+
+        self.post(
+            path,
+            headers=headers,
+            body=body,
+            expected_status_code=expected_status_code,
+            expected_error_message=expected_error_message,
+            expected_message=expected_message,
+            expected_error_code=expected_error_code
+        )
+        return mock
 
     def __accept_work(self,
                       session_token: str,

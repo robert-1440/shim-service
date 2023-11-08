@@ -4,9 +4,10 @@ import logging
 import os
 import sys
 from traceback import print_exc
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 import adjust_path
+from aws import AwsClient
 from bean import profiles, ALL_PROFILES
 
 profiles.set_active_profiles(ALL_PROFILES)
@@ -68,7 +69,18 @@ def deserialize(token: str) -> ServiceKeys:
     exit(2)
 
 
+def apply_keys(keys: ServiceKeys, current: Optional[ServiceKeys]):
+    client: AwsClient = beans.get_bean_instance(BeanName.SECRETS_MANAGER_CLIENT)
+    name = f"shim-service/service-keys"
+    payload = keys.to_json()
+    if current is None:
+        client.create_secret(Name=name, SecretString=payload, Description="Service keys for Shim Service")
+    else:
+        client.update_secret(SecretId=name, SecretString=payload, Description="Service keys for Shim Service")
+
+
 cli = CommandLineProcessor(usage)
+force = cli.find_and_remove("--f")
 token = cli.get_next_arg("token")
 cli.assert_no_more()
 
@@ -80,13 +92,14 @@ if profile is None:
     exit(3)
 keys = deserialize(token)
 repo: SecretsRepo = beans.get_bean_instance(BeanName.SECRETS_REPO)
+
 current = repo.find_service_keys()
-if current is not None:
+if current is not None and not force:
     print(f"Service keys are already deployed for {profile}.", file=sys.stderr)
     exit(2)
 
 record = keys.to_record()
 print(json.dumps(record, indent=True))
 prompt_yes(f"Deploy to {profile}", exit_code_on_no=0)
-repo.create_service_keys(keys)
+apply_keys(keys, current)
 print("Service keys deployed.")

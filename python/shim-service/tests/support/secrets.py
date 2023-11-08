@@ -1,6 +1,9 @@
+from typing import Any
+
 from bean import BeanName, beans
+from botomocks.sm_mock import MockSecretsManagerClient
 from cs_client import ConfigServiceSecret
-from repos.secrets import ServiceKeys, ServiceKey, SecretsRepo
+from repos.secrets import ServiceKeys, ServiceKey
 from utils.date_utils import get_system_time_in_millis
 
 
@@ -18,14 +21,18 @@ class TestSecret:
         })
 
 
-def setup_mock():
+def install(session_mock: Any = None) -> MockSecretsManagerClient:
+    client = MockSecretsManagerClient()
     now = get_system_time_in_millis()
     service_keys = ServiceKeys([
         ServiceKey('key1', "key-value1", now),
         ServiceKey('key2', "key-value2", now),
         ServiceKey('key3', "key-value3", now),
     ])
-
-    repo: SecretsRepo = beans.get_bean_instance(BeanName.SECRETS_REPO)
-
-    repo.create_service_keys(service_keys)
+    name = f"shim-service/service-keys"
+    payload = service_keys.to_json()
+    client.create_secret(Name=name, SecretString=payload, Description="Service keys for Shim Service")
+    beans.override_bean(BeanName.SECRETS_MANAGER_CLIENT, client)
+    if session_mock is not None:
+        session_mock.set_service_keys(service_keys)
+    return client

@@ -5,7 +5,7 @@ from typing import Dict, Any, Union
 
 from instance import Instance
 from lambda_web_framework.request import get_required_parameter, get_parameter
-from lambda_web_framework.web_exceptions import BadRequestException, InvalidParameterException
+from lambda_web_framework.web_exceptions import BadRequestException, InvalidParameterException, NotFoundException
 from lambda_web_framework.web_router import LambdaHttpRequest
 from utils import loghelper
 
@@ -64,10 +64,14 @@ def get_work_target_id(body: Dict[str, Any], key: str = "workTargetId") -> str:
     return value
 
 
-def validate_work_target_id(value: str, key: str = "workTargetId"):
+def validate_work_target_id(value: str, key: str = "workTargetId", in_path: bool = False):
     value_len = len(value)
     if value_len != 15 and value_len != 18:
-        raise InvalidParameterException(key, f"value '{value}' has invalid length of {value_len}, must be 15 or 18.")
+        if in_path:
+            raise NotFoundException("Unable to find specified workTargetId.")
+        else:
+            raise InvalidParameterException(key,
+                                            f"value '{value}' has invalid length of {value_len}, must be 15 or 18.")
 
 
 def get_tenant_id(instance: Instance, request: LambdaHttpRequest, org_id: str) -> int:

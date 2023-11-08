@@ -21,9 +21,8 @@ from services.sfdc.live_agent import StatusOption, PresenceStatus
 from services.sfdc.live_agent.omnichannel_api import load_api, OmniChannelApi
 from session import Session
 from session.manager import create_session, CreateResult
-from support import salesforce_auth, thread_utils
+from support import salesforce_auth, thread_utils, secrets
 from support.salesforce_auth import AuthInfo
-from support.secrets import setup_mock
 from utils import collection_utils
 from utils.uri_utils import Uri
 
@@ -52,7 +51,7 @@ setup_ddb(ddb_client)
 beans.override_bean(BeanName.DYNAMODB_CLIENT, ddb_client)
 sm_client = MockSecretsManagerClient()
 beans.override_bean(BeanName.SECRETS_MANAGER_CLIENT, sm_client)
-setup_mock()
+secrets.install()
 
 push_notifier_mock = MockPushNotifier()
 beans.override_bean(BeanName.PUSH_NOTIFIER, push_notifier_mock)
