@@ -59,6 +59,7 @@ class DeclineWorkBody:
     def __init__(self, request: LambdaHttpRequest):
         record = from_json(request.body)
         self.work_id = validation_utils.get_work_id(record)
+        self.work_target_id = get_work_target_id(record)
         self.decline_reason = get_parameter(
             record,
             "declineReason",
@@ -78,7 +79,7 @@ class DeclineWorkBody:
                 body_transformer=DeclineWorkBody,
                 method=Method.POST)
 def decline_work(work_body: DeclineWorkBody, api: OmniChannelApi):
-    api.decline_work(work_body.work_id, work_body.decline_reason)
+    api.decline_work(work_body.work_id, work_body.work_target_id, work_body.decline_reason)
     return LambdaHttpResponse.no_content()
 
 

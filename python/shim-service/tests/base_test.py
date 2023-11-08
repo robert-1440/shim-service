@@ -15,7 +15,6 @@ from better_test_case import BetterTestCase
 from botomocks.dynamodb_mock import MockDynamoDbClient
 from botomocks.lambda_mock import MockLambdaClient
 from botomocks.scheduler_mock import MockSchedulerClient
-from botomocks.sm_mock import MockSecretsManagerClient
 from botomocks.sns_mock import MockSnsClient
 from config import Config
 from events import EventType, Event
@@ -27,7 +26,6 @@ from mocks.gcp.firebase_admin import messaging
 from mocks.mock_session import MockSession
 from mocks.session_repo_mock import MockAwsSessionsRepo
 from repos.events import EventsRepo
-from repos.secrets import ServiceKeys, ServiceKey, SecretsRepo
 from services.sfdc import create_authenticator
 from services.sfdc.sfdc_connection import create_new_connection, SfdcConnection
 from session import SessionToken, Session, SessionKey

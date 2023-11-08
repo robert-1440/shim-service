@@ -1,7 +1,7 @@
 import json
 from typing import Optional, Any, Dict
 
-from base_test import BaseTest, AsyncMode, DEFAULT_WORK_ID, DEFAULT_WORK_TARGET_ID, ANOTHER_WORK_TARGET_ID
+from base_test import BaseTest, AsyncMode, DEFAULT_WORK_ID, DEFAULT_WORK_TARGET_ID
 from events import EventType
 from mocks.extended_http_session_mock import ExtendedHttpMockSession
 from mocks.http_session_mock import MockedResponse, MockHttpSession
@@ -141,14 +141,6 @@ class PresenceTests(BaseTest):
 
         self.__send_work_message(
             token,
-            message="Hello",
-            work_target_id=ANOTHER_WORK_TARGET_ID,
-            expected_status_code=404,
-            expected_error_message="Resource Not Found: Unable to find specified workTargetId."
-        )
-
-        self.__send_work_message(
-            token,
             expected_status_code=400,
             expected_error_message="Either messageBody or attachments must be specified."
         )
@@ -222,11 +214,14 @@ class PresenceTests(BaseTest):
         req = mock.pop_request()
         body = json.loads(req.body)
         self.assertEqual('lmagent', body['channelType'])
-        self.assertEqual(DEFAULT_WORK_ID, body['workId'])
+        self.assertEqual(DEFAULT_WORK_TARGET_ID, body['workId'])
         self.assertEqual("Hello", body['text'])
         self.assertHasLength(0, body['attachments'])
         self.assertEqual('HUMAN_AGENT', body['intent'])
         self.assertEqual(message_id, body['messageId'])
+        self.assertEqual("text/plain;charset=UTF-8", req.get_header('Content-Type'))
+        self.assertEqual("*/*", req.get_header('Accept'))
+        print(json.dumps(req.headers, indent=True))
 
         message_id = uuid()
         mock = self.__send_work_message(
@@ -420,6 +415,7 @@ class PresenceTests(BaseTest):
     def __decline_work(self,
                        session_token: str,
                        work_id: Optional[str] = DEFAULT_WORK_ID,
+                       work_target_id: Optional[str] = DEFAULT_WORK_TARGET_ID,
                        decline_reason: Optional[str] = None,
                        expected_status_code: int = 204,
                        expected_error_message: str = None,
@@ -437,7 +433,10 @@ class PresenceTests(BaseTest):
             )
         else:
             mock = None
-        body = {'workId': work_id}
+        body = {
+            'workId': work_id,
+            'workTargetId': work_target_id
+        }
         if decline_reason is not None:
             body['declineReason'] = decline_reason
 

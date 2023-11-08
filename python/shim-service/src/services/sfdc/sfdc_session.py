@@ -71,7 +71,8 @@ class SfdcSession(SessionKey, metaclass=abc.ABCMeta):
             method,
             uri,
             body=body,
-            response_on_error=True
+            response_on_error=True,
+            headers=headers
         )
         event_data = dict(event_data) if event_data is not None else {}
         event_data['sfdcResponse'] = resp.status_code

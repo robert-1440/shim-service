@@ -112,7 +112,7 @@ class _BeanImpl(Bean):
         self.__init_in_progress = True
         try:
             if self.__disabled:
-                raise Exception("Bean not active based on current profile.")
+                raise Exception(f"Bean {self.name} not active based on current profile.")
             initializer = self.__override_initializer if self.__override_initializer else self.__initializer
             if isinstance(initializer, _LazyLoader):
                 self.__value = initializer.invoke()

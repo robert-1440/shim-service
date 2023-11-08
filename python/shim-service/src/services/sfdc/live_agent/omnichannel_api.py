@@ -72,7 +72,7 @@ class OmniChannelApi(metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def decline_work(self, work_id: str, decline_reason: Optional[str]):
+    def decline_work(self, work_id: str, work_target_id: str, decline_reason: Optional[str]):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -138,9 +138,10 @@ class _OmniChannelApi(OmniChannelApi):
             event_data
         )
 
-    def decline_work(self, work_id: str, decline_reason: Optional[str]):
+    def decline_work(self, work_id: str, work_target_id: str, decline_reason: Optional[str]):
         event_data = {
-            'workId': work_id
+            'workId': work_id,
+            'workTargetId': work_target_id
         }
         if decline_reason is not None:
             event_data['declineReason'] = decline_reason
@@ -212,7 +213,7 @@ class _OmniChannelApi(OmniChannelApi):
             work_target_id
         )
         if not work_target_id.startswith('a17'):
-            self.__end_conversation(work_id)
+            self.__end_conversation(work_target_id)
             self.__start_after_conversation_work(work_id)
 
         event_data = {
@@ -245,13 +246,8 @@ class _OmniChannelApi(OmniChannelApi):
         logger.info(f"Response to {action} request: {resp.to_string()}")
 
     def send_work_message(self, message: WorkMessage):
-        work_id = self.work_id_repo.get_work_id(
-            self.sfdc_session.tenant_id,
-            self.sfdc_session.user_id,
-            message.work_target_id,
-            in_path=True
-        )
-        body = message.to_body(work_id)
+        # Yes, it's actually work target id we need to send here
+        body = message.to_body(message.work_target_id)
         event_data = {'messageId': message.message_id}
         self.sfdc_session.send_web_request_with_event(
             EventType.MESSAGE_SENT,
@@ -260,7 +256,10 @@ class _OmniChannelApi(OmniChannelApi):
             HttpMethod.POST,
             "rest/Conversational/ConversationMessage",
             body,
-            headers={'Content-Type': 'text/plain;charset=UTF-8'}
+            headers={
+                'Accept': "*/*",
+                'Content-Type': 'text/plain;charset=UTF-8'
+            }
         )
 
     def __enter__(self):

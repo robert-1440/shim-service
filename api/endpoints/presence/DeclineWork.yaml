@@ -24,6 +24,11 @@ request:
         description: "The work id"
         required: true
 
+      workTargetId:
+        type: WorkTargetId
+        description: "The work target id"
+        required: true
+
       declineReason:
         type: String
         size: 250

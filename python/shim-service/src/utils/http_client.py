@@ -1,6 +1,7 @@
 import abc
 import json
 import os
+import sys
 from enum import Enum
 from http.cookiejar import Cookie
 from io import StringIO
@@ -34,6 +35,8 @@ _MEDIA_TYPES = [
 
 HeaderValue = Union[str, int, List[str]]
 Headers = Dict[str, HeaderValue]
+
+VERBOSE_REQUESTS = False
 
 
 class MediaType(Enum):
@@ -159,6 +162,11 @@ class HttpRequest:
 
         if timeout is not None:
             params['timeout'] = timeout
+
+        if VERBOSE_REQUESTS:
+            print(f"Http Request: {self.method.name} {self.url} \n<<<", file=sys.stderr)
+            print(json.dumps(params, indent=True), file=sys.stderr)
+            print(">>>", file=sys.stderr)
 
         return session.request(self.method.name, self.url, **params)
 

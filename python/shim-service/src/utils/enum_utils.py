@@ -1,6 +1,6 @@
 from enum import Enum
 from threading import RLock
-from typing import Type, Dict, Any, Callable
+from typing import Type, Dict, Any, Callable, Optional
 
 
 def build_value_table(enum_type: Type[Enum],
@@ -30,7 +30,7 @@ class ReverseLookupEnum(Enum):
     __mutex__ = RLock()
 
     @classmethod
-    def _value_of(cls, value: Any, thing: str) -> Any:
+    def _value_of(cls, value: Any, thing: Optional[str] = None) -> Any:
         if cls.__reverse_table__ is None:
             with cls.__mutex__:
                 if cls.__reverse_table__ is None:
@@ -38,7 +38,7 @@ class ReverseLookupEnum(Enum):
             cls.__mutex__ = None
 
         v = cls.__reverse_table__.get(value)
-        if v is not None:
+        if v is not None or thing is None:
             return v
         raise ValueError(f"Invalid {thing}: '{value}'.")
 
