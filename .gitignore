@@ -36,3 +36,4 @@ terraform/.terraform
 dist/
 *.zip
 .terraform.lock.hcl
+scratch/

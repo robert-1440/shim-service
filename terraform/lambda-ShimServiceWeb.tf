@@ -75,6 +75,12 @@ data "aws_iam_policy_document" "shim_service_web" {
 
   statement {
     effect    = "Allow"
+    resources = [ "${aws_lambda_function.shim_live_agent_poller.arn}" ]
+    actions   = [ "lambda:Invoke" ]
+  }
+
+  statement {
+    effect    = "Allow"
     resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceWeb" ]
     actions   = [ "lambda:Invoke" ]
   }

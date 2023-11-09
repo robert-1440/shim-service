@@ -62,6 +62,12 @@ data "aws_iam_policy_document" "shim_live_agent_poller" {
     resources = [ aws_dynamodb_table.shim_service_event.arn ]
     actions   = [ "dynamodb:PutItem" ]
   }
+
+  statement {
+    effect    = "Allow"
+    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimLiveAgentPoller" ]
+    actions   = [ "lambda:Invoke" ]
+  }
 }
 
 resource "aws_iam_policy" "shim_live_agent_poller" {

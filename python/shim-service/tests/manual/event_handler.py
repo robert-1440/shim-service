@@ -1,5 +1,5 @@
 import time
-from typing import Optional, List, Callable, Set, Dict
+from typing import Optional, Callable, Set, Dict
 
 from manual.polling_events import EventListener, PollingEvent, EventType, LoginResultEvent, PresenceStatusChangedEvent, \
     AsyncResultEvent, WorkAssignedEvent, WorkAcceptedEvent, ChatEstablishedEvent, ConversationMessageEvent, \

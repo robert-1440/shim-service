@@ -22,7 +22,7 @@ class Pair<L, R> {
 }
 
 abstract class Mappable {
-  Map<String, dynamic> toMap({bool forExport = false});
+  Map<String, dynamic> toMap();
 
   @override
   String toString() {
