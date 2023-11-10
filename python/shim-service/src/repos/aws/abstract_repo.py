@@ -201,6 +201,12 @@ class AbstractAwsRepo(metaclass=abc.ABCMeta):
         key, _ = self.primary_key.build_key_from_args(*args)
         if self.virtual_table is not None and (attributes_to_get is not None and len(attributes_to_get) > 0):
             raise NotImplementedError("Projecting attributes is not supported with virtual tables")
+        if attributes_to_get is not None:
+            # We need to ensure that the primary key attributes are included so that we can match them up later
+            att_set = set(attributes_to_get)
+            att_set.update(key.keys())
+            attributes_to_get = list(att_set)
+
         req = GetItemRequest(
             self.table_name,
             key,

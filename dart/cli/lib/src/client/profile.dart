@@ -60,13 +60,15 @@ class Credentials extends AbstractCredentials {
 }
 
 class Profile {
+  final String name;
+
   final String _url;
 
   final Credentials _credentials;
 
   final String env;
 
-  Profile.$(String url, this._credentials, this.env) : _url = joinPaths(url, "shim-service/");
+  Profile.$(this.name, String url, this._credentials, this.env) : _url = joinPaths(url, "shim-service/");
 
   RequestBuilder newRequestBuilder(String uri, Method method) {
     return RequestBuilder(joinPaths(_url, uri), method);
@@ -91,7 +93,7 @@ Profile loadProfile(String profileName) {
   var password = section.getRequired("shim.password");
   var env = section.getRequired("shim.env");
 
-  return Profile.$(url, Credentials(name, clientId, password), env);
+  return Profile.$(profileName.toLowerCase(), url, Credentials(name, clientId, password), env);
 }
 
 IniFile loadProfiles() {
@@ -119,6 +121,14 @@ String getHomePath() {
     default:
       throw StateError("Unsupported operating system ${Platform.operatingSystem}");
   }
+}
+
+String getCurrentUser() {
+  final user = Platform.environment['USER'] ?? Platform.environment['USERNAME'];
+  if (user == null) {
+    throw StateError("Could not determine current user");
+  }
+  return user;
 }
 
 /// Returns the current time in milliseconds since epoch.

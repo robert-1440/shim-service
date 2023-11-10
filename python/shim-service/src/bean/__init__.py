@@ -4,6 +4,7 @@ from typing import Any, TypeVar, Dict
 
 from bean.profiles import WEB_PROFILE, LIVE_AGENT_PROCESSOR_PROFILE, PUBSUB_POLLER_PROFILE, PUSH_NOTIFIER_PROFILE, \
     ALL_PROFILES, NON_WEB_PROFILES, NON_PUSH_PROFILES
+from constants import SQS_PUSH_NOTIFICATION_QUEUE_URL
 from utils import exception_utils
 
 T = TypeVar("T")
@@ -60,10 +61,11 @@ class BeanName(Enum):
     LIVE_AGENT_MESSAGE_DISPATCHER = 34, LIVE_AGENT_PROCESSOR_PROFILE
     PENDING_EVENTS_REPO = 35, ALL_PROFILES
     PUSH_NOTIFIER_PROCESSOR = 36, PUSH_NOTIFIER_PROFILE
-    SNS_PUSH_NOTIFIER = 37, WEB_PROFILE | PUSH_NOTIFIER_PROFILE, {'type': BeanType.PUSH_NOTIFIER,
-                                                                  'var': 'SNS_PUSH_TOPIC_ARN'}
+    SQS_PUSH_NOTIFIER = 37, WEB_PROFILE | PUSH_NOTIFIER_PROFILE, {'type': BeanType.PUSH_NOTIFIER,
+                                                                  'var': SQS_PUSH_NOTIFICATION_QUEUE_URL}
     PUSH_NOTIFICATION_MANAGER = 38, WEB_PROFILE | PUSH_NOTIFIER_PROFILE
     WORK_ID_MAP_REPO = 39, WEB_PROFILE, {'type': BeanType.EVENT_LISTENER}
+    SQS = 40, WEB_PROFILE | PUSH_NOTIFIER_PROFILE, {'var': SQS_PUSH_NOTIFICATION_QUEUE_URL}
 
 
 BeanSupplier = Supplier[T]

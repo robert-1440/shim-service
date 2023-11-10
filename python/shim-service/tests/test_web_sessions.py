@@ -16,8 +16,11 @@ class SessionsTest(BaseWebTest):
         session_token = self.create_web_session()
 
         # Attempt again with the same parameters
-        another = self.create_web_session(expected_status_code=200)
+        resp = self.create_web_session(expected_status_code=200, return_full_response=True)
+        another = resp.body['sessionToken']
         self.assertEqual(session_token, another)
+
+        self.assertHasLength(3, resp.body.get('presenceStatuses'))
 
         # Attempt with a different device token
         resp = self.create_web_session(

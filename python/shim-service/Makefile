@@ -38,7 +38,7 @@ $(LAMBDA_ZIPS_DIR):
 	@mkdir -p $(LAMBDA_ZIPS_DIR)
 
 $(LAMBDA_ZIPS_DIR)%.zip:
-	@python3 archiver.py --profile $* $@
+	python3 archiver.py ACTIVE_PROFILES=$* $@
 
 service-keys:
 	@python3 src/tools/deploy_service_keys.py $(KEYS_TOKEN) $(KEYS_OPTIONS)

@@ -4,7 +4,6 @@ import 'package:cli/src/cli/util.dart';
 import 'package:cli/src/client/http.dart';
 import 'package:cli/src/client/profile.dart';
 
-
 String? _toStringBody(dynamic value) {
   if (value != null) {
     if (value is! String) {
@@ -33,8 +32,14 @@ abstract class BaseClient {
 
   RequestBuilder newPostBuilder(String uri) => newRequestBuilder(uri, Method.POST);
 
+  RequestBuilder newPutBuilder(String uri) => newRequestBuilder(uri, Method.PUT);
+
   RequestBuilder newRequestBuilder(String uri, Method method) {
     return _profile.newRequestBuilder(joinPaths(baseUri(), uri), method);
+  }
+
+  RequestBuilder newDeleteBuilder(String uri) {
+    return _profile.newRequestBuilder(joinPaths(baseUri(), uri), Method.DELETE);
   }
 
   Future<Map<String, dynamic>> getRequiredJson(String uri) async {
@@ -107,7 +112,7 @@ abstract class BaseClient {
   Future<HttpResponse> send(RequestBuilder b, [bool notFoundOk = false]) async {
     try {
       return await b.send();
-    } on HttpClientException catch(ex) {
+    } on HttpClientException catch (ex) {
       if (!notFoundOk || ex.statusCode != 404) {
         try {
           Map<String, dynamic> record = jsonDecode(ex.body);
@@ -130,12 +135,16 @@ abstract class BaseClient {
   Future<HttpResponse> patch(String uri, MediaType acceptType, {MediaType? contentType, String? body}) async {
     return _exchangeBody(Method.PATCH, uri, acceptType, contentType: contentType, body: body);
   }
-  
+
+  Future<HttpResponse> put(String uri, MediaType acceptType, {MediaType? contentType, String? body}) async {
+    return _exchangeBody(Method.PUT, uri, acceptType, contentType: contentType, body: body);
+  }
+
 }
 
 abstract class CredsBasedClient extends BaseClient {
   CredsBasedClient(super.profile);
-  
+
   @override
   void handleAuth(RequestBuilder b) {
     _profile.configAuth(b);

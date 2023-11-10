@@ -58,6 +58,9 @@ permissions:
       actions:
         - GetSecretValue
 
+  queues:
+    - name: push-notification
+
   topics:
     - name: shim-error
       actions:
@@ -67,6 +70,7 @@ permissions:
   dynamodb-tables:
     - table: ShimServiceSession
       actions:
+        - BatchGetItem
         - GetItem
         - PutItem
         - UpdateItem
@@ -100,4 +104,5 @@ permissions:
 
 environment:
   variables:
+    ACTIVE_PROFILES: web
     CONFIG_SERVICE_URL: ${configServiceUrl:null}

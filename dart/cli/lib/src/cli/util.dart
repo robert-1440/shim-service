@@ -28,6 +28,10 @@ abstract class Mappable {
   String toString() {
     return JsonEncoder.withIndent("  ").convert(toMap());
   }
+
+  String toJson() {
+    return jsonEncode(toMap());
+  }
 }
 
 final lineSplitter = LineSplitter();

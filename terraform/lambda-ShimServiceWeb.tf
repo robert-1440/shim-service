@@ -24,6 +24,7 @@ data "aws_iam_policy_document" "shim_service_web" {
     effect    = "Allow"
     resources = [ aws_dynamodb_table.shim_service_session.arn ]
     actions   = [
+      "dynamodb:BatchGetItem",
       "dynamodb:GetItem",
       "dynamodb:PutItem",
       "dynamodb:UpdateItem",
@@ -76,13 +77,13 @@ data "aws_iam_policy_document" "shim_service_web" {
   statement {
     effect    = "Allow"
     resources = [ "${aws_lambda_function.shim_live_agent_poller.arn}" ]
-    actions   = [ "lambda:Invoke" ]
+    actions   = [ "lambda:InvokeFunction" ]
   }
 
   statement {
     effect    = "Allow"
     resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceWeb" ]
-    actions   = [ "lambda:Invoke" ]
+    actions   = [ "lambda:InvokeFunction" ]
   }
 }
 
@@ -131,8 +132,10 @@ resource "aws_lambda_function" "shim_service_web" {
 
   environment {
     variables = {
-      CONFIG_SERVICE_URL = "https://sswki1xsfd.execute-api.us-west-1.amazonaws.com"
-      ERROR_TOPIC_ARN    = "${aws_sns_topic.shim_error.arn}"
+      ACTIVE_PROFILES                 = "web"
+      CONFIG_SERVICE_URL              = "https://sswki1xsfd.execute-api.us-west-1.amazonaws.com"
+      SQS_PUSH_NOTIFICATION_QUEUE_URL = "${aws_sqs_queue.push_notification.url}"
+      ERROR_TOPIC_ARN                 = "${aws_sns_topic.shim_error.arn}"
     }
   }
   depends_on = [ aws_iam_role_policy_attachment.shim_service_web ]
@@ -141,4 +144,11 @@ resource "aws_lambda_function" "shim_service_web" {
 resource "aws_cloudwatch_log_group" "shim_service_web" {
   name              = "/aws/lambda/${aws_lambda_function.shim_service_web.function_name}"
   retention_in_days = 30
+}
+
+resource "aws_lambda_permission" "shim_service_web_shim_service_web" {
+  principal     = "lambda.amazonaws.com"
+  action        = "lambda:InvokeFunction"
+  source_arn    = "${aws_lambda_function.shim_service_web.arn}"
+  function_name = aws_lambda_function.shim_service_web.function_name
 }

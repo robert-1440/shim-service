@@ -9,6 +9,7 @@ logger = loghelper.get_logger(__name__)
 class PushNotificationManager:
     def __init__(self, notifiers: Collection[PushNotifier]):
         assert len(notifiers) > 0, "No notifiers found."
+
         self.notifiers = {}
         self.default_notifier = None
 

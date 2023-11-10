@@ -11,6 +11,13 @@ resource "aws_api_gateway_rest_api" "shim_service_requests" {
   body        = data.template_file.shim_service_requests_api.rendered
 }
 
+resource "aws_lambda_permission" "shim_service_requests" {
+  principal     = "apigateway.amazonaws.com"
+  action        = "lambda:InvokeFunction"
+  source_arn    = "${aws_api_gateway_rest_api.shim_service_requests.execution_arn}/*/*"
+  function_name = aws_lambda_function.shim_service_web.function_name
+}
+
 resource "aws_api_gateway_deployment" "shim_service_requests_api" {
   rest_api_id = aws_api_gateway_rest_api.shim_service_requests.id
 

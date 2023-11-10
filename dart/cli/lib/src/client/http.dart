@@ -66,6 +66,10 @@ class HttpResourceNotFoundException extends HttpClientException {
   HttpResourceNotFoundException(super.resp);
 }
 
+class HttpConflictException extends HttpClientException {
+  HttpConflictException(http.Response resp) : super(resp);
+}
+
 enum MediaType {
   X_WWW_FORM_URLENCODED("application/x-www-form-urlencoded"),
   JSON("application/json"),
@@ -111,8 +115,11 @@ http.Response _checkResponse(http.Response resp) {
   if (base != 2) {
     switch (base) {
       case 4:
-        if (statusCode == 404) {
-          throw HttpResourceNotFoundException(resp);
+        switch (statusCode) {
+          case 404:
+            throw HttpResourceNotFoundException(resp);
+          case 409:
+            throw HttpConflictException(resp);
         }
         throw HttpClientException(resp);
 

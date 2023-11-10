@@ -6,7 +6,7 @@ from auth import Credentials
 from lambda_web_framework.web_exceptions import NotAuthorizedException, ConflictException
 from platform_channels import OMNI_PLATFORM, PlatformChannel, X1440_PLATFORM
 from utils import loghelper
-from utils.date_utils import EpochMilliseconds, get_system_time_in_millis
+from utils.date_utils import EpochMilliseconds, get_system_time_in_millis, EpochSeconds
 from utils.dict_utils import set_if_not_none
 from utils.enum_utils import ReverseLookupEnum
 
@@ -139,7 +139,6 @@ class SessionToken(SessionKey):
 class Session(SessionKey):
     time_created: int
     update_time: int
-    token_expiration_time: Optional[str]
     access_token: Optional[str]
     state_counter: int
     expiration_seconds: int
@@ -150,6 +149,7 @@ class Session(SessionKey):
     tenant_id: int
     channel_platform_types: List[str]
     status: SessionStatus
+    expiration_time: EpochSeconds
 
     def __init__(self, tenant_id: int,
                  session_id: str,
@@ -158,10 +158,13 @@ class Session(SessionKey):
                  instance_url: str,
                  access_token: str,
                  fcm_device_token: Optional[str],
-                 expiration_seconds: int, channel_platform_types: List[str], state_counter=1,
+                 expiration_seconds: int,
+                 channel_platform_types: List[str],
+                 state_counter=1,
                  update_time: Optional[EpochMilliseconds] = None,
                  status: SessionStatus = SessionStatus.PENDING,
-                 failure_message: str = None):
+                 failure_message: str = None,
+                 expiration_time: int = None):
         assert tenant_id is not None
         self.tenant_id = tenant_id
         self.session_id = session_id
@@ -176,6 +179,7 @@ class Session(SessionKey):
         self.access_token = access_token
         self.status = status
         self.failure_message = failure_message
+        self.expiration_time = expiration_time
 
     def has_live_agent_polling(self) -> bool:
         return OMNI_PLATFORM.name in self.channel_platform_types
@@ -222,7 +226,8 @@ class Session(SessionKey):
             'platformTypes': self.channel_platform_types,
             'stateCounter': self.state_counter,
             'updateTime': self.update_time,
-            'sessionStatus': self.status.value
+            'sessionStatus': self.status.value,
+            'expireTime': self.expiration_time
         }
         set_if_not_none(record, 'fcmDeviceToken', self.fcm_device_token)
         set_if_not_none(record, 'failureMessage', self.failure_message)
@@ -244,7 +249,8 @@ class Session(SessionKey):
                        record['expirationSeconds'], record['platformTypes'], record['stateCounter'],
                        record['updateTime'],
                        _map_session_status(record['sessionStatus']),
-                       record.get('failureMessage'))
+                       record.get('failureMessage'),
+                       record.get('expireTime'))
 
     def __eq__(self, other):
         if isinstance(other, Session):

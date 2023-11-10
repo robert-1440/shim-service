@@ -16,14 +16,18 @@ data "aws_iam_policy_document" "shim_notification_publisher" {
 
   statement {
     effect    = "Allow"
-    resources = [ aws_sns_topic.shim_mock_push_notification.arn ]
-    actions   = [ "sns:Publish" ]
+    resources = [ aws_sqs_queue.push_notification.arn ]
+    actions   = [
+      "sqs:SendMessage",
+      "sqs:GetQueueUrl"
+    ]
   }
 
   statement {
     effect    = "Allow"
     resources = [ aws_dynamodb_table.shim_service_session.arn ]
     actions   = [
+      "dynamodb:BatchGetItem",
       "dynamodb:GetItem",
       "dynamodb:PutItem",
       "dynamodb:UpdateItem",
@@ -116,10 +120,11 @@ resource "aws_lambda_function" "shim_notification_publisher" {
 
   environment {
     variables = {
+      ACTIVE_PROFILES                     = "notification-publisher"
       SHIM_SERVICE_PUSH_NOTIFIER          = "ShimPushNotifierGroup"
       SHIM_SERVICE_PUSH_NOTIFIER_ROLE_ARN = "${aws_iam_role.push_notifier_group.arn}"
+      SQS_PUSH_NOTIFICATION_QUEUE_URL     = "${aws_sqs_queue.push_notification.url}"
       ERROR_TOPIC_ARN                     = "${aws_sns_topic.shim_error.arn}"
-      SNS_PUSH_TOPIC_ARN                  = "${aws_sns_topic.shim_mock_push_notification.arn}"
     }
   }
   depends_on = [ aws_iam_role_policy_attachment.shim_notification_publisher ]

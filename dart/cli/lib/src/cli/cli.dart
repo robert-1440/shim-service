@@ -1,6 +1,8 @@
 import 'dart:collection';
 import 'dart:io';
 
+import 'package:cli/src/client/http.dart';
+
 import '../cli/processor.dart';
 import '../cli/util.dart';
 
@@ -11,7 +13,7 @@ class Command {
 
   final dynamic usage;
 
-  final void Function(CommandLineProcessor) invoker;
+  final Future<void> Function(CommandLineProcessor) invoker;
 
   late String _moduleName;
 
@@ -26,9 +28,9 @@ class Command {
     return '$message\n';
   }
 
-  void invoke(CommandLineProcessor cli) {
+  Future<void> invoke(CommandLineProcessor cli) async {
     cli.setUsage(_generateUsage);
-    invoker(cli);
+    await invoker(cli);
   }
 }
 
@@ -67,7 +69,7 @@ abstract class App {
 
   List<Module> modules();
 
-  void setup(CommandLineProcessor cli);
+  void setup(CommandLineProcessor processor);
 }
 
 class CommandLineRunner {
@@ -86,7 +88,7 @@ class CommandLineRunner {
 
   String nextArg([String? argName]) => _cli.next(argName);
 
-  void execute() {
+  Future<void> execute() async {
     String name = _cli.next("command");
     var impl = _moduleMap[name];
     if (impl == null) {
@@ -100,8 +102,7 @@ class CommandLineRunner {
       _cli.invokeUsage("Invalid command '$action' for $name.");
       return;
     }
-
-    command.invoke(_cli);
+    await command.invoke(_cli);
   }
 
   String _generateUsage() {
@@ -142,8 +143,12 @@ CommandLineRunner createRunner(List<String> args, App app, {bool? exitMode}) {
   return CommandLineRunner.$(cli, app);
 }
 
-void init(List<String> args, App app, {bool? exitMode}) {
+void init(List<String> args, App app, {bool? exitMode}) async {
   var runner = createRunner(args, app, exitMode: exitMode);
   app.setup(runner._cli);
-  runner.execute();
+  try {
+    await runner.execute();
+  } on HttpResponseException catch (ex) {
+    fatalError("Error from service: $ex");
+  }
 }

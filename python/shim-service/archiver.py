@@ -4,6 +4,24 @@ import sys
 
 os.environ['TZ'] = 'UTC'  # Set the time zone to UTC for consistency
 os.environ['SOURCE_DATE_EPOCH'] = '0'  # Set the source date epoch to a fixed value (e.g., 0)
+os.environ['IGNORE_VARS'] = 'true'
+
+
+def check_env_variables():
+    again = True
+    while len(sys.argv) > 1 and again:
+        again = False
+        for index in range(1, len(sys.argv)):
+            value = sys.argv[index]
+            v_index = value.find("=")
+            if v_index > 0:
+                os.environ[value[0:v_index:]] = value[v_index + 1::]
+                del sys.argv[index]
+                again = True
+                break
+
+
+check_env_variables()
 
 import zipfile
 from types import ModuleType
@@ -18,7 +36,6 @@ import app
 from bean.beans import load_all_lazy
 
 verbose = False
-profile_name: Optional[str] = None
 
 TIME_STAMP = (2020, 2, 2, 2, 2, 2)
 EMPTY = bytes()
@@ -92,15 +109,12 @@ class MyZipper:
 
 
 def check_args():
-    global profile_name
     target = None
     arg_it = iter(sys.argv[1::])
     for v in arg_it:
         if v == "-v":
             global verbose
             verbose = True
-        elif v == "--profile":
-            profile_name = next(arg_it)
         elif target is None:
             target = v
         else:
@@ -109,8 +123,7 @@ def check_args():
     if target is None:
         print("Please supply target zip file name.", file=sys.stderr)
         exit(2)
-    if profile_name is not None:
-        os.environ['ACTIVE_PROFILES'] = profile_name
+    if "ACTIVE_PROFILES" in os.environ:
         load_all_lazy()
     return target
 

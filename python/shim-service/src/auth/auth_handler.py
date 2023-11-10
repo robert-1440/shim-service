@@ -57,6 +57,7 @@ def _parse_auth_parts(token: str) -> Optional[_AuthParts]:
                 diff = abs(get_system_time_in_millis() - request_time)
                 if diff <= _GRACE_TIME_MILLIS:
                     return _AuthParts(values[0], request_time, values[2])
+        logger.warning(f"Invalid auth token, decoded='{decoded}'")
     return None
 
 

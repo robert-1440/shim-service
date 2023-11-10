@@ -109,109 +109,17 @@
      "passthroughBehavior": "when_no_match",
      "timeoutInMillis": 29000
     }
-   },
-   "get": {
+   }
+  },
+  "/presence/actions/decline-work": {
+   "post": {
     "tags": [
      "presence"
     ],
-    "summary": "Get Presence Statuses",
-    "description": "Used to retrieve a list of all available presence statuses.\n",
-    "operationId": "GetPresenceStatuses",
+    "summary": "Decline a Work Item",
+    "description": "Used to decline work.\n",
+    "operationId": "DeclineWork",
     "parameters": [
-     {
-      "name": "X-1440-Session-Token",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     },
-     {
-      "name": "X-Correlation-ID",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     },
-     {
-      "name": "Authorization",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     },
-     {
-      "name": "Accept",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     }
-    ],
-    "responses": {
-     "200": {
-      "description": "OK",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/GetPresenceStatusesResponse"
-        }
-       }
-      }
-     },
-     "401": {
-      "description": "Unauthorized",
-      "content": {}
-     },
-     "403": {
-      "description": "Insufficient privileges",
-      "content": {}
-     },
-     "500": {
-      "description": "500 response"
-     },
-     "503": {
-      "description": "503 response"
-     },
-     "400": {
-      "description": "400 response"
-     },
-     "406": {
-      "description": "406 response"
-     },
-     "415": {
-      "description": "415 response"
-     }
-    },
-    "x-amazon-apigateway-integration": {
-     "type": "aws_proxy",
-     "httpMethod": "GET",
-     "uri": "${uri}",
-     "passthroughBehavior": "when_no_match",
-     "timeoutInMillis": 29000
-    }
-   }
-  },
-  "/conversations/{conversationId}/actions/transfer": {
-   "post": {
-    "tags": [
-     "conversation"
-    ],
-    "summary": "Transfer a Conversation",
-    "description": "Used to transfer a conversation / work. @TODO: List all of the things that happen.\n",
-    "operationId": "TransferConversation",
-    "parameters": [
-     {
-      "name": "conversationId",
-      "in": "path",
-      "description": "The id of the conversation to transfer.",
-      "required": true,
-      "schema": {
-       "type": "string",
-       "maxLength": 18,
-       "pattern": "^[a-zA-Z0-9]*$",
-       "example": "x05Hs00000AIDN5IAP"
-      }
-     },
      {
       "name": "X-1440-Session-Token",
       "in": "header",
@@ -252,317 +160,14 @@
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/TransferConversationRequest"
+        "$ref": "#/components/schemas/DeclineWorkRequest"
        }
       }
      }
     },
     "responses": {
      "204": {
-      "description": "OK"
-     },
-     "400": {
-      "description": "Bad Request",
-      "content": {}
-     },
-     "401": {
-      "description": "Unauthorized",
-      "content": {}
-     },
-     "403": {
-      "description": "Insufficient privileges",
-      "content": {}
-     },
-     "404": {
-      "description": "Conversation ot found.",
-      "content": {}
-     },
-     "500": {
-      "description": "500 response"
-     },
-     "503": {
-      "description": "503 response"
-     },
-     "406": {
-      "description": "406 response"
-     },
-     "415": {
-      "description": "415 response"
-     }
-    },
-    "x-amazon-apigateway-integration": {
-     "type": "aws_proxy",
-     "httpMethod": "POST",
-     "uri": "${uri}",
-     "passthroughBehavior": "when_no_match",
-     "timeoutInMillis": 29000
-    }
-   }
-  },
-  "/conversations/{conversationId}": {
-   "get": {
-    "tags": [
-     "conversation"
-    ],
-    "summary": "Get a Conversation",
-    "description": "Used to retrieve a conversation.\n",
-    "operationId": "GetConversation",
-    "parameters": [
-     {
-      "name": "conversationId",
-      "in": "path",
-      "description": "Device Id",
-      "required": true,
-      "schema": {
-       "type": "string",
-       "maxLength": 18,
-       "pattern": "^[a-zA-Z0-9]*$",
-       "example": "x05Hs00000AIDN5IAP"
-      }
-     },
-     {
-      "name": "X-1440-Session-Token",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     },
-     {
-      "name": "X-Correlation-ID",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     },
-     {
-      "name": "Authorization",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     },
-     {
-      "name": "Accept",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     }
-    ],
-    "responses": {
-     "200": {
-      "description": "OK",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/GetConversationResponse"
-        }
-       }
-      }
-     },
-     "401": {
-      "description": "Unauthorized",
-      "content": {}
-     },
-     "403": {
-      "description": "Insufficient privileges",
-      "content": {}
-     },
-     "404": {
-      "description": "Conversation not found.",
-      "content": {}
-     },
-     "500": {
-      "description": "500 response"
-     },
-     "503": {
-      "description": "503 response"
-     },
-     "400": {
-      "description": "400 response"
-     },
-     "406": {
-      "description": "406 response"
-     },
-     "415": {
-      "description": "415 response"
-     }
-    },
-    "x-amazon-apigateway-integration": {
-     "type": "aws_proxy",
-     "httpMethod": "GET",
-     "uri": "${uri}",
-     "passthroughBehavior": "when_no_match",
-     "timeoutInMillis": 29000
-    }
-   },
-   "patch": {
-    "tags": [
-     "conversation"
-    ],
-    "summary": "Patch Conversation",
-    "description": "Used to accept or decline a conversation / work, or end a conversation.\n",
-    "operationId": "PatchConversation",
-    "parameters": [
-     {
-      "name": "conversationId",
-      "in": "path",
-      "description": "Device Id",
-      "required": true,
-      "schema": {
-       "type": "string",
-       "maxLength": 18,
-       "pattern": "^[a-zA-Z0-9]*$",
-       "example": "x05Hs00000AIDN5IAP"
-      }
-     },
-     {
-      "name": "X-1440-Session-Token",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     },
-     {
-      "name": "X-Correlation-ID",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     },
-     {
-      "name": "Authorization",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     },
-     {
-      "name": "Accept",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     },
-     {
-      "name": "Content-Type",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     }
-    ],
-    "requestBody": {
-     "content": {
-      "application/json": {
-       "schema": {
-        "$ref": "#/components/schemas/PatchConversationRequest"
-       }
-      }
-     }
-    },
-    "responses": {
-     "204": {
-      "description": "OK"
-     },
-     "400": {
-      "description": "Bad Request",
-      "content": {}
-     },
-     "401": {
-      "description": "Unauthorized",
-      "content": {}
-     },
-     "403": {
-      "description": "Insufficient privileges",
-      "content": {}
-     },
-     "500": {
-      "description": "500 response"
-     },
-     "503": {
-      "description": "503 response"
-     },
-     "406": {
-      "description": "406 response"
-     },
-     "415": {
-      "description": "415 response"
-     }
-    },
-    "x-amazon-apigateway-integration": {
-     "type": "aws_proxy",
-     "httpMethod": "PATCH",
-     "uri": "${uri}",
-     "passthroughBehavior": "when_no_match",
-     "timeoutInMillis": 29000
-    }
-   }
-  },
-  "/conversations": {
-   "post": {
-    "tags": [
-     "conversation"
-    ],
-    "summary": "Start a Conversation",
-    "description": "Used to start a conversation / work.\n",
-    "operationId": "StartConversation",
-    "parameters": [
-     {
-      "name": "X-1440-Session-Token",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     },
-     {
-      "name": "X-Correlation-ID",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     },
-     {
-      "name": "Authorization",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     },
-     {
-      "name": "Accept",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     },
-     {
-      "name": "Content-Type",
-      "in": "header",
-      "schema": {
-       "type": "string"
-      }
-     }
-    ],
-    "requestBody": {
-     "content": {
-      "application/json": {
-       "schema": {
-        "$ref": "#/components/schemas/StartConversationRequest"
-       }
-      }
-     }
-    },
-    "responses": {
-     "200": {
-      "description": "OK",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/StartConversationResponse"
-        }
-       }
-      }
+      "description": "No Content"
      },
      "400": {
       "description": "Bad Request",
@@ -598,25 +203,209 @@
     }
    }
   },
-  "/conversations/{conversationId}/messages": {
+  "/presence/actions/accept-work": {
+   "post": {
+    "tags": [
+     "presence"
+    ],
+    "summary": "Accept a Work Item",
+    "description": "Used to accept work.\n",
+    "operationId": "AcceptWork",
+    "parameters": [
+     {
+      "name": "X-1440-Session-Token",
+      "in": "header",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "X-Correlation-ID",
+      "in": "header",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Authorization",
+      "in": "header",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Accept",
+      "in": "header",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AcceptWorkRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "No Content"
+     },
+     "400": {
+      "description": "Bad Request",
+      "content": {}
+     },
+     "401": {
+      "description": "Unauthorized",
+      "content": {}
+     },
+     "403": {
+      "description": "Insufficient privileges",
+      "content": {}
+     },
+     "500": {
+      "description": "500 response"
+     },
+     "503": {
+      "description": "503 response"
+     },
+     "406": {
+      "description": "406 response"
+     },
+     "415": {
+      "description": "415 response"
+     }
+    },
+    "x-amazon-apigateway-integration": {
+     "type": "aws_proxy",
+     "httpMethod": "POST",
+     "uri": "${uri}",
+     "passthroughBehavior": "when_no_match",
+     "timeoutInMillis": 29000
+    }
+   }
+  },
+  "/presence/actions/close-work": {
+   "post": {
+    "tags": [
+     "presence"
+    ],
+    "summary": "Close a Work Item",
+    "description": "Used to close work.\n",
+    "operationId": "CloseWork",
+    "parameters": [
+     {
+      "name": "X-1440-Session-Token",
+      "in": "header",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "X-Correlation-ID",
+      "in": "header",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Authorization",
+      "in": "header",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Accept",
+      "in": "header",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "Content-Type",
+      "in": "header",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CloseWorkRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "No Content"
+     },
+     "400": {
+      "description": "Bad Request",
+      "content": {}
+     },
+     "401": {
+      "description": "Unauthorized",
+      "content": {}
+     },
+     "403": {
+      "description": "Insufficient privileges",
+      "content": {}
+     },
+     "500": {
+      "description": "500 response"
+     },
+     "503": {
+      "description": "503 response"
+     },
+     "406": {
+      "description": "406 response"
+     },
+     "415": {
+      "description": "415 response"
+     }
+    },
+    "x-amazon-apigateway-integration": {
+     "type": "aws_proxy",
+     "httpMethod": "POST",
+     "uri": "${uri}",
+     "passthroughBehavior": "when_no_match",
+     "timeoutInMillis": 29000
+    }
+   }
+  },
+  "/work-conversations/{workTargetId}/messages": {
    "post": {
     "tags": [
      "conversation"
     ],
     "summary": "Send Conversation Message",
     "description": "Used to send a message.",
-    "operationId": "SendConversationMessage",
+    "operationId": "SendWorkMessage",
     "parameters": [
      {
-      "name": "conversationId",
+      "name": "workTargetId",
       "in": "path",
-      "description": "Device Id",
+      "description": "Work Target Id",
       "required": true,
       "schema": {
        "type": "string",
        "maxLength": 18,
-       "pattern": "^[a-zA-Z0-9]*$",
-       "example": "x05Hs00000AIDN5IAP"
+       "pattern": "^0Mw[a-zA-Z0-9]{12,15}",
+       "example": "0MwHs0000011U8O"
       }
      },
      {
@@ -659,7 +448,7 @@
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/SendConversationMessageRequest"
+        "$ref": "#/components/schemas/SendWorkMessageRequest"
        }
       }
      }
@@ -916,7 +705,7 @@
     },
     "x-amazon-apigateway-integration": {
      "type": "aws_proxy",
-     "httpMethod": "PUT",
+     "httpMethod": "POST",
      "uri": "${uri}",
      "passthroughBehavior": "when_no_match",
      "timeoutInMillis": 29000
@@ -1011,7 +800,7 @@
     },
     "x-amazon-apigateway-integration": {
      "type": "aws_proxy",
-     "httpMethod": "DELETE",
+     "httpMethod": "POST",
      "uri": "${uri}",
      "passthroughBehavior": "when_no_match",
      "timeoutInMillis": 29000
@@ -1021,32 +810,6 @@
  },
  "components": {
   "schemas": {
-   "Participant": {
-    "type": "object",
-    "properties": {
-     "id": {
-      "type": "string",
-      "maxLength": 18
-     },
-     "userName": {
-      "type": "string",
-      "maxLength": 250
-     },
-     "participantType": {
-      "type": "string",
-      "maxLength": 20,
-      "enum": [
-       "Employee",
-       "Visitor",
-       "Bot"
-      ]
-     },
-     "photoUrl": {
-      "type": "string",
-      "maxLength": 2048
-     }
-    }
-   },
    "MessageAttachment": {
     "type": "object",
     "properties": {
@@ -1060,72 +823,13 @@
      }
     }
    },
-   "Message": {
-    "type": "object",
-    "properties": {
-     "id": {
-      "type": "string",
-      "maxLength": 250
-     },
-     "conversationId": {
-      "type": "string",
-      "maxLength": 18,
-      "pattern": "^[a-zA-Z0-9]*$"
-     },
-     "messageBody": {
-      "type": "string",
-      "maxLength": 16384
-     },
-     "timestamp": {
-      "type": "string",
-      "maxLength": 100
-     },
-     "entryType": {
-      "type": "string",
-      "maxLength": 15,
-      "enum": [
-       "text",
-       "media",
-       "carousel",
-       "endUserOptedIn"
-      ]
-     },
-     "actorType": {
-      "type": "string",
-      "maxLength": 10,
-      "enum": [
-       "endUser",
-       "agent",
-       "bot",
-       "supervisor",
-       "system"
-      ]
-     },
-     "salesforcePayload": {
-      "type": "string",
-      "maxLength": 16384
-     },
-     "sequence": {
-      "type": "string",
-      "maxLength": 250
-     },
-     "participant": {
-      "$ref": "#/components/schemas/Participant"
-     },
-     "attachments": {
-      "type": "array",
-      "items": {
-       "$ref": "#/components/schemas/MessageAttachment"
-      }
-     }
-    }
-   },
    "PresenceStatus": {
     "type": "object",
     "properties": {
      "id": {
       "type": "string",
-      "maxLength": 18
+      "maxLength": 18,
+      "pattern": "^0N5[a-zA-Z0-9]{15,18}"
      },
      "label": {
       "type": "string",
@@ -1142,194 +846,61 @@
      }
     }
    },
-   "Conversation": {
-    "type": "object",
-    "properties": {
-     "id": {
-      "type": "string",
-      "maxLength": 18,
-      "pattern": "^[a-zA-Z0-9]*$"
-     },
-     "consumer": {
-      "$ref": "#/components/schemas/Participant"
-     },
-     "userName": {
-      "type": "string",
-      "maxLength": 250
-     },
-     "ownerId": {
-      "type": "string",
-      "maxLength": 18,
-      "pattern": "^005[a-zA-Z0-9]{15,18}"
-     },
-     "channel": {
-      "type": "string",
-      "maxLength": 30
-     },
-     "status": {
-      "type": "string",
-      "maxLength": 30
-     },
-     "channelType": {
-      "type": "string",
-      "maxLength": 20,
-      "enum": [
-       "liveAgentChat",
-       "sms"
-      ]
-     },
-     "pictureUrl": {
-      "type": "string",
-      "maxLength": 1024
-     },
-     "endedBy": {
-      "$ref": "#/components/schemas/Participant"
-     },
-     "salesforcePayload": {
-      "type": "string",
-      "maxLength": 8192
-     },
-     "messages": {
-      "type": "array",
-      "items": {
-       "$ref": "#/components/schemas/Message"
-      }
-     }
-    }
-   },
    "SetPresenceStatusRequest": {
     "type": "object",
     "properties": {
      "id": {
       "type": "string",
-      "maxLength": 18
+      "maxLength": 18,
+      "pattern": "^0N5[a-zA-Z0-9]{15,18}"
      }
     }
    },
-   "GetPresenceStatusesResponse": {
+   "DeclineWorkRequest": {
     "type": "object",
     "properties": {
-     "statuses": {
-      "type": "array",
-      "items": {
-       "$ref": "#/components/schemas/PresenceStatus"
-      }
-     }
-    }
-   },
-   "TransferConversationRequest": {
-    "type": "object",
-    "properties": {
-     "requestId": {
-      "type": "string",
-      "maxLength": 64,
-      "pattern": "^[a-zA-Z0-9-]+$"
-     },
-     "userId": {
+     "workId": {
       "type": "string",
       "maxLength": 18,
-      "pattern": "^005[a-zA-Z0-9]{15,18}"
+      "pattern": "^0Bz[a-zA-Z0-9]{12,15}"
      },
-     "fcmDeviceToken": {
-      "type": "string",
-      "maxLength": 512
-     }
-    }
-   },
-   "GetConversationResponse": {
-    "type": "object",
-    "properties": {
-     "id": {
+     "workTargetId": {
       "type": "string",
       "maxLength": 18,
-      "pattern": "^[a-zA-Z0-9]*$"
+      "pattern": "^0Mw[a-zA-Z0-9]{12,15}"
      },
-     "consumer": {
-      "$ref": "#/components/schemas/Participant"
-     },
-     "userName": {
+     "declineReason": {
       "type": "string",
       "maxLength": 250
-     },
-     "ownerId": {
+     }
+    }
+   },
+   "AcceptWorkRequest": {
+    "type": "object",
+    "properties": {
+     "workId": {
       "type": "string",
       "maxLength": 18,
-      "pattern": "^005[a-zA-Z0-9]{15,18}"
+      "pattern": "^0Bz[a-zA-Z0-9]{12,15}"
      },
-     "channel": {
-      "type": "string",
-      "maxLength": 30
-     },
-     "status": {
-      "type": "string",
-      "maxLength": 30
-     },
-     "channelType": {
-      "type": "string",
-      "maxLength": 20,
-      "enum": [
-       "liveAgentChat",
-       "sms"
-      ]
-     },
-     "pictureUrl": {
-      "type": "string",
-      "maxLength": 1024
-     },
-     "endedBy": {
-      "$ref": "#/components/schemas/Participant"
-     },
-     "salesforcePayload": {
-      "type": "string",
-      "maxLength": 8192
-     },
-     "messages": {
-      "type": "array",
-      "items": {
-       "$ref": "#/components/schemas/Message"
-      }
-     }
-    }
-   },
-   "PatchConversationRequest": {
-    "type": "object",
-    "properties": {
-     "action": {
-      "type": "string",
-      "maxLength": 7,
-      "enum": [
-       "accept",
-       "decline",
-       "end"
-      ]
-     }
-    }
-   },
-   "StartConversationRequest": {
-    "type": "object",
-    "properties": {
-     "requestId": {
-      "type": "string",
-      "maxLength": 64,
-      "pattern": "^[a-zA-Z0-9-]+$"
-     },
-     "message": {
-      "type": "string",
-      "maxLength": 8192
-     }
-    }
-   },
-   "StartConversationResponse": {
-    "type": "object",
-    "properties": {
-     "conversationId": {
+     "workTargetId": {
       "type": "string",
       "maxLength": 18,
-      "pattern": "^[a-zA-Z0-9]*$"
+      "pattern": "^0Mw[a-zA-Z0-9]{12,15}"
      }
     }
    },
-   "SendConversationMessageRequest": {
+   "CloseWorkRequest": {
+    "type": "object",
+    "properties": {
+     "workTargetId": {
+      "type": "string",
+      "maxLength": 18,
+      "pattern": "^0Mw[a-zA-Z0-9]{12,15}"
+     }
+    }
+   },
+   "SendWorkMessageRequest": {
     "type": "object",
     "properties": {
      "id": {
@@ -1339,10 +910,6 @@
      "messageBody": {
       "type": "string",
       "maxLength": 16384
-     },
-     "timestamp": {
-      "type": "string",
-      "maxLength": 100
      },
      "attachments": {
       "type": "array",
@@ -1395,6 +962,12 @@
      "expirationTime": {
       "type": "integer",
       "format": "int64"
+     },
+     "presenceStatuses": {
+      "type": "array",
+      "items": {
+       "$ref": "#/components/schemas/PresenceStatus"
+      }
      }
     }
    }

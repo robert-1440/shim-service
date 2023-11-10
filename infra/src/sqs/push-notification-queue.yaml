@@ -1,0 +1,19 @@
+type: queue
+
+name: push-notification
+
+queue-name: mock-notification-queue
+
+resource-enabled: ${mockPushNotificationsEnabled:false}
+
+fifo: true
+
+fifo-dedup: true
+
+env-name: SQS_PUSH_NOTIFICATION_QUEUE_URL
+
+policy-actions:
+  - DeleteMessage
+  - GetQueueUrl
+  - ReceiveMessage
+  - SendMessage

@@ -102,7 +102,6 @@ DEFAULT_WORK_ID = "0BzHs000005aLv4"
 DEFAULT_WORK_TARGET_ID = "0MwHs0000011U8O"
 ANOTHER_WORK_TARGET_ID = "0MwHs0000011U8A"
 
-
 DEFAULT_TENANT_ID = 12345
 ALTERNATE_TENANT_ID = 99999
 
@@ -324,6 +323,28 @@ class BaseTest(BetterTestCase):
             expected_message=expected_message
         )
 
+    def put(self,
+            path: str,
+            creds: TestCredentials = GOOD_CREDS,
+            headers: Dict[str, Any] = None,
+            body: Any = None,
+            expected_status_code: int = 200,
+            expected_error_message: str = None,
+            expected_error_code: str = None,
+            expected_message: str = None
+            ) -> InvokeResponse:
+        return self.invoke_web_event(
+            path,
+            "PUT",
+            in_headers=headers,
+            creds=creds,
+            body=body,
+            expected_status_code=expected_status_code,
+            expected_error_message=expected_error_message,
+            expected_error_code=expected_error_code,
+            expected_message=expected_message
+        )
+
     def delete(self,
                path: str,
                creds: TestCredentials = GOOD_CREDS,
@@ -427,7 +448,7 @@ class BaseTest(BetterTestCase):
             self.prepare_sfdc_connection()
             expected_status_code = 201 if expected_status_code == 202 else expected_status_code
 
-        resp = self.post(
+        resp = self.put(
             f"organizations/{org_id}/sessions",
             creds=creds,
             headers=headers,

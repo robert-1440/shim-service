@@ -53,14 +53,16 @@ permissions:
       actions:
         - "sns:Publish"
 
-    - name: shim-mock-push-notification
-      manage: false
+  queues:
+    - name: push-notification
       actions:
-        - "sns:Publish"
+        - "sqs:SendMessage"
+        - "sqs:GetQueueUrl"
 
   dynamodb-tables:
     - table: ShimServiceSession
       actions:
+        - BatchGetItem
         - GetItem
         - PutItem
         - UpdateItem
@@ -89,3 +91,6 @@ permissions:
         - PutItem
 
 
+environment:
+  variables:
+    ACTIVE_PROFILES: notification-publisher

@@ -23,9 +23,18 @@ __profile_entries = {
 
 _active_profiles: Optional[int] = None
 
+__ignore_vars: Optional[bool] = None
+
 
 def is_profile_active(bit: int):
     return (get_active_profiles() & bit) != 0
+
+
+def should_ignore_vars() -> bool:
+    global __ignore_vars
+    if __ignore_vars is None:
+        __ignore_vars = os.environ.get("IGNORE_VARS", "false").lower() == "true"
+    return __ignore_vars
 
 
 def set_active_profiles(profile_bits: int):

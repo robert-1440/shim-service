@@ -81,10 +81,12 @@ class _BeanImpl(Bean):
             bt = params.get('type')
             if bt is not None:
                 self.__bean_type_flags = bt.value
-            env_var = params.get('var')
-            if env_var is not None:
-                if len(os.environ.get(env_var, '')) == 0:
-                    self.__disabled = True
+            if not profiles.should_ignore_vars():
+                env_var = params.get('var')
+                if env_var is not None:
+                    if len(os.environ.get(env_var, '')) == 0:
+                        print(f"Disabling bean {name.name} because '{env_var}' is not set.")
+                        self.__disabled = True
 
         if not self.__disabled:
             if isinstance(self.__initializer, _LazyLoader):
@@ -124,7 +126,7 @@ class _BeanImpl(Bean):
                 self.__value = initializer
             self.__initialized = True
             return
-        except Exception as ex:
+        except BaseException as ex:
             print_exc()
             ex_to_raise = BeanInitializationException(self.name)
         finally:
@@ -206,8 +208,9 @@ __BEANS: Dict[BeanName, _BeanImpl] = {
     BeanName.PENDING_EVENTS_REPO: _module(),
     BeanName.PUSH_NOTIFIER_PROCESSOR: _module(),
     BeanName.PUSH_NOTIFICATION_MANAGER: _module(),
-    BeanName.SNS_PUSH_NOTIFIER: _module(),
-    BeanName.WORK_ID_MAP_REPO: _module()
+    BeanName.SQS_PUSH_NOTIFIER: _module(),
+    BeanName.WORK_ID_MAP_REPO: _module(),
+    BeanName.SQS: _boto3('sqs')
 }
 
 
@@ -273,10 +276,6 @@ def _to_collection(thing: Any):
         if len(thing) == 0:
             return None
     return thing
-
-
-def _get_beans_by_type(flags: int):
-    pass
 
 
 def _get_bean_type_flags(bean_types: Collection[BeanType]):

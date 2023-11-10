@@ -85,3 +85,6 @@ permissions:
       actions:
         - PutItem
 
+environment:
+  variables:
+    ACTIVE_PROFILES: live-agent-poller

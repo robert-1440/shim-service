@@ -7,14 +7,21 @@ import 'package:cli/src/cli/util.dart';
 import 'package:cli/src/client/http.dart';
 import 'package:cli/src/client/profile.dart';
 
+String _toInstanceUrl(String url) {
+  return Uri
+      .parse(url)
+      .origin;
+}
+
 class AuthInfo extends Mappable {
   String serverUrl;
   String sessionId;
   String userId;
   String orgId;
   int expireTime;
+  String instanceUrl;
 
-  AuthInfo(this.sessionId, this.serverUrl, this.userId, this.orgId, this.expireTime);
+  AuthInfo(this.sessionId, this.serverUrl, this.userId, this.orgId, this.expireTime) : instanceUrl = _toInstanceUrl(serverUrl);
 
   @override
   Map<String, dynamic> toMap() {
@@ -67,7 +74,8 @@ Future<AuthInfo> _doAuth(String profileName) async {
     password += token;
   }
   var headers = {'content-type': 'text/xml', 'SOAPAction': "login"};
-  var xml = """<soapenv:Envelope xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:urn='urn:partner.soap.sforce.com'>
+  var xml =
+  """<soapenv:Envelope xmlns:soapenv='http://schemas.xmlsoap.org/soap/envelope/' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:urn='urn:partner.soap.sforce.com'>
     <soapenv:Body>
       <urn:login>
         <urn:username><![CDATA[$userName]]></urn:username>

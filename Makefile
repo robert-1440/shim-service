@@ -51,6 +51,9 @@ MAKE_TERRAFORM=make AWS_PROFILE=$(AWS_PROFILE) TERRAFORM_DIR=$(TERRAFORM_DIR) -f
 check-api:
 	@${PYTHON} ${API_BUILDER} . validate
 
+shim-test:
+	@cd dart/cli; make
+
 
 gen-doc:
 	@echo "Generating documentation ..."
@@ -95,7 +98,7 @@ build-terraform bt: $(API_SPEC)
 package:
 	@cd $(SERVICE_DIR); make package
 
-bp: package bt apply
+bp: oas package bt apply
 
 
 init:

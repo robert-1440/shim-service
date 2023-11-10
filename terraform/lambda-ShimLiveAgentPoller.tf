@@ -66,7 +66,7 @@ data "aws_iam_policy_document" "shim_live_agent_poller" {
   statement {
     effect    = "Allow"
     resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimLiveAgentPoller" ]
-    actions   = [ "lambda:Invoke" ]
+    actions   = [ "lambda:InvokeFunction" ]
   }
 }
 
@@ -113,6 +113,7 @@ resource "aws_lambda_function" "shim_live_agent_poller" {
 
   environment {
     variables = {
+      ACTIVE_PROFILES = "live-agent-poller"
       ERROR_TOPIC_ARN = "${aws_sns_topic.shim_error.arn}"
     }
   }
@@ -122,4 +123,18 @@ resource "aws_lambda_function" "shim_live_agent_poller" {
 resource "aws_cloudwatch_log_group" "shim_live_agent_poller" {
   name              = "/aws/lambda/${aws_lambda_function.shim_live_agent_poller.function_name}"
   retention_in_days = 30
+}
+
+resource "aws_lambda_permission" "shim_live_agent_poller_shim_live_agent_poller" {
+  principal     = "lambda.amazonaws.com"
+  action        = "lambda:InvokeFunction"
+  source_arn    = "${aws_lambda_function.shim_live_agent_poller.arn}"
+  function_name = aws_lambda_function.shim_live_agent_poller.function_name
+}
+
+resource "aws_lambda_permission" "shim_live_agent_poller_shim_service_web" {
+  principal     = "lambda.amazonaws.com"
+  action        = "lambda:InvokeFunction"
+  source_arn    = "${aws_lambda_function.shim_service_web.arn}"
+  function_name = aws_lambda_function.shim_live_agent_poller.function_name
 }

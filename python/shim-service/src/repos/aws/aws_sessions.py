@@ -46,7 +46,8 @@ class AwsSessionsRepo(SessionsRepo, AbstractAwsRepo):
 
     def create_session(self, request: CreateSessionRequest):
         expire_time = get_system_time_in_seconds() + request.session.expiration_seconds
-        session_put = self.create_put_item_request(request.session, expireTime=expire_time)
+        request.session.expiration_time = expire_time
+        session_put = self.create_put_item_request(request.session)
         user_session = request.session.to_user_session()
         user_session_put = self.user_sessions_repo.create_put_item_request(user_session, expireTime=expire_time)
 

@@ -55,7 +55,7 @@ def __build_session(instance: Instance, request: LambdaHttpRequest, org_id: str)
 
 @sessions.route("",
                 response_codes=(200, 201),
-                method=Method.POST)
+                method=Method.PUT)
 def start_session(instance: Instance, request: LambdaHttpRequest, orgId: str):
     creds = request.get_credentials()
     session = __build_session(instance, request, orgId)
@@ -73,7 +73,10 @@ def start_session(instance: Instance, request: LambdaHttpRequest, orgId: str):
     token = SessionToken(session.tenant_id, session.session_id, session.user_id)
 
     token_string = token.serialize(creds)
-    body = {'sessionToken': token_string}
+    body = {
+        'sessionToken': token_string,
+        'expirationTime': session.expiration_time
+    }
     if result.created:
         code = 202 if async_request else 201
     else:

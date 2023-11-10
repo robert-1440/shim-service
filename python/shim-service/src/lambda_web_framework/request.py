@@ -204,7 +204,8 @@ def from_json(data: Union[dict, str]) -> Dict[str, Any]:
     try:
         return json.loads(data)
     except Exception:
-        raise BadRequestException("Malformed JSON")
+        logger.info(f"Invalid JSON: <<<{data}>>>")
+        raise BadRequestException("Malformed JSON.")
 
 
 class LambdaHttpResponse:
