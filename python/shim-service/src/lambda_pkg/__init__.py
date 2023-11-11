@@ -16,6 +16,13 @@ class LambdaFunctionParameters:
         self.__role_env_name = role_env_name + "_ROLE_ARN"
         self.__default_bean_name = default_bean_name
         self.__scheduler_group = scheduler_group
+        self.__queue_url = os.environ.get(f"SQS_{self.__name.upper()}_QUEUE_URL")
+
+    @property
+    def queue_url(self) -> str:
+        if self.__queue_url is None:
+            raise AssertionError("No queue url for " + self.__name)
+        return self.__queue_url
 
     @property
     def scheduler_group_name(self) -> str:
@@ -73,18 +80,16 @@ class LambdaInvoker(metaclass=abc.ABCMeta):
     def invoke_function(self,
                         function: LambdaFunction,
                         parameters: Dict[str, Any],
-                        bean_name: BeanName = None,
-                        delay_seconds: int = None):
+                        bean_name: BeanName = None):
         raise NotImplementedError()
 
     def invoke_connect_session(self, session_key: SessionKey):
         self.invoke_function(LambdaFunction.Web, parameters=session_key.to_key_dict())
 
-    def invoke_live_agent_poller(self, delay_seconds: int = None):
+    def invoke_live_agent_poller(self):
         self.invoke_function(
             LambdaFunction.LiveAgentPoller,
-            parameters={},
-            delay_seconds=delay_seconds
+            parameters={}
         )
 
     def invoke_notification_poller(self, session_key: SessionKey):

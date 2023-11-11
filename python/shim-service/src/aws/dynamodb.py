@@ -710,7 +710,7 @@ class DynamoDb:
         expression_atts = {':keyval': {att_name: att_value}}
         if range_key_qualifier is not None:
             stmt += f" AND {range_key_qualifier.attribute} {range_key_qualifier.operation} :rangeval"
-            expression_atts[':rangeval'] = _to_attribute_value(range_key_qualifier.value)
+            expression_atts[':rangeval'] = _to_attribute_value_dict(range_key_qualifier.value)
 
         props['KeyConditionExpression'] = stmt
 

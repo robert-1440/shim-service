@@ -41,6 +41,12 @@ timeout: 900
 #
 log-retention-days: 30
 
+
+#
+# true means create an SQS queue that will trigger this lambda
+#
+event-queue: true
+
 layers:
   - common-layer
   - gcp-layer

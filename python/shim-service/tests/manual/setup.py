@@ -3,11 +3,12 @@ import os
 from http.client import HTTPConnection
 from queue import Queue
 
+from botomocks.scheduler_mock import MockSchedulerClient
+
 from base_test import setup_ddb
 from bean import beans, BeanName
 from botomocks.dynamodb_mock import MockDynamoDbClient
 from botomocks.lambda_mock import MockLambdaClient
-from botomocks.scheduler_mock import MockSchedulerClient
 from botomocks.sm_mock import MockSecretsManagerClient
 from manual.mock_push_notifications_repo import MockPushNotificationsRepo
 from manual.polling_events import EventListener, PollingEvent

@@ -2,7 +2,7 @@ import json
 from traceback import print_exc
 from typing import Any, Dict
 
-from bean import BeanName, beans
+from bean import BeanName, beans, Bean
 from bean.beans import inject
 from lambda_web_framework import WebRequestProcessor, init_lambda
 from lambda_web_framework.request import LambdaHttpResponse
@@ -48,13 +48,15 @@ def __call_bean(bean_name: str, event: Dict[str, Any]):
         return __SERVER_ERROR_RESPONSE
 
 
-def __check_event(event: dict) -> dict:
+@inject(beans=BeanName.SCHEDULER)
+def __check_event(event: dict, scheduler_bean: Bean) -> dict:
     # Let's see if this came from SQS
     records = event.get('Records')
     if records is not None and len(records) == 1:
         record = records[0]
         if isinstance(record, dict):
             if record.get('eventSource') == 'aws:sqs':
+                scheduler_bean.get_instance().process_sqs_event(record)
                 body = record.get('body')
                 if body is not None:
                     return json.loads(body)

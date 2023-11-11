@@ -1,5 +1,8 @@
+import json
 from typing import Dict
 
+import app
+from bean import BeanName
 from botomocks import BaseMockClient, assert_empty, raise_not_found
 from utils import dict_utils
 
@@ -13,7 +16,7 @@ class Queue:
         group_list = dict_utils.get_or_create(self.groups, group_id, list)
         group_list.append(message)
 
-    def pop_message(self, group_id: str) -> str:
+    def pop_message(self, group_id: str = "") -> str:
         group_list = self.groups[group_id]
         return group_list.pop(0)
 
@@ -30,14 +33,47 @@ class MockSqsClient(BaseMockClient):
     def send_message(self, **kwargs):
         queue_url = kwargs.pop('QueueUrl')
         message_body = kwargs.pop('MessageBody')
-        message_group = kwargs.pop('MessageGroupId')
+        message_group = kwargs.pop('MessageGroupId', "")
+        kwargs.pop('DelaySeconds', None)
 
         assert_empty(kwargs)
-        queue = dict_utils.get_or_create(self.queues, queue_url, lambda: Queue(queue_url))
+        queue: Queue = dict_utils.get_or_create(self.queues, queue_url, lambda: Queue(queue_url))
         if queue is None:
             raise_not_found("SendMessage", "Queue does not exist")
         queue.send_message(message_group, message_body)
         return {}
 
+    def invoke_schedules(self, bean_name: BeanName):
+        for q in self.queues.values():
+            g = q.groups.get("")
+            if g is not None:
+                for message in list(g):
+                    record = json.loads(message)
+                    if bean_name is not None:
+                        if record['bean'] != bean_name.name:
+                            continue
+                    app.handler(record, None)
+                    g.remove(message)
+
+        pass
+
     def create_paginator(self, operation_name: str):
         pass
+
+    def pop_schedule(self, url: str) -> dict:
+        q = self.queues[url]
+        g = q.groups.get("")
+        if g is not None:
+            for message in g:
+                record = json.loads(message)
+                g.remove(message)
+                return record
+
+        raise AssertionError("No messages found for {url}")
+
+    def assert_no_schedules(self, url: str):
+        url = self.queues.get(url)
+        if url is not None:
+            g = url.groups.get("")
+            if g is not None:
+                assert_empty(g)

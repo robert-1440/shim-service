@@ -1,7 +1,7 @@
 import abc
 import random
 from copy import deepcopy
-from typing import List, Optional, Any, Dict, Tuple, Iterable, Callable, Union
+from typing import List, Optional, Any, Dict, Tuple, Iterable, Callable
 
 from aws.dynamodb import DynamoDbValidationException, DynamoDbRow, DynamoDbItem, convert_value, \
     ResourceNotFoundException
@@ -610,9 +610,9 @@ def _to_sort_value(value: Any):
     return str(value)
 
 
-def _to_compare_value(value: Union[Tuple[str, Any], Dict[str, Any]]):
-    if type(value) is tuple:
-        value = {value[0]: value[1]}
+def _to_compare_value(value: Dict[str, Any]):
+    if type(value) is not dict:
+        raise AttributeError(f"{type(value)} is not supported.")
     return convert_value(value)
 
 

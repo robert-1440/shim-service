@@ -6,8 +6,24 @@ from typing import Dict, Any, Optional, Union, Tuple, List, Callable
 
 import app
 import bean
+from botomocks.sqs_mock import MockSqsClient
 
 bean.beans.RESETTABLE = True
+# Protect us from accidentally hitting an actual AWS account
+os.environ['AWS_ACCESS_KEY_ID'] = "invalid"
+os.environ['AWS_SECRET_ACCESS_KEY'] = "invalid"
+os.environ['ERROR_TOPIC_ARN'] = 'error:topic:arn'
+os.environ['SHIM_SERVICE_PUSH_NOTIFIER_ROLE_ARN'] = 'push:role'
+os.environ['INTERNAL_TESTING'] = "true"
+
+SQS_LIVE_AGENT_QUEUE_URL_ENV_NAME = "SQS_SHIMSERVICELIVEAGENTPOLLER_QUEUE_URL"
+SQS_LIVE_AGENT_QUEUE_URL = "https://somewhere.1440.io/live-agent-poller-queue"
+
+os.environ[SQS_LIVE_AGENT_QUEUE_URL_ENV_NAME] = SQS_LIVE_AGENT_QUEUE_URL
+
+SQS_NOTIFICATION_PUBLISHER_ENV_NAME = "SQS_SHIMSERVICENOTIFICATIONPUBLISHER_QUEUE_URL"
+SQS_NOTIFICATION_PUBLISHER_QUEUE_URL = "https://somewhere.1440.io/notification-publisher-queue"
+os.environ[SQS_NOTIFICATION_PUBLISHER_ENV_NAME] = SQS_NOTIFICATION_PUBLISHER_QUEUE_URL
 
 import bean.beans
 from auth import Credentials
@@ -18,7 +34,6 @@ from bean.loaders import sessions_repo
 from better_test_case import BetterTestCase
 from botomocks.dynamodb_mock import MockDynamoDbClient
 from botomocks.lambda_mock import MockLambdaClient
-from botomocks.scheduler_mock import MockSchedulerClient
 from botomocks.sns_mock import MockSnsClient
 from config import Config
 from events import EventType, Event
@@ -43,12 +58,6 @@ from utils import string_utils, loghelper
 from utils.date_utils import get_system_time_in_millis
 from utils.dict_utils import set_if_not_none
 from utils.http_client import create_client, HttpClient
-
-# Protect us from accidentally hitting an actual AWS account
-os.environ['AWS_ACCESS_KEY_ID'] = "invalid"
-os.environ['AWS_SECRET_ACCESS_KEY'] = "invalid"
-os.environ['ERROR_TOPIC_ARN'] = 'error:topic:arn'
-os.environ['SHIM_SERVICE_PUSH_NOTIFIER_ROLE_ARN'] = 'push:role'
 
 app.TESTING = True
 
@@ -194,6 +203,8 @@ def setup_ddb(client: MockDynamoDbClient):
 
 
 class BaseTest(BetterTestCase):
+    disable_notification_check: bool
+    sqs_mock: MockSqsClient
     instance: Instance
     http_session_mock: ExtendedHttpMockSession
     config: Config
@@ -201,7 +212,10 @@ class BaseTest(BetterTestCase):
     http_mock_session_list: Optional[ExtendedHttpMockSession]
     save_class: Any
     lambda_mock: Optional[MockLambdaClient]
-    scheduler_mock: MockSchedulerClient
+
+    def __init__(self, method_name: str = None):
+        super().__init__(method_name)
+        self.disable_notification_check = False
 
     @staticmethod
     def create_http_client(session: ExtendedHttpMockSession = None) -> HttpClient:
@@ -225,8 +239,8 @@ class BaseTest(BetterTestCase):
         secrets.install(self.http_session_mock)
         self.ddb_mock = MockDynamoDbClient()
         self.http_mock_session_list: List[ExtendedHttpMockSession] = []
-        self.scheduler_mock = MockSchedulerClient()
         self.sns_mock = MockSnsClient()
+        self.sqs_mock = MockSqsClient()
 
         install_gcp_cert(self.http_session_mock)
 
@@ -238,8 +252,8 @@ class BaseTest(BetterTestCase):
         beans.override_bean(BeanName.HTTP_CLIENT_BUILDER, lambda: client_builder)
         beans.override_bean(BeanName.HTTP_CLIENT, self.create_http_client(self.http_session_mock))
         beans.override_bean(BeanName.DYNAMODB_CLIENT, self.ddb_mock)
-        beans.override_bean(BeanName.SCHEDULER_CLIENT, self.scheduler_mock)
-        beans.override_bean(BeanName.SNS, self.sns_mock)
+        beans.override_bean(BeanName.SNS_CLIENT, self.sns_mock)
+        beans.override_bean(BeanName.SQS_CLIENT, self.sqs_mock)
 
         setup_ddb(self.ddb_mock)
         self.dynamodb: DynamoDb = beans.get_bean_instance(BeanName.DYNAMODB)
@@ -414,6 +428,10 @@ class BaseTest(BetterTestCase):
         return organization_id
 
     def tearDown(self) -> None:
+        if not self.disable_notification_check:
+            self.sns_mock.assert_no_notifications()
+        else:
+            self.disable_notification_check = True
         beans.reset()
         messaging.reset()
         sessions_repo.INVOKE_CLASS = self.save_class

@@ -40,9 +40,9 @@ class MemoizedSupplier(Supplier):
                     if not self.__value_set:
                         self.__value = self.__getter()
                         self.__value_set = True
-                        del self.__mutex
                         del self.__getter
                         if callback_initializer is not None:
                             callback_initializer()
+                        self.__mutex = None
 
         return self.__value

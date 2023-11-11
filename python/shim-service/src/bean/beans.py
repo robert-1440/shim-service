@@ -94,14 +94,19 @@ class _BeanImpl(Bean):
                     self.__initializer.name = name.name.lower()
 
     def __execute_with_lock(self, caller: Callable):
-        if self.__mutex is None:
+        m = self.__mutex
+        if m is None:
             with _GLOBAL_MUTEX:
                 if self.__mutex is None:
+                    if self.__initialized:
+                        return
                     self.__mutex = RLock()
-        with self.__mutex:
-            caller()
-        if not RESETTABLE:
-            del self.__mutex
+                m = self.__mutex
+        with m:
+            if self.__mutex is not None:
+                caller()
+                if not RESETTABLE:
+                    self.__mutex = None
 
     def _preload(self):
         if self.__lazy:
@@ -200,7 +205,6 @@ __BEANS: Dict[BeanName, _BeanImpl] = {
     BeanName.SESSION_CONNECTOR: _module(),
     BeanName.RESOURCE_LOCK_REPO: _module(),
     BeanName.LIVE_AGENT_PROCESSOR: _module(),
-    BeanName.SCHEDULER_CLIENT: _boto3('scheduler'),
     BeanName.SCHEDULER: _module(),
     BeanName.LIVE_AGENT_MESSAGE_DISPATCHER: _module(),
     BeanName.PENDING_EVENTS_REPO: _module(),
@@ -208,7 +212,7 @@ __BEANS: Dict[BeanName, _BeanImpl] = {
     BeanName.PUSH_NOTIFICATION_MANAGER: _module(),
     BeanName.SQS_PUSH_NOTIFIER: _module(),
     BeanName.WORK_ID_MAP_REPO: _module(),
-    BeanName.SQS: _boto3('sqs')
+    BeanName.SQS_CLIENT: _boto3('sqs')
 }
 
 

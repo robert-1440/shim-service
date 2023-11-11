@@ -5,12 +5,12 @@ from typing import Dict, Any, Optional, List
 
 from bean import InvocableBean
 from config import Config
-from lambda_pkg import LambdaInvoker
 from pending_event import PendingEventType, PendingEvent
 from poll import PollingShutdownException
 from repos.pending_event_repo import PendingEventsRepo
 from repos.resource_lock import ResourceLock, ResourceLockRepo
 from repos.session_contexts import SessionContextsRepo
+from scheduler import Scheduler
 from services.sfdc.live_agent import LiveAgentPollerSettings
 from services.sfdc.live_agent.message_dispatcher import LiveAgentMessageDispatcher
 from services.sfdc.sfdc_session import SfdcSessionAndContext, load_with_context, SfdcSession
@@ -51,15 +51,15 @@ class LiveAgentPollingProcessor(InvocableBean):
     def __init__(self, pending_events_repo: PendingEventsRepo,
                  resource_lock_repo: ResourceLockRepo,
                  contexts_repo: SessionContextsRepo,
-                 invoker: LambdaInvoker,
+                 scheduler: Scheduler,
                  config: Config,
                  dispatcher: LiveAgentMessageDispatcher):
         self.pe_repo = pending_events_repo
         self.resource_lock_repo = resource_lock_repo
         self.contexts_repo = contexts_repo
+        self.scheduler = scheduler
         self.max_sessions = config.sessions_per_live_agent_poll_processor
         self.refresh_seconds = config.live_agent_poll_session_seconds
-        self.invoker = invoker
         self.dispatcher = dispatcher
 
     def __try_lock(self, event: PendingEvent) -> Optional[LockAndEvent]:
@@ -74,7 +74,7 @@ class LiveAgentPollingProcessor(InvocableBean):
         return None
 
     def __invoke_again(self, delay_seconds: int = None):
-        self.invoker.invoke_live_agent_poller(delay_seconds)
+        self.scheduler.schedule_live_agent_poller(delay_seconds)
 
     def __collect_keys(self) -> Optional[List[LockAndEvent]]:
         # Sleep for a bit, so we can get as many as possible

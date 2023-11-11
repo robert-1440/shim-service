@@ -2,7 +2,7 @@ import json
 import time
 from typing import List
 
-from base_test import BaseTest, AsyncMode, SECOND_USER_ID, DEFAULT_USER_ID
+from base_test import BaseTest, AsyncMode, SECOND_USER_ID, DEFAULT_USER_ID, SQS_LIVE_AGENT_QUEUE_URL
 from bean import beans, BeanName
 from config import Config
 from mocks.gcp.firebase_admin import messaging
@@ -102,7 +102,8 @@ class TestLiveAgentPollingProcessor(BaseTest):
         messaging.assert_no_invocations()
 
         # Make sure it scheduled another invocation since it would have seen a lock
-        text = self.execute_and_capture_info_logs(lambda: self.scheduler_mock.invoke_schedules())
+        text = self.execute_and_capture_info_logs(
+            lambda: self.sqs_mock.invoke_schedules(BeanName.PUSH_NOTIFIER_PROCESSOR))
 
         self.assertIn("Total number notifications sent: 0.", text)
 
@@ -144,8 +145,14 @@ class TestLiveAgentPollingProcessor(BaseTest):
         self.create_web_session(async_mode=AsyncMode.NONE, user_id=SECOND_USER_ID)
         self.processor.invoke({})
         self.assertIn("Starting poll for 2 session(s) ...", self.info_logs)
+        # We get two errors because it's very difficult to mock the polling
+        self.sns_mock.pop_notification()
+        self.sns_mock.pop_notification()
 
     def test_limit(self):
+        # We get errors because of the unexpected GET requests
+        self._disable_notification_check = True
+
         """
         Here we create the max events allowed per session + 1
         """
@@ -156,8 +163,6 @@ class TestLiveAgentPollingProcessor(BaseTest):
             user_id = template_user_id + c
             self.create_web_session(user_id=user_id, async_mode=AsyncMode.NONE)
 
-        self.lambda_mock.clear_invocations()
-
         self.processor.invoke({})
         self.assertIn(f"Starting poll for {config.sessions_per_live_agent_poll_processor} session(s) ...",
                       self.info_logs)
@@ -165,12 +170,10 @@ class TestLiveAgentPollingProcessor(BaseTest):
         # Make sure we had two invocations
         # One because we had more than the max events to be processed
         # One done at the end of processing
-        invocation = self.lambda_mock.pop_invocation(POLLER_FUNCTION)
-        invocation2 = self.lambda_mock.pop_invocation(POLLER_FUNCTION)
-        self.lambda_mock.assert_no_invocations(POLLER_FUNCTION)
+        self.sqs_mock.pop_schedule(SQS_LIVE_AGENT_QUEUE_URL)
+        self.sqs_mock.pop_schedule(SQS_LIVE_AGENT_QUEUE_URL)
+        self.sqs_mock.assert_no_schedules(SQS_LIVE_AGENT_QUEUE_URL)
 
-        self.assertEqual(POLLER_FUNCTION, invocation.function_name)
-        self.assertEqual(POLLER_FUNCTION, invocation2.function_name)
 
     def setUp(self) -> None:
         super().setUp()

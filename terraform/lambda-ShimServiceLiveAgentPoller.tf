@@ -32,7 +32,8 @@ data "aws_iam_policy_document" "shim_service_live_agent_poller" {
       "sqs:ReceiveMessage",
       "sqs:DeleteMessage",
       "sqs:GetQueueAttributes",
-      "sqs:SendMessage"
+      "sqs:SendMessage",
+      "sqs:GetQueueUrl"
     ]
   }
 

@@ -1,7 +1,8 @@
 import abc
 from enum import Enum
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
+from bean import BeanName
 from lambda_pkg import LambdaFunction
 from utils import date_utils
 from utils.date_utils import EpochSeconds
@@ -47,34 +48,19 @@ def minutes_in_future_target(minutes: int) -> ScheduleTarget:
 
 
 class Scheduler(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def delete_schedule(self, group_name: str, name: str) -> bool:
-        raise NotImplementedError()
+
+    def schedule_live_agent_poller(self, delay_seconds: Optional[int] = None):
+        self.schedule_lambda(LambdaFunction.LiveAgentPoller, {}, delay_seconds)
 
     @abc.abstractmethod
     def schedule_lambda(self,
-                        schedule_name: str,
-                        schedule_target: ScheduleTarget,
                         function: LambdaFunction,
-                        parameters: Dict[str, Any]) -> bool:
+                        parameters: Dict[str, Any],
+                        seconds_in_future: int = None,
+                        bean_name: BeanName = None,
+                        ):
         raise NotImplementedError()
 
-    def schedule_lambda_minutes(self, schedule_name: str,
-                                minutes_in_future: int,
-                                function: LambdaFunction,
-                                event: Dict[str, Any]) -> bool:
-        """
-        Used to schedule a lamda function invocation.
-
-        :param schedule_name: the name to use for the schedule.
-        :param minutes_in_future: the minutes in the future the invocation should take place.
-        :param function: the lambda function to invoke.
-        :param event: the event to include.
-        :return: True if the schedule was created, False if it existed already.
-        """
-        return self.schedule_lambda(
-            schedule_name,
-            minutes_in_future_target(minutes_in_future),
-            function,
-            event
-        )
+    @abc.abstractmethod
+    def process_sqs_event(self, record: dict):
+        raise NotImplementedError()

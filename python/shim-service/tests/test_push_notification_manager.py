@@ -18,7 +18,7 @@ class TestSuite(BaseTest):
 
     def setUp(self) -> None:
         self.sqs_mock = MockSqsClient()
-        beans.override_bean(BeanName.SQS, self.sqs_mock)
+        beans.override_bean(BeanName.SQS_CLIENT, self.sqs_mock)
         super().setUp()
 
     def test_sqs(self):
