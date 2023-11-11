@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:aws_client/connect_cases_2022_10_03.dart';
+
 import '../cli/util.dart';
 
 bool exitMode = true;
@@ -148,6 +150,14 @@ class IniConfig {
 
   Section? operator [](String key) {
     return _sectionMap[key.toLowerCase()];
+  }
+
+  Section getSection(String sectionName) {
+    var section = this[sectionName];
+    if (section == null) {
+      throw _fatal("Unable to find section '$sectionName'.");
+    }
+    return section;
   }
 
   Section getOrAddSection(String sectionName) {

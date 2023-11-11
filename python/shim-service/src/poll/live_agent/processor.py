@@ -73,8 +73,8 @@ class LiveAgentPollingProcessor(InvocableBean):
             return LockAndEvent(event, lock)
         return None
 
-    def __invoke_again(self):
-        self.invoker.invoke_live_agent_poller()
+    def __invoke_again(self, delay_seconds: int = None):
+        self.invoker.invoke_live_agent_poller(delay_seconds)
 
     def __collect_keys(self) -> Optional[List[LockAndEvent]]:
         # Sleep for a bit, so we can get as many as possible
@@ -124,7 +124,7 @@ class LiveAgentPollingProcessor(InvocableBean):
         try:
             self.__poll(sc.session, sc.context)
         except BaseException as ex:
-            logger.error(f"Failed during poll: {exception_utils.dump_ex(ex)}")
+            logger.severe(f"Failed during poll: {exception_utils.dump_ex(ex)}")
             message = exception_utils.get_exception_message(ex)
             self.contexts_repo.set_failed(sc.context, message)
             key.failed = True
@@ -135,7 +135,8 @@ class LiveAgentPollingProcessor(InvocableBean):
                 try:
                     self.__process(key)
                 except BaseException as ex:
-                    logger.error(f"Error while processing {key.event}: {exception_utils.dump_ex(ex)}")
+                    key.failed = True
+                    logger.severe(f"Error while processing {key.event}: {exception_utils.dump_ex(ex)}")
 
         return threading_utils.start_thread(runner, name=f"{key.event}")
 
@@ -166,5 +167,5 @@ class LiveAgentPollingProcessor(InvocableBean):
                 self.__release(keys)
                 self.__touch(keys)
             finally:
-                self.__invoke_again()
+                self.__invoke_again(delay_seconds=5)
                 logger.info(f"Stopping, elapsed time = {format_elapsed_time_seconds(start_time)}.")

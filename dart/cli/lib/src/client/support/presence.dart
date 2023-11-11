@@ -37,6 +37,24 @@ class PresenceStatus extends Mappable {
     };
   }
 
+  bool get isOnline => statusOption == StatusOption.online;
+
+  bool get isBusy => statusOption == StatusOption.busy;
+
+  bool get isOffline => statusOption == StatusOption.offline;
+
+  @override
+  String toString() {
+    return "$label = ${statusOption.name} (id=$id)";
+  }
+
+  static List<PresenceStatus> listFromNode(List<dynamic>? list) {
+    if (list == null) {
+      return [];
+    }
+    return list.map((e) => fromMap(e)).toList();
+  }
+
   static PresenceStatus fromMap(Map<String, dynamic> map) {
     return PresenceStatus(map['id'], map['label'], StatusOption.valueOf(map['statusOption']));
   }

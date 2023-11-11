@@ -4,7 +4,7 @@
 
 type: lambda-function
 
-name: ShimNotificationPublisher
+name: ShimServiceNotificationPublisher
 
 description: "Shim Service Notification Publisher"
 
@@ -76,6 +76,7 @@ permissions:
         - PutItem
         - UpdateItem
         - DeleteItem
+        - Query
 
     - table: ShimServiceVirtualTable
       actions:

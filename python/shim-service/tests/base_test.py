@@ -5,6 +5,10 @@ from io import StringIO
 from typing import Dict, Any, Optional, Union, Tuple, List, Callable
 
 import app
+import bean
+
+bean.beans.RESETTABLE = True
+
 import bean.beans
 from auth import Credentials
 from aws.dynamodb import DynamoDb
@@ -28,7 +32,8 @@ from mocks.session_repo_mock import MockAwsSessionsRepo
 from repos.events import EventsRepo
 from services.sfdc import create_authenticator
 from services.sfdc.sfdc_connection import create_new_connection, SfdcConnection
-from session import SessionToken, Session, SessionKey
+from session import Session, SessionKey
+from session.token import SessionToken
 from support import secrets
 from support.credentials import TestCredentials
 from support.live_agent_helper import prepare_live_agent
@@ -46,7 +51,6 @@ os.environ['ERROR_TOPIC_ARN'] = 'error:topic:arn'
 os.environ['SHIM_SERVICE_PUSH_NOTIFIER_ROLE_ARN'] = 'push:role'
 
 app.TESTING = True
-bean.beans.RESETTABLE = True
 
 ROOT = "/shim-service/"
 

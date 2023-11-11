@@ -664,3 +664,7 @@ int parseInt(String value, String parameter, {int? minValue}) {
   }
   return v;
 }
+
+String toPrettyJson(Map<String, dynamic> map) {
+  return JsonEncoder.withIndent('  ').convert(map);
+}

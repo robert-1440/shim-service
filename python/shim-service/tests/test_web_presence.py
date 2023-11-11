@@ -513,7 +513,7 @@ class PresenceTests(BaseTest):
             'x-1440-session-token': session_token
         }
         self.post(
-            "presence-statuses",
+            "presence/actions/set-status",
             headers=headers,
             body={'id': status_id},
             expected_status_code=expected_status_code,

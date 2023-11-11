@@ -19,7 +19,8 @@ from repos.sessions_repo import SessionsRepo, UserSessionExistsException, Create
 from repos.user_sessions import UserSessionsRepo
 from services.sfdc.live_agent import LiveAgentWebSettings, PresenceStatus
 from services.sfdc.sfdc_session import create_sfdc_session_from_session, SfdcSession, load_with_context
-from session import SessionToken, Session, SessionStatus, verify_session_status, ContextType, SessionContext
+from session import Session, SessionStatus, verify_session_status, ContextType, SessionContext
+from session.token import SessionToken
 from utils import loghelper, exception_utils
 
 logger = loghelper.get_logger(__name__)

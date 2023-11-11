@@ -11,7 +11,7 @@ tags:
   - presence
 
 request:
-  path: /presence-statuses
+  path: /presence/actions/set-status
   method: POST
 
   headers:

@@ -10,9 +10,10 @@ environment:
 dependencies:
   # path: ^1.8.0
   http: ^1.1.0
-  uuid: ^4.0.0
+  uuid: ^3.0.3
   crypto: ^3.0.3
   xml: ^6.4.2
+  aws_client: ^0.4.1
 
 dev_dependencies:
   lints: ^2.0.0

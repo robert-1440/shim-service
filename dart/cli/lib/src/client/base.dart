@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cli/src/cli/util.dart';
 import 'package:cli/src/client/http.dart';
 import 'package:cli/src/client/profile.dart';
+import 'package:cli/src/salesforce/auth.dart' as auth;
 
 String? _toStringBody(dynamic value) {
   if (value != null) {
@@ -97,8 +98,8 @@ abstract class BaseClient {
   }
 
   Future<HttpResponse> _exchangeBody(Method method, String uri, MediaType acceptType,
-      {MediaType? contentType, String? body}) async {
-    var b = newRequestBuilder(uri, method).accept(acceptType);
+      {MediaType? contentType, String? body, Map<String, String>? headers}) async {
+    var b = newRequestBuilder(uri, method).accept(acceptType).headers(headers);
     if (contentType != null) {
       assert(body != null && body.isNotEmpty);
       b.contentType(contentType).body(body!);
@@ -110,26 +111,12 @@ abstract class BaseClient {
   }
 
   Future<HttpResponse> send(RequestBuilder b, [bool notFoundOk = false]) async {
-    try {
-      return await b.send();
-    } on HttpClientException catch (ex) {
-      if (!notFoundOk || ex.statusCode != 404) {
-        try {
-          Map<String, dynamic> record = jsonDecode(ex.body);
-          var errorMessage = record['errorMessage'];
-          if (errorMessage != null) {
-            fatalError(errorMessage);
-          }
-        } catch (e) {
-          // OK
-        }
-      }
-      rethrow;
-    }
+    return await b.send();
   }
 
-  Future<HttpResponse> post(String uri, MediaType acceptType, {MediaType? contentType, String? body}) async {
-    return _exchangeBody(Method.POST, uri, acceptType, contentType: contentType, body: body);
+  Future<HttpResponse> post(String uri, MediaType acceptType,
+      {MediaType? contentType, String? body, Map<String, String>? headers}) async {
+    return _exchangeBody(Method.POST, uri, acceptType, contentType: contentType, body: body, headers: headers);
   }
 
   Future<HttpResponse> patch(String uri, MediaType acceptType, {MediaType? contentType, String? body}) async {
@@ -139,7 +126,6 @@ abstract class BaseClient {
   Future<HttpResponse> put(String uri, MediaType acceptType, {MediaType? contentType, String? body}) async {
     return _exchangeBody(Method.PUT, uri, acceptType, contentType: contentType, body: body);
   }
-
 }
 
 abstract class CredsBasedClient extends BaseClient {
@@ -148,5 +134,9 @@ abstract class CredsBasedClient extends BaseClient {
   @override
   void handleAuth(RequestBuilder b) {
     _profile.configAuth(b);
+  }
+
+  Future<auth.AuthInfo> getAuthInfo() async {
+    return await auth.getAuthInfo(_profile.env);
   }
 }

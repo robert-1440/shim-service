@@ -5,10 +5,21 @@ import 'package:cli/src/cli/processor.dart';
 import 'package:cli/src/client/_init.dart';
 import 'package:cli/src/client/profile.dart';
 import 'package:cli/src/client/support/channel.dart';
+import 'package:cli/src/client/support/exceptions.dart';
+import 'package:cli/src/client/support/presence.dart';
 import 'package:cli/src/client/support/session.dart';
+import 'package:cli/src/poll.dart';
 import 'package:cli/src/state.dart';
 
-final _commandLoaders = [() => Command("start", "Start a session.", "", _startSession)];
+final _commandLoaders = [
+  () => Command("start", "Start a session.", "", _startSession),
+  () => Command("end", "End current session.", "", _endSession),
+  () => Command("ka", "Keep-alive.", "", _keepSessionAlive),
+  () => Command("state", "Show current state.", "", _showState),
+  () => Command("login", "Log in.", "", _login),
+  () => Command("logout", "Log out.", "", _logout),
+  () => Command("busy", "Set status to busy.", "", _busy),
+];
 
 class MainModule extends Module {
   @override
@@ -40,7 +51,7 @@ Future<void> _startSession(CommandLineProcessor processor) async {
       authInfo.sessionId,
       ChannelPlatformType.values //
       );
-  var state = loadSessionState(getProfile(processor));
+  var state = loadFromProcessor(processor);
   try {
     var resp = await client.startSession(request);
     state = state.setSessionResponse(resp);
@@ -53,4 +64,64 @@ Future<void> _startSession(CommandLineProcessor processor) async {
     print("Session token: ${ex.token}");
     exit(1);
   }
+}
+
+Future<void> _endSession(CommandLineProcessor processor) async {
+  processor.assertNoMore();
+  var state = loadFromProcessor(processor).assertToken();
+
+  var client = getClientManager(processor).getSessionClient();
+  String phrase;
+  try {
+    await client.endSession(state.orgId, state.token);
+    phrase = "ended";
+  } on SessionGoneException {
+    phrase = "was gone, and was cleared.";
+  }
+  state.clearSession();
+  print("Session $phrase.");
+}
+
+Future<void> _keepSessionAlive(CommandLineProcessor processor) async {
+  processor.assertNoMore();
+  var state = await _poll(processor);
+  var client = getClientManager(processor).getSessionClient();
+  var resp = await client.keepSessionAlive(state.orgId, state.token);
+  print("Session kept alive, expire time is now ${resp.expirationTime}.");
+}
+
+Future<void> _showState(CommandLineProcessor processor) async {
+  processor.assertNoMore();
+  var state = await _poll(processor);
+
+  print(state.describe());
+}
+
+Future<SessionState> _poll(CommandLineProcessor processor, [SessionState? state]) async {
+  state ??= loadFromProcessor(processor);
+  var newState = await poll(getProfile(processor), state);
+  state.assertToken();
+  return newState;
+}
+
+Future<void> _setPresenceStatus(CommandLineProcessor processor, StatusOption statusOption) async {
+  processor.assertNoMore();
+  var state = await _poll(processor);
+  var client = getClientManager(processor).getPresenceClient();
+  await client.setPresenceStatus(state.token, state.getPresenceStatus(statusOption).id);
+}
+
+Future<void> _login(CommandLineProcessor processor) async {
+  await _setPresenceStatus(processor, StatusOption.online);
+  print("Logged in.");
+}
+
+Future<void> _logout(CommandLineProcessor processor) async {
+  await _setPresenceStatus(processor, StatusOption.offline);
+  print("Logged out.");
+}
+
+Future<void> _busy(CommandLineProcessor processor) async {
+  await _setPresenceStatus(processor, StatusOption.busy);
+  print("Status set to busy.");
 }

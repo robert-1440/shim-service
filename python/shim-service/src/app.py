@@ -29,20 +29,40 @@ def __dispatch_web_request(event: dict, web_router: WebRequestProcessor):
     except LambdaHttpException as ex:
         logger.error(f"Error: {ex}")
         resp_dict = ex.to_response()
-    except Exception as ex:
+    except BaseException as ex:
         if TESTING:
             raise ex
+        logger.severe("Unexpected exception", ex)
         print_exc()
         resp_dict = __SERVER_ERROR_RESPONSE
     return resp_dict
 
 
 def __call_bean(bean_name: str, event: Dict[str, Any]):
-    beans.invoke_bean_by_name(bean_name, event.get('parameters'))
-    return {'StatusCode': 200}
+    try:
+        beans.invoke_bean_by_name(bean_name, event.get('parameters'))
+        return {'StatusCode': 200}
+    except BaseException as ex:
+        logger.severe("Unexpected exception", ex)
+        print_exc()
+        return __SERVER_ERROR_RESPONSE
+
+
+def __check_event(event: dict) -> dict:
+    # Let's see if this came from SQS
+    records = event.get('Records')
+    if records is not None and len(records) == 1:
+        record = records[0]
+        if isinstance(record, dict):
+            if record.get('eventSource') == 'aws:sqs':
+                body = record.get('body')
+                if body is not None:
+                    return json.loads(body)
+    return event
 
 
 def handler(event: dict, context: Any):
+    event = __check_event(event)
     bean_name = event.get('bean')
     if bean_name is not None:
         return __call_bean(bean_name, event)

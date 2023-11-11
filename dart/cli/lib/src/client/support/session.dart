@@ -3,11 +3,6 @@ import 'package:cli/src/client/_init.dart';
 import 'package:cli/src/client/support/channel.dart';
 import 'package:cli/src/client/support/presence.dart';
 
-class UserAlreadyLoggedInException extends ShimException {
-  final String token;
-
-  UserAlreadyLoggedInException(this.token) : super("User already logged in");
-}
 
 class StartSessionRequest extends Mappable {
   final String orgId;
@@ -43,17 +38,19 @@ class StartSessionRequest extends Mappable {
 class StartSessionResponse {
   final bool newSession;
 
+  final bool pending;
+
   final String sessionToken;
 
   final DateTime expirationTime;
 
   final List<PresenceStatus> presenceStatuses;
 
-  StartSessionResponse(this.newSession, this.sessionToken, this.expirationTime, this.presenceStatuses);
+  StartSessionResponse(this.newSession,this.pending, this.sessionToken, this.expirationTime, this.presenceStatuses);
 
-  static StartSessionResponse fromMap(bool newSession, Map<String, dynamic> map) {
-    return StartSessionResponse(newSession, map['sessionToken'], DateTime.fromMillisecondsSinceEpoch(map['expirationTime'] * 1000),
-        map['presenceStatuses'].map((status) => PresenceStatus.fromMap(status)).toList());
+  static StartSessionResponse fromMap(bool newSession, bool pending, Map<String, dynamic> map) {
+    return StartSessionResponse(newSession, pending, map['sessionToken'], DateTime.fromMillisecondsSinceEpoch(map['expirationTime'] * 1000),
+        PresenceStatus.listFromNode(map['presenceStatuses']));
   }
 }
 

@@ -1,6 +1,7 @@
 import "dart:convert";
 import "dart:io";
 
+import "package:cli/src/cli/util.dart";
 import 'package:crypto/crypto.dart';
 import "_init.dart";
 import "http.dart";
@@ -64,11 +65,16 @@ class Profile {
 
   final String _url;
 
+  final String orgId;
+
   final Credentials _credentials;
 
   final String env;
 
-  Profile.$(this.name, String url, this._credentials, this.env) : _url = joinPaths(url, "shim-service/");
+  final String? _awsProfile;
+
+  Profile.$(this.name, String url, this.orgId, this._credentials, this.env, this._awsProfile)
+      : _url = joinPaths(url, "shim-service/");
 
   RequestBuilder newRequestBuilder(String uri, Method method) {
     return RequestBuilder(joinPaths(_url, uri), method);
@@ -76,6 +82,13 @@ class Profile {
 
   void configAuth(RequestBuilder b) {
     _credentials.auth(b);
+  }
+
+  String get awsProfile {
+    if (_awsProfile == null) {
+      fatalError("shim.aws_profile is not set in profile $name");
+    }
+    return _awsProfile!;
   }
 }
 
@@ -92,8 +105,10 @@ Profile loadProfile(String profileName) {
   var name = section.getRequired("shim.name");
   var password = section.getRequired("shim.password");
   var env = section.getRequired("shim.env");
+  var orgId = section.getRequired("shim.orgid");
+  var awsProfile = section['shim.aws_profile'];
 
-  return Profile.$(profileName.toLowerCase(), url, Credentials(name, clientId, password), env);
+  return Profile.$(profileName.toLowerCase(), url, orgId, Credentials(name, clientId, password), env, awsProfile);
 }
 
 IniFile loadProfiles() {

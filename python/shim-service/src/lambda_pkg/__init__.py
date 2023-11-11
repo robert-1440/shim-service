@@ -52,7 +52,7 @@ class LambdaFunction(ReverseLookupEnum):
     )
 
     PushNotifier = LambdaFunctionParameters(
-        "ShimPushNotifier",
+        "ShimServiceNotificationPublisher",
         "SHIM_SERVICE_PUSH_NOTIFIER",
         BeanName.PUSH_NOTIFIER_PROCESSOR,
         "ShimPushNotifier"
@@ -73,16 +73,18 @@ class LambdaInvoker(metaclass=abc.ABCMeta):
     def invoke_function(self,
                         function: LambdaFunction,
                         parameters: Dict[str, Any],
-                        bean_name: BeanName = None):
+                        bean_name: BeanName = None,
+                        delay_seconds: int = None):
         raise NotImplementedError()
 
     def invoke_connect_session(self, session_key: SessionKey):
         self.invoke_function(LambdaFunction.Web, parameters=session_key.to_key_dict())
 
-    def invoke_live_agent_poller(self):
+    def invoke_live_agent_poller(self, delay_seconds: int = None):
         self.invoke_function(
             LambdaFunction.LiveAgentPoller,
-            parameters={}
+            parameters={},
+            delay_seconds=delay_seconds
         )
 
     def invoke_notification_poller(self, session_key: SessionKey):

@@ -11,6 +11,7 @@ import boto3
 from bean import BeanName, Bean, BeanInitializationException, profiles, InvocableBean, BeanType
 from bean.profiles import get_active_profiles
 from config import Config
+from utils.supplier import MemoizedSupplier
 
 BeanValue = Union[Callable, Any]
 
@@ -85,7 +86,6 @@ class _BeanImpl(Bean):
                 env_var = params.get('var')
                 if env_var is not None:
                     if len(os.environ.get(env_var, '')) == 0:
-                        print(f"Disabling bean {name.name} because '{env_var}' is not set.")
                         self.__disabled = True
 
         if not self.__disabled:
@@ -98,12 +98,10 @@ class _BeanImpl(Bean):
             with _GLOBAL_MUTEX:
                 if self.__mutex is None:
                     self.__mutex = RLock()
-        try:
-            with self.__mutex:
-                caller()
-        finally:
-            if not RESETTABLE:
-                del self.__mutex
+        with self.__mutex:
+            caller()
+        if not RESETTABLE:
+            del self.__mutex
 
     def _preload(self):
         if self.__lazy:
@@ -303,31 +301,34 @@ def inject(bean_instances: Union[BeanName, Collection[BeanName]] = None,
     if beans is not None and len(beans) == 0:
         beans = None
 
-    bean_args = None
+    def load_bean_args():
+        bean_args = []
+        if bean_instances is not None:
+            for bv in bean_instances:
+                bean_args.append(get_bean_instance(bv))
+        if bean_types is not None:
+            for bv in bean_types:
+                flags = _get_bean_type_flags(_to_collection(bv))
+                bean_list = map(lambda b: b.get_instance(),
+                                filter(lambda b: b.has_bean_type_flags(flags), __BEANS.values()))
+                bean_args.append(tuple(bean_list))
+        if beans is not None:
+            for bv in beans:
+                bean_args.append(get_bean(bv))
+        return bean_args
 
-    def load_bean_args(args_copy: list):
-        nonlocal bean_args
-        if bean_args is None or RESETTABLE:
-            bean_args = []
-            if bean_instances is not None:
-                for bv in bean_instances:
-                    bean_args.append(get_bean_instance(bv))
-            if bean_types is not None:
-                for bv in bean_types:
-                    flags = _get_bean_type_flags(_to_collection(bv))
-                    bean_list = map(lambda b: b.get_instance(),
-                                    filter(lambda b: b.has_bean_type_flags(flags), __BEANS.values()))
-                    bean_args.append(tuple(bean_list))
-            if beans is not None:
-                for bv in beans:
-                    bean_args.append(get_bean(bv))
-        args_copy.extend(bean_args)
+    if RESETTABLE:
+        loader = load_bean_args
+    else:
+        supplier = MemoizedSupplier(load_bean_args)
+        loader = supplier.get
 
     def decorator(wrapped_function):
         @functools.wraps(wrapped_function)
         def _inner_wrapper(*args):
             args_copy = list(args)
-            load_bean_args(args_copy)
+            args_to_copy = loader()
+            args_copy.extend(args_to_copy)
             return wrapped_function(*args_copy)
 
         return _inner_wrapper

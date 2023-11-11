@@ -10,8 +10,9 @@ from lambda_web_framework.web_exceptions import LambdaHttpException, \
 from lambda_web_framework.web_router import Method
 from platform_channels import assert_valid_platform_channel
 from repos.sessions_repo import UserSessionExistsException
-from session import manager, SessionToken, Session
+from session import manager, Session
 from session.manager import CreateResult
+from session.token import SessionToken
 from utils import validation_utils
 from utils.date_utils import get_system_time_in_millis
 from utils.string_utils import uuid

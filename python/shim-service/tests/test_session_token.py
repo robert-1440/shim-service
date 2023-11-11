@@ -2,7 +2,7 @@ from auth import Credentials
 from better_test_case import BetterTestCase
 from cs_client import ConfigServiceCredentials
 from lambda_web_framework.web_exceptions import NotAuthorizedException
-from session import SessionToken
+from session.token import SessionToken
 
 
 class SessionTokenTest(BetterTestCase):

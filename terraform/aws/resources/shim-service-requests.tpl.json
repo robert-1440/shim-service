@@ -19,7 +19,7 @@
   }
  ],
  "paths": {
-  "/presence-statuses": {
+  "/presence/actions/set-status": {
    "post": {
     "tags": [
      "presence"

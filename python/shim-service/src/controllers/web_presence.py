@@ -8,7 +8,7 @@ from services.sfdc.live_agent.omnichannel_api import OmniChannelApi
 from utils import collection_utils, validation_utils
 from utils.validation_utils import get_work_id, get_work_target_id
 
-presence = Resource(ROOT, "")
+presence = Resource(ROOT, "presence/actions")
 
 
 class SetPresenceBody:
@@ -20,7 +20,7 @@ class SetPresenceBody:
         self.status_id: str = status_id
 
 
-@presence.route("presence-statuses",
+@presence.route("set-status",
                 response_codes=(204,),
                 api_required=True,
                 no_instance=True,
@@ -44,7 +44,7 @@ class AcceptWorkBody:
         assert_empty(record)
 
 
-@presence.route("presence/actions/accept-work",
+@presence.route("accept-work",
                 response_codes=(204,),
                 api_required=True,
                 no_instance=True,
@@ -72,7 +72,7 @@ class DeclineWorkBody:
         assert_empty(record)
 
 
-@presence.route("presence/actions/decline-work",
+@presence.route("decline-work",
                 response_codes=(204,),
                 api_required=True,
                 no_instance=True,
@@ -90,7 +90,7 @@ class CloseWorkBody:
         assert_empty(record)
 
 
-@presence.route("presence/actions/close-work",
+@presence.route("close-work",
                 response_codes=(204,),
                 api_required=True,
                 no_instance=True,

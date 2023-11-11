@@ -11,6 +11,10 @@ File getHomeFile(String file) {
   return File("${f40ParentFolder.path}${Platform.pathSeparator}$file");
 }
 
+File getRootHomeFile(String file) {
+  return File("${getHomePath()}${Platform.pathSeparator}$file");
+}
+
 abstract class DataFormatter {
   void format(List<Map<String, dynamic>> rows, StringSink sink);
 
@@ -19,11 +23,6 @@ abstract class DataFormatter {
   bool isDefault() => false;
 }
 
-class ShimException {
-  final String message;
-
-  ShimException(this.message);
-}
 
 final _clientManagerKey = ".cm";
 

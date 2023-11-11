@@ -70,6 +70,10 @@ class HttpConflictException extends HttpClientException {
   HttpConflictException(http.Response resp) : super(resp);
 }
 
+class HttpGoneException extends HttpClientException {
+  HttpGoneException(http.Response resp) : super(resp);
+}
+
 enum MediaType {
   X_WWW_FORM_URLENCODED("application/x-www-form-urlencoded"),
   JSON("application/json"),
@@ -118,8 +122,12 @@ http.Response _checkResponse(http.Response resp) {
         switch (statusCode) {
           case 404:
             throw HttpResourceNotFoundException(resp);
+
           case 409:
             throw HttpConflictException(resp);
+
+          case 410:
+            throw HttpGoneException(resp);
         }
         throw HttpClientException(resp);
 
@@ -306,6 +314,13 @@ class RequestBuilder {
 
   RequestBuilder header(String name, String value) {
     _headers[name] = value;
+    return this;
+  }
+
+  RequestBuilder headers(Map<String, String>? headers) {
+    if (headers != null) {
+      _headers.addAll(headers);
+    }
     return this;
   }
 

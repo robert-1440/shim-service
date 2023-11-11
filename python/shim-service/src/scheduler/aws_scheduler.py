@@ -87,7 +87,7 @@ class AwsScheduler(Scheduler):
         return True
 
     def get_arn(self, function: LambdaFunction):
-        resp = self.lambda_client.get_function(FunctionName=function.value)
+        resp = self.lambda_client.get_function(FunctionName=function.value.name)
         return resp['Configuration']['FunctionArn']
 
     def schedule_lambda(self,

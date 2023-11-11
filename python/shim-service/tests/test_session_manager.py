@@ -20,8 +20,9 @@ from repos.session_contexts import SessionContextsRepo
 from repos.sessions_repo import UserSessionExistsException
 from services.sfdc.live_agent import LiveAgentWebSettings, LiveAgentPollerSettings
 from services.sfdc.sfdc_session import load_with_context
-from session import manager, SessionToken, Session, SessionStatus, ContextType
+from session import manager, Session, SessionStatus, ContextType
 from session.exceptions import SessionNotActiveException
+from session.token import SessionToken
 from support import verification_utils
 from support.credentials import TestCredentials
 from utils import collection_utils

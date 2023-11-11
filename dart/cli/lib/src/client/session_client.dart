@@ -2,14 +2,11 @@ import 'dart:convert';
 
 import 'package:cli/src/client/base.dart';
 import 'package:cli/src/client/http.dart';
-import 'package:cli/src/client/profile.dart';
+import 'package:cli/src/client/support/exceptions.dart';
 import 'package:cli/src/client/support/session.dart';
-import '../salesforce/auth.dart' as auth;
 
 class SessionClient extends CredsBasedClient {
-  final Profile _profile;
-
-  SessionClient(super.profile) : _profile = profile;
+  SessionClient(super.profile);
 
   @override
   String baseUri() {
@@ -27,7 +24,7 @@ class SessionClient extends CredsBasedClient {
   Future<StartSessionResponse> startSession(StartSessionRequest request) async {
     try {
       var resp = await put("${request.orgId}/sessions", MediaType.ALL, contentType: MediaType.JSON, body: request.toJson());
-      return StartSessionResponse.fromMap(resp.statusCode == 201, jsonDecode(resp.body!));
+      return StartSessionResponse.fromMap(resp.statusCode == 201, resp.statusCode == 202, jsonDecode(resp.body!));
     } on HttpConflictException catch (ex) {
       throw UserAlreadyLoggedInException(ex.headers['x-1440-session-token']!);
     }
@@ -51,10 +48,11 @@ class SessionClient extends CredsBasedClient {
   /// [token] - Session token.
   ///
   Future<void> endSession(String orgId, String token) async {
-    await delete("$orgId/sessions/$token");
+    try {
+      await delete("$orgId/sessions/$token");
+    } on HttpGoneException {
+      throw SessionGoneException();
+    }
   }
 
-  Future<auth.AuthInfo> getAuthInfo() async {
-    return await auth.getAuthInfo(_profile.env);
-  }
 }

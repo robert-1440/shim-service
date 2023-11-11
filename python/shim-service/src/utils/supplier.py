@@ -6,7 +6,7 @@ T = TypeVar("T")
 
 
 class Supplier(Generic[T], metaclass=abc.ABCMeta):
-    def get(self) -> T:
+    def get(self, callback_initializer: Callable = None) -> T:
         """
         The value of the supplier.
         """
@@ -32,7 +32,7 @@ class MemoizedSupplier(Supplier):
         self.__value: Optional[T] = None
         self.__getter = getter
 
-    def get(self) -> T:
+    def get(self, callback_initializer: Callable = None) -> T:
         if not self.__value_set:
             m = self.__mutex
             if m is not None:
@@ -42,5 +42,7 @@ class MemoizedSupplier(Supplier):
                         self.__value_set = True
                         del self.__mutex
                         del self.__getter
+                        if callback_initializer is not None:
+                            callback_initializer()
 
         return self.__value

@@ -1,9 +1,11 @@
 import json
+import os
 from typing import Dict, Any, Optional
 
 from botocore.response import StreamingBody
 
-from bean import BeanName
+from aws import AwsClient
+from bean import BeanName, BeanSupplier
 from lambda_pkg import LambdaInvoker, LambdaFunction
 
 
@@ -35,13 +37,31 @@ class InvocationException(Exception):
 
 class AwsLambdaInvoker(LambdaInvoker):
 
-    def __init__(self, client: Any):
+    def __init__(self, client: AwsClient, sqs_client_supplier: BeanSupplier[AwsClient]):
         self.client = client
+        self.sqs_client_supplier = sqs_client_supplier
+        self.our_function_name = os.environ.get('AWS_LAMBDA_FUNCTION_NAME')
+        self.__queue_url: Optional[str] = None
+
+    def __sqs_initialized(self):
+        name = f"SQS_{self.our_function_name.upper()}_QUEUE_URL"
+        self.__queue_url = os.environ[name]
+
+    def __submit_to_queue(self, message: str, delay_seconds: Optional[int]):
+        client = self.sqs_client_supplier.get(self.__sqs_initialized)
+        params = {
+            'QueueUrl': self.__queue_url,
+            'MessageBody': message
+        }
+        if delay_seconds is not None:
+            params['DelaySeconds'] = delay_seconds
+        client.send_message(**params)
 
     def invoke_function(self,
                         function: LambdaFunction,
                         parameters: Dict[str, Any],
-                        bean_name: BeanName = None):
+                        bean_name: BeanName = None,
+                        delay_seconds: int = None):
         if bean_name is None:
             bean_name = function.value.default_bean_name
         record = {
@@ -49,12 +69,15 @@ class AwsLambdaInvoker(LambdaInvoker):
             'parameters': parameters
         }
 
-        payload = json.dumps(record).encode('utf-8')
-        resp = self.client.invoke(
-            FunctionName=function.value.name,
-            InvocationType="Event",
-            Payload=payload
-        )
-        r = InvokeResponse(resp)
-        if r.status_code // 100 != 2:
-            raise InvocationException(r)
+        payload = json.dumps(record)
+        if self.our_function_name is not None and self.our_function_name == function.value.name:
+            self.__submit_to_queue(payload, delay_seconds)
+        else:
+            resp = self.client.invoke(
+                FunctionName=function.value.name,
+                InvocationType="Event",
+                Payload=payload.encode('utf-8')
+            )
+            r = InvokeResponse(resp)
+            if r.status_code // 100 != 2:
+                raise InvocationException(r)

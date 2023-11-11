@@ -16,5 +16,5 @@ env-var-name: SHIM_SERVICE_PUSH_NOTIFIER
 #
 # Indicate the lambda to be invoked. Used for creating the appropriate role.
 #
-lambda: ShimNotificationPublisher
+lambda: ShimServiceNotificationPublisher
 

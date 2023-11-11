@@ -14,7 +14,7 @@ from utils import loghelper
 
 POLLER_FUNCTION = "ShimServiceLiveAgentPoller"
 
-PUSH_NOTIFIER_FUNCTION = "ShimPushNotifier"
+PUSH_NOTIFIER_FUNCTION = "ShimServiceNotificationPublisher"
 
 _MESSAGE = {
     'type': 'AsyncResult',

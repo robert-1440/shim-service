@@ -4,7 +4,7 @@
 
 type: lambda-function
 
-name: ShimLiveAgentPoller
+name: ShimServiceLiveAgentPoller
 
 description: "Shim Service Live Agent Poller"
 
@@ -45,6 +45,11 @@ layers:
   - common-layer
   - requests-layer
 
+#
+# true means create an SQS queue that will trigger this lambda
+#
+event-queue: true
+
 permissions:
 
   topics:
@@ -53,12 +58,13 @@ permissions:
         - "sns:Publish"
 
   lambdas:
-    - self
+    - ShimServiceNotificationPublisher
 
   dynamodb-tables:
     - table: ShimServiceSession
       actions:
         - GetItem
+        - BatchGetItem
         - PutItem
         - UpdateItem
         - DeleteItem
@@ -71,6 +77,7 @@ permissions:
         - PutItem
         - UpdateItem
         - DeleteItem
+        - Query
 
     - table: ShimServiceVirtualTable
       actions:

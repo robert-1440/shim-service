@@ -14,12 +14,7 @@ class MyApp extends App {
   }
 
   String determineProfile() {
-    var p = Platform.environment["SHIM_TEST_PROFILE"];
-    if (p != null) {
-      stderr.writeln("Test profile is $p.");
-      return p;
-    }
-    return "default";
+    return Platform.environment["SHIM_TEST_PROFILE"] ?? "default";
   }
 
   @override

@@ -47,11 +47,16 @@ layers:
   - crypto-layer
   - requests-layer
 
+
+#
+# true means create an SQS queue that will trigger this lambda
+#
+event-queue: true
+
 permissions:
 
   lambdas:
-    - self
-    - ShimLiveAgentPoller
+    - ShimServiceLiveAgentPoller
 
   secrets:
     - name: shim-service/*

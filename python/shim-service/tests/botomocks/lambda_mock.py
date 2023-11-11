@@ -130,6 +130,7 @@ class MockLambdaClient:
         params = dict(kwargs)
         name = params.pop("FunctionName")
         assert_empty(params)
+        assert type(name) is str
 
         arn = f"lambda:arn:{name}"
         return {
