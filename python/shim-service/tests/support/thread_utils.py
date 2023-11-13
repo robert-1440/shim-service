@@ -255,3 +255,11 @@ class ThreadLocalPropertySet:
 def join(thread: Thread, timeout: float = None) -> bool:
     thread.join(timeout)
     return not thread.is_alive()
+
+
+def synchronized(f):
+    def wrapper(*args, **kwargs):
+        with args[0].mutex:
+            return f(*args, **kwargs)
+
+    return wrapper

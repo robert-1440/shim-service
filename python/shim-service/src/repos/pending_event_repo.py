@@ -1,5 +1,5 @@
 import abc
-from typing import Iterable
+from typing import Iterable, Any
 
 from pending_event import PendingEventType, PendingEvent
 from repos import QueryResult
@@ -8,7 +8,7 @@ from repos import QueryResult
 class PendingEventsRepo(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def query_events(self, event_type: PendingEventType, limit: int) -> QueryResult:
+    def query_events(self, event_type: PendingEventType, limit: int, next_token: Any) -> QueryResult:
         raise NotImplementedError()
 
     @abc.abstractmethod

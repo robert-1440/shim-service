@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 from bean import BeanName, beans, Bean
 from bean.beans import inject
-from lambda_web_framework import WebRequestProcessor, init_lambda
+from lambda_web_framework import WebRequestProcessor
 from lambda_web_framework.request import LambdaHttpResponse
 from lambda_web_framework.web_exceptions import LambdaHttpException
 from utils import loghelper
@@ -18,8 +18,6 @@ logger = loghelper.get_logger(__name__)
 __SERVER_ERROR_RESPONSE = {'statusCode': 500, 'body': {
     'errorMessage': "Internal Server Error"
 }}
-
-init_lambda(logger)
 
 
 @inject(bean_instances=BeanName.WEB_ROUTER)
@@ -63,7 +61,7 @@ def __check_event(event: dict, scheduler_bean: Bean) -> dict:
     return event
 
 
-def handler(event: dict, context: Any):
+def _handler(event: dict, context: Any):
     event = __check_event(event)
     bean_name = event.get('bean')
     if bean_name is not None:
@@ -78,3 +76,11 @@ def handler(event: dict, context: Any):
             if body is not None and type(body) is dict:
                 r['body'] = json.dumps(body)
     return r
+
+
+def handler(event: dict, context: Any):
+    try:
+        return _handler(event, context)
+    except BaseException as ex:
+        print_exc()
+        raise ex

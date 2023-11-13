@@ -5,7 +5,8 @@ from botocore.response import StreamingBody
 
 from aws import AwsClient
 from bean import BeanName
-from lambda_pkg import LambdaInvoker, LambdaFunction
+from lambda_pkg.functions import LambdaFunction
+from lambda_pkg.functions import LambdaInvoker
 
 
 class InvokeResponse:

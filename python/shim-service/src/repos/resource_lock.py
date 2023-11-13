@@ -7,7 +7,7 @@ from retry.api import retry_call
 
 from bean import beans, BeanName
 from bean.beans import inject
-from lambda_pkg import LambdaFunction
+from lambda_pkg.functions import LambdaFunction
 from lambda_web_framework.web_exceptions import ConflictException
 from repos import OptimisticLockException
 from scheduler import Scheduler

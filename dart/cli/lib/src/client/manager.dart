@@ -1,4 +1,5 @@
 import 'package:cli/src/client/base.dart';
+import 'package:cli/src/client/conversation_client.dart';
 import 'package:cli/src/client/presence_client.dart';
 import 'package:cli/src/client/profile.dart';
 import 'package:cli/src/client/session_client.dart';
@@ -22,5 +23,9 @@ class ClientManager {
 
   PresenceClient getPresenceClient() {
     return _getClient(PresenceClient, (p) => PresenceClient(p));
+  }
+
+  ConversationClient getConversationClient() {
+    return _getClient(ConversationClient, (p) => ConversationClient(p));
   }
 }

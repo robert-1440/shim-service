@@ -3,7 +3,7 @@ from typing import Optional, List, Any, Dict
 
 from base_test import DEFAULT_ORGANIZATION, GOOD_CREDS, NON_EXISTENT_CREDS, ALTERNATE_CREDS, AsyncMode, InvokeResponse
 from base_web_test import BaseWebTest
-from lambda_pkg import LambdaFunction
+from lambda_pkg.functions import LambdaFunction
 from mocks.gcp.firebase_admin import messaging
 from support.credentials import TestCredentials
 from support.live_agent_helper import ONLINE_ID, BUSY_ID, OFFLINE_ID

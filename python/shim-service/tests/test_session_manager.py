@@ -479,8 +479,7 @@ class SessionManagerTest(BaseTest):
         repo: PendingEventsRepo = beans.get_bean_instance(BeanName.PENDING_EVENTS_REPO)
         events = repo.query_events(
             PendingEventType.LIVE_AGENT_POLL,
-            10
-        ).rows
+            10, None).rows
 
         live_event = collection_utils.find_first_match(
             events, lambda e: e.tenant_id == session.tenant_id and e.session_id == session.session_id

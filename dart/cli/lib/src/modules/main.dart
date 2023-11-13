@@ -12,13 +12,16 @@ import 'package:cli/src/poll.dart';
 import 'package:cli/src/state.dart';
 
 final _commandLoaders = [
-  () => Command("start", "Start a session.", "", _startSession),
-  () => Command("end", "End current session.", "", _endSession),
-  () => Command("ka", "Keep-alive.", "", _keepSessionAlive),
-  () => Command("state", "Show current state.", "", _showState),
-  () => Command("login", "Log in.", "", _login),
-  () => Command("logout", "Log out.", "", _logout),
-  () => Command("busy", "Set status to busy.", "", _busy),
+      () => Command("start", "Start a session.", "", _startSession),
+      () => Command("end", "End current session.", "", _endSession),
+      () => Command("ka", "Keep-alive.", "", _keepSessionAlive),
+      () => Command("state", "Show current state.", "", _showState),
+      () => Command("login", "Log in.", "", _login),
+      () => Command("logout", "Log out.", "", _logout),
+      () => Command("accept", "Accept work.", "<work number>", _acceptWork),
+      () => Command("busy", "Set status to busy.", "", _busy),
+      () => Command("send", "Send a message.", "<work number> <message>", _sendMessage),
+      () => Command("close", "Close work.", "<work number>", _closeWork),
 ];
 
 class MainModule extends Module {
@@ -50,7 +53,7 @@ Future<void> _startSession(CommandLineProcessor processor) async {
       deviceToken,
       authInfo.sessionId,
       ChannelPlatformType.values //
-      );
+  );
   var state = loadFromProcessor(processor);
   try {
     var resp = await client.startSession(request);
@@ -108,7 +111,9 @@ Future<void> _setPresenceStatus(CommandLineProcessor processor, StatusOption sta
   processor.assertNoMore();
   var state = await _poll(processor);
   var client = getClientManager(processor).getPresenceClient();
-  await client.setPresenceStatus(state.token, state.getPresenceStatus(statusOption).id);
+  await client.setPresenceStatus(state.token, state
+      .getPresenceStatus(statusOption)
+      .id);
 }
 
 Future<void> _login(CommandLineProcessor processor) async {
@@ -125,3 +130,45 @@ Future<void> _busy(CommandLineProcessor processor) async {
   await _setPresenceStatus(processor, StatusOption.busy);
   print("Status set to busy.");
 }
+
+Future<void> _acceptWork(CommandLineProcessor processor) async {
+  var workNumber = processor.nextInt("work number");
+  processor.assertNoMore();
+
+  var state = await _poll(processor);
+  var assignment = state.getWorkAssignment(workNumber);
+
+  var client = getClientManager(processor).getPresenceClient();
+  await client.acceptWork(state.token, assignment.workId, assignment.workTargetId);
+
+  print("Work '$assignment' accepted.");
+}
+
+Future<void> _sendMessage(CommandLineProcessor processor) async {
+  var workNumber = processor.nextInt("work number");
+  var message = processor.next("message");
+
+  processor.assertNoMore();
+
+  var state = await _poll(processor);
+  var assignment = state.getWorkAssignment(workNumber);
+
+  var client = getClientManager(processor).getConversationClient();
+  await client.sendMessage(state.token, assignment.workTargetId, message);
+  print("Message sent to '${assignment.workTargetId}'.");
+}
+
+
+Future<void> _closeWork(CommandLineProcessor processor) async {
+  var workNumber = processor.nextInt("work number");
+  processor.assertNoMore();
+  var state = await _poll(processor);
+  var assignment = state.getWorkAssignment(workNumber);
+
+  var client = getClientManager(processor).getPresenceClient();
+  await client.closeWork(state.token, assignment.workTargetId);
+
+  print("Work '$assignment' closed.");
+
+}
+

@@ -42,6 +42,8 @@ timeout: 900
 log-retention-days: 30
 
 
+mirror: true
+
 #
 # true means create an SQS queue that will trigger this lambda
 #

@@ -1,5 +1,11 @@
-import json
+
+SQS_LIVE_AGENT_QUEUE_URL_ENV_NAME = "SQS_SHIMSERVICELIVEAGENTPOLLER_QUEUE_URL"
+SQS_LIVE_AGENT_QUEUE_URL = "https://somewhere.1440.io/live-agent-poller-queue"
 import os
+
+os.environ[SQS_LIVE_AGENT_QUEUE_URL_ENV_NAME] = SQS_LIVE_AGENT_QUEUE_URL
+
+import json
 from enum import Enum
 from io import StringIO
 from typing import Dict, Any, Optional, Union, Tuple, List, Callable
@@ -7,6 +13,7 @@ from typing import Dict, Any, Optional, Union, Tuple, List, Callable
 import app
 import bean
 from botomocks.sqs_mock import MockSqsClient
+from lambda_pkg.functions import LambdaFunction
 
 bean.beans.RESETTABLE = True
 # Protect us from accidentally hitting an actual AWS account
@@ -15,11 +22,6 @@ os.environ['AWS_SECRET_ACCESS_KEY'] = "invalid"
 os.environ['ERROR_TOPIC_ARN'] = 'error:topic:arn'
 os.environ['SHIM_SERVICE_PUSH_NOTIFIER_ROLE_ARN'] = 'push:role'
 os.environ['INTERNAL_TESTING'] = "true"
-
-SQS_LIVE_AGENT_QUEUE_URL_ENV_NAME = "SQS_SHIMSERVICELIVEAGENTPOLLER_QUEUE_URL"
-SQS_LIVE_AGENT_QUEUE_URL = "https://somewhere.1440.io/live-agent-poller-queue"
-
-os.environ[SQS_LIVE_AGENT_QUEUE_URL_ENV_NAME] = SQS_LIVE_AGENT_QUEUE_URL
 
 SQS_NOTIFICATION_PUBLISHER_ENV_NAME = "SQS_SHIMSERVICENOTIFICATIONPUBLISHER_QUEUE_URL"
 SQS_NOTIFICATION_PUBLISHER_QUEUE_URL = "https://somewhere.1440.io/notification-publisher-queue"
@@ -38,14 +40,13 @@ from botomocks.sns_mock import MockSnsClient
 from config import Config
 from events import EventType, Event
 from instance import Instance
-from lambda_pkg import LambdaFunction
 from mocks.extended_http_session_mock import ExtendedHttpMockSession
 from mocks.gcp import install_gcp_cert
 from mocks.gcp.firebase_admin import messaging
 from mocks.mock_session import MockSession
 from mocks.session_repo_mock import MockAwsSessionsRepo
 from repos.events import EventsRepo
-from services.sfdc import create_authenticator
+from services.sfdc import create_authenticator, sfdc_session
 from services.sfdc.sfdc_connection import create_new_connection, SfdcConnection
 from session import Session, SessionKey
 from session.token import SessionToken
@@ -60,6 +61,7 @@ from utils.dict_utils import set_if_not_none
 from utils.http_client import create_client, HttpClient
 
 app.TESTING = True
+sfdc_session.TESTING = True
 
 ROOT = "/shim-service/"
 
@@ -212,6 +214,7 @@ class BaseTest(BetterTestCase):
     http_mock_session_list: Optional[ExtendedHttpMockSession]
     save_class: Any
     lambda_mock: Optional[MockLambdaClient]
+    started: bool
 
     def __init__(self, method_name: str = None):
         super().__init__(method_name)
@@ -234,6 +237,7 @@ class BaseTest(BetterTestCase):
         return None
 
     def setUp(self) -> None:
+        self.started = False
         beans.reset()
         self.http_session_mock = ExtendedHttpMockSession()
         secrets.install(self.http_session_mock)
@@ -275,6 +279,7 @@ class BaseTest(BetterTestCase):
         self.put_organization()
 
         self.lambda_mock = configure_lambdas(self.lambdas_enabled())
+        self.started = True
 
     def _test_initialized(self):
         pass
@@ -428,10 +433,11 @@ class BaseTest(BetterTestCase):
         return organization_id
 
     def tearDown(self) -> None:
-        if not self.disable_notification_check:
-            self.sns_mock.assert_no_notifications()
-        else:
-            self.disable_notification_check = True
+        if self.started:
+            if not self.disable_notification_check:
+                self.sns_mock.assert_no_notifications()
+            else:
+                self.disable_notification_check = False
         beans.reset()
         messaging.reset()
         sessions_repo.INVOKE_CLASS = self.save_class

@@ -50,6 +50,8 @@ layers:
 #
 event-queue: true
 
+mirror: true
+
 permissions:
 
   topics:

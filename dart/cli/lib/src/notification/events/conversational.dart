@@ -1,6 +1,6 @@
 import 'package:cli/src/notification/event.dart';
 
-final conversationMessage = EventType('Conversational/Message');
+final conversationMessage = EventType('Conversational/ConversationMessage');
 
 class ConversationMessageEvent extends PollingEvent {
   late String text;
@@ -11,6 +11,11 @@ class ConversationMessageEvent extends PollingEvent {
     text = eventData['text'];
     attachments = eventData['attachments'];
     workId = eventData['workId'];
+  }
+
+  @override
+  String toString() {
+    return "$eventType: text=$text, attachments=$attachments, workId=$workId";
   }
 
   @override

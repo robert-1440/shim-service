@@ -1,50 +1,15 @@
 import json
-from datetime import datetime
 from typing import Any, Dict
 
 from aws import AwsClient
 from bean import BeanName
-from lambda_pkg import LambdaFunction
-from scheduler import Scheduler, ScheduleTarget, ScheduleTargetType
+from lambda_pkg.functions import LambdaFunction
+from lambda_pkg.params import LambdaFunctionParameters
+from scheduler import Scheduler
 from utils import loghelper
-from utils.dict_utils import set_if_not_none
 from utils.exception_utils import dump_ex
 
-_FLEX_WINDOW = {"Mode": "OFF"}
-
 logger = loghelper.get_logger(__name__)
-
-
-def _format_at(dt: datetime) -> str:
-    return f"at({dt.year:04d}-{dt.month:02d}-{dt.day:02d}T{dt.hour:02d}:{dt.minute:02d})"
-
-
-def _format_rate(minutes: int) -> str:
-    unit = "minute"
-    if minutes > 1:
-        unit += "s"
-    return f"rate({minutes} {unit})"
-
-
-def get_role(function: LambdaFunction):
-    name = function.value
-
-
-def _fill_schedule_params(target: ScheduleTarget, record: Dict[str, Any]):
-    t = target.target_type()
-    after_completion = None
-
-    if t == ScheduleTargetType.AT:
-        start_dt = datetime.fromtimestamp(target.value)
-        schedule_exp = _format_at(start_dt)
-        after_completion = "DELETE"
-    elif t == ScheduleTargetType.RATE:
-        schedule_exp = _format_rate(target.value)
-    else:
-        raise NotImplementedError(f"No support for {t}")
-
-    set_if_not_none(record, "ActionAfterCompletion", after_completion)
-    record['ScheduleExpression'] = schedule_exp
 
 
 class AwsScheduler(Scheduler):
@@ -66,12 +31,15 @@ class AwsScheduler(Scheduler):
 
         payload = json.dumps(record)
 
+        function_parameters: LambdaFunctionParameters = function.value
         params = {
-            'QueueUrl': function.value.queue_url,
+            'QueueUrl': function_parameters.queue_url,
             'MessageBody': payload
         }
         if seconds_in_future is not None and seconds_in_future > 0:
             params['DelaySeconds'] = seconds_in_future
+
+        logger.info(f"Sending queue message:\n{json.dumps(params, indent=True)})")
         self.sqs_client.send_message(**params)
 
     def process_sqs_event(self, record: dict):

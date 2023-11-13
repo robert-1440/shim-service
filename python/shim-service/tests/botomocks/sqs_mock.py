@@ -1,9 +1,11 @@
 import json
+from threading import RLock
 from typing import Dict
 
 import app
 from bean import BeanName
 from botomocks import BaseMockClient, assert_empty, raise_not_found
+from support.thread_utils import synchronized
 from utils import dict_utils
 
 
@@ -25,11 +27,13 @@ class MockSqsClient(BaseMockClient):
 
     def __init__(self):
         super(MockSqsClient, self).__init__()
+        self.mutex = RLock()
         self.queues: Dict[str, Queue] = {}
 
     def get_queue(self, url: str) -> Queue:
         return self.queues[url]
 
+    @synchronized
     def send_message(self, **kwargs):
         queue_url = kwargs.pop('QueueUrl')
         message_body = kwargs.pop('MessageBody')
@@ -43,6 +47,7 @@ class MockSqsClient(BaseMockClient):
         queue.send_message(message_group, message_body)
         return {}
 
+    @synchronized
     def invoke_schedules(self, bean_name: BeanName):
         for q in self.queues.values():
             g = q.groups.get("")
@@ -60,8 +65,17 @@ class MockSqsClient(BaseMockClient):
     def create_paginator(self, operation_name: str):
         pass
 
+    @synchronized
+    def clear_schedules(self, url: str):
+        q = self.queues.get(url)
+        if q is not None:
+            q.groups.clear()
+
+    @synchronized
     def pop_schedule(self, url: str) -> dict:
-        q = self.queues[url]
+        q = self.queues.get(url)
+        if q is None:
+            raise AssertionError(f"Unable to find queue url in {self.queues.keys()}")
         g = q.groups.get("")
         if g is not None:
             for message in g:
@@ -72,8 +86,9 @@ class MockSqsClient(BaseMockClient):
         raise AssertionError("No messages found for {url}")
 
     def assert_no_schedules(self, url: str):
-        url = self.queues.get(url)
-        if url is not None:
-            g = url.groups.get("")
+        q = self.queues.get(url)
+        if q is not None:
+            g = q.groups.get("")
             if g is not None:
-                assert_empty(g)
+                if len(g) > 0:
+                    raise AssertionError(f"Expected no schedules for {url} but found {g}")

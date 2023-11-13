@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, Any
 
 from aws.dynamodb import DynamoDb, le_filter
 from pending_event import PendingEventType, PendingEvent
@@ -6,10 +6,12 @@ from repos import QueryResult, OptimisticLockException
 from repos.aws import PENDING_EVENT_TABLE
 from repos.aws.abstract_range_table_repo import AwsVirtualRangeTableRepo
 from repos.pending_event_repo import PendingEventsRepo
-from utils.date_utils import get_system_time_in_millis
+from utils import loghelper
+from utils.date_utils import get_system_time_in_millis, millis_to_timestamp
 
 ACTIVE_AT = 'activeAt'
 
+logger = loghelper.get_logger(__name__)
 
 class AwsPendingEventsRepo(AwsVirtualRangeTableRepo, PendingEventsRepo):
     __hash_key_attributes__ = {
@@ -27,10 +29,10 @@ class AwsPendingEventsRepo(AwsVirtualRangeTableRepo, PendingEventsRepo):
     def __init__(self, ddb: DynamoDb):
         super(AwsPendingEventsRepo, self).__init__(ddb)
 
-    def query_events(self, event_type: PendingEventType, limit: int) -> QueryResult:
+    def query_events(self, event_type: PendingEventType, limit: int, next_token: Any) -> QueryResult:
         assert 0 < limit < 100000
         now = get_system_time_in_millis()
-        results = QueryResult([], None)
+        results = QueryResult([], next_token)
         filter_op = le_filter('activeAt', now)
         while True:
             result = self.query(
@@ -51,7 +53,9 @@ class AwsPendingEventsRepo(AwsVirtualRangeTableRepo, PendingEventsRepo):
     def update_action_time(self, event: PendingEvent, seconds_in_future: int) -> bool:
         new_action_at = get_system_time_in_millis() + (seconds_in_future * 1000)
         try:
+            logger.info(f"Setting action time for {event} to {millis_to_timestamp(new_action_at)}.")
             self.patch_with_condition(event, ACTIVE_AT, new_action_at)
+            event.active_at = new_action_at
             return True
         except OptimisticLockException:
             return False

@@ -139,4 +139,10 @@ abstract class CredsBasedClient extends BaseClient {
   Future<auth.AuthInfo> getAuthInfo() async {
     return await auth.getAuthInfo(_profile.env);
   }
+
+  Future<HttpResponse> postWithToken(String uri, String token, MediaType acceptType, {MediaType? contentType, String? body}) async {
+    var headers = {'X-1440-Session-Token': token};
+    return post(uri, acceptType, contentType: contentType, body: body, headers: headers);
+  }
+
 }

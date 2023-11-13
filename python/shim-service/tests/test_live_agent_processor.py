@@ -6,7 +6,10 @@ from base_test import BaseTest, AsyncMode, SECOND_USER_ID, DEFAULT_USER_ID, SQS_
 from bean import beans, BeanName
 from config import Config
 from mocks.gcp.firebase_admin import messaging
+from mocks.http_session_mock import set_always_response, MockedResponse
+from pending_event import PendingEventType
 from poll.live_agent.processor import LiveAgentPollingProcessor
+from repos.pending_event_repo import PendingEventsRepo
 from repos.session_push_notifications import SessionPushNotificationsRepo
 from session import SessionStatus
 from support.verification_utils import verify_dry_run, verify_async_result, verify_agent_chat_request
@@ -106,6 +109,13 @@ class TestLiveAgentPollingProcessor(BaseTest):
             lambda: self.sqs_mock.invoke_schedules(BeanName.PUSH_NOTIFIER_PROCESSOR))
 
         self.assertIn("Total number notifications sent: 0.", text)
+        pe_repo: PendingEventsRepo = beans.get_bean_instance(BeanName.PENDING_EVENTS_REPO)
+        result = pe_repo.query_events(PendingEventType.LIVE_AGENT_POLL, 100, None)
+        self.assertHasLength(1, result.rows)
+        event = result.rows[0]
+        sess = self.get_session_from_token(token)
+        self.assertEqual(sess.tenant_id, event.tenant_id)
+        self.assertEqual(sess.session_id, event.session_id)
 
     def install_notification_delay(self):
         """
@@ -150,9 +160,6 @@ class TestLiveAgentPollingProcessor(BaseTest):
         self.sns_mock.pop_notification()
 
     def test_limit(self):
-        # We get errors because of the unexpected GET requests
-        self._disable_notification_check = True
-
         """
         Here we create the max events allowed per session + 1
         """
@@ -163,17 +170,17 @@ class TestLiveAgentPollingProcessor(BaseTest):
             user_id = template_user_id + c
             self.create_web_session(user_id=user_id, async_mode=AsyncMode.NONE)
 
+        # We're intentionally forcing the shutdown to happen
+        set_always_response(MockedResponse(400))
+
+        self.sqs_mock.clear_schedules(SQS_LIVE_AGENT_QUEUE_URL)
         self.processor.invoke({})
         self.assertIn(f"Starting poll for {config.sessions_per_live_agent_poll_processor} session(s) ...",
                       self.info_logs)
 
-        # Make sure we had two invocations
-        # One because we had more than the max events to be processed
-        # One done at the end of processing
-        self.sqs_mock.pop_schedule(SQS_LIVE_AGENT_QUEUE_URL)
+        # Make sure we saw the one invocation because we had more than the max events to be processed
         self.sqs_mock.pop_schedule(SQS_LIVE_AGENT_QUEUE_URL)
         self.sqs_mock.assert_no_schedules(SQS_LIVE_AGENT_QUEUE_URL)
-
 
     def setUp(self) -> None:
         super().setUp()
@@ -187,3 +194,4 @@ class TestLiveAgentPollingProcessor(BaseTest):
     def tearDown(self) -> None:
         super().tearDown()
         loghelper.INFO_LOGGING_HOOK = None
+        set_always_response(None)

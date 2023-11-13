@@ -20,8 +20,13 @@ class PresenceClient extends CredsBasedClient {
     await postWithToken("set-status", token, MediaType.ALL, contentType: MediaType.JSON, body: jsonEncode({"id": statusId}));
   }
 
-  Future<HttpResponse> postWithToken(String uri, String token, MediaType acceptType, {MediaType? contentType, String? body}) async {
-    var headers = {'X-1440-Session-Token': token};
-    return post(uri, acceptType, contentType: contentType, body: body, headers: headers);
+  Future<void> acceptWork(String token, String workId, String workTargetId) async {
+    await postWithToken("accept-work", token, MediaType.ALL,
+        contentType: MediaType.JSON, body: jsonEncode({"workId": workId, "workTargetId": workTargetId}));
+  }
+
+  Future<void> closeWork(String token, String workTargetId) async {
+    await postWithToken("close-work", token, MediaType.ALL,
+        contentType: MediaType.JSON, body: jsonEncode({"workTargetId": workTargetId}));
   }
 }

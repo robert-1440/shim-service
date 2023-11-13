@@ -5,9 +5,12 @@ from typing import Callable, Collection, Optional, List, Dict, Any
 from lambda_web_framework.request import LambdaHttpRequest, LambdaHttpResponse, BodyTransformer
 from lambda_web_framework.web_exceptions import LambdaHttpException
 from services.sfdc.live_agent.omnichannel_api import load_api
+from utils import loghelper
 from utils.http_client import HttpException
 from utils.path_utils import Path
 
+
+logger = loghelper.get_logger(__name__)
 
 class Method(Enum):
     GET = 0,
@@ -55,6 +58,7 @@ class Route:
                     'statusCode': ex.get_status_code(),
                     'body': ex.get_body_as_string()
                 }
+                logger.severe(f"SF call failed: {body}", ex=ex)
                 raise LambdaHttpException(502, "SF call failed.", body=body)
 
     def invoke(self, instance: Any,

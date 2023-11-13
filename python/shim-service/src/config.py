@@ -21,7 +21,7 @@ DEFAULT_IDLE_POLLING_SECONDS = 300
 #
 # Number of sessions a single lambda instance can support for polling live agent
 #
-DEFAULT_SESSIONS_PER_LA_POLL_PROCESSOR = 10
+DEFAULT_SESSIONS_PER_LA_POLL_PROCESSOR = 20
 
 #
 # Max seconds we expect a poll to take for live agent

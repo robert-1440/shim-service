@@ -139,6 +139,14 @@ class SessionState extends Mappable {
     return this;
   }
 
+  WorkAssignment getWorkAssignment(int assignmentNumber) {
+    int index = --assignmentNumber;
+    if (index < 0 || index >= _workAssignments.length) {
+      fatalError("Invalid work assignment number: $assignmentNumber");
+    }
+    return _workAssignments[index];
+  }
+
   void save() {
     if (!homeDir.existsSync()) {
       homeDir.createSync(recursive: true);
@@ -178,11 +186,14 @@ class SessionState extends Mappable {
   SessionState _clone([String token = "", List<PresenceStatus> presenceStatuses = const []]) {
     var state = SessionState(orgId, token, presenceStatuses);
     state._file = _file;
-    state._loggedIn = _loggedIn;
-    state._userName = _userName;
-    state._chatMessages = List.of(_chatMessages);
-    state._conversationMessages = List.of(_conversationMessages);
-
+    if (token.isNotEmpty) {
+      state._loggedIn = _loggedIn;
+      state._userName = _userName;
+      state._chatMessages = List.of(_chatMessages);
+      state._conversationMessages = List.of(_conversationMessages);
+      state._workAssignments = List.of(_workAssignments);
+      state._acceptedWorkIds = List.of(_acceptedWorkIds);
+    }
     return state;
   }
 
@@ -201,8 +212,10 @@ class SessionState extends Mappable {
     }
     sw.addLine("Work assignments:");
     sw.indent();
+    var counter = 1;
     for (var assignment in _workAssignments) {
-      sw.addLine("$assignment");
+      sw.addLine("$counter - $assignment");
+      counter++;
     }
     sw.unIndent();
   }

@@ -66,6 +66,8 @@ METHOD_MAP = {
     'DELETE': HttpMethod.DELETE
 }
 
+ALWAYS_RESPONSE: Optional[MockedResponse] = None
+
 
 class MockHttpSession:
     def __init__(self):
@@ -159,6 +161,8 @@ class MockHttpSession:
                 self.cookies.set_cookie(cookie)
 
     def check_for_response(self, request: HttpRequest) -> MockedResponse:
+        if ALWAYS_RESPONSE is not None:
+            return ALWAYS_RESPONSE
         key = f"{request.method.name}:{request.url}"
         r = self.responses.get(key)
         if r is None:
@@ -191,3 +195,10 @@ class MockHttpSession:
             return SimulatedResponse(MockedResponse(200))
         resp = self.check_for_response(req)
         return SimulatedResponse(resp)
+
+
+def set_always_response(response: Optional[MockedResponse]) -> Optional[MockedResponse]:
+    global ALWAYS_RESPONSE
+    old = ALWAYS_RESPONSE
+    ALWAYS_RESPONSE = response
+    return old

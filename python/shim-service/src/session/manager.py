@@ -7,7 +7,7 @@ from auth import Credentials
 from bean import BeanName
 from bean.beans import inject
 from instance import Instance
-from lambda_pkg import LambdaInvoker
+from lambda_pkg.functions import LambdaInvoker
 from lambda_web_framework.web_exceptions import NotAuthorizedException, GoneException, BadRequestException, \
     LambdaHttpException
 from lambda_web_framework.web_router import LambdaHttpRequest

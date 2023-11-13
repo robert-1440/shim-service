@@ -147,7 +147,7 @@ class _SfdcSessionImpl(SfdcSession):
         try:
             resp = self.conn.http_call(rb)
         except BaseException as ex:
-            logger.error(f"Exception polling live agent: {dump_ex(ex)}")
+            logger.severe(f"Exception polling live agent: {dump_ex(ex)}")
             return MessageData.create_live_agent_kit_shutdown_data(settings.ack)
 
         elapsed = get_system_time_in_millis() - start

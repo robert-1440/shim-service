@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Dict, Any, Optional
 
 from bean import BeanName
-from lambda_pkg import LambdaFunction
+from lambda_pkg.functions import LambdaFunction
 from utils import date_utils
 from utils.date_utils import EpochSeconds
 

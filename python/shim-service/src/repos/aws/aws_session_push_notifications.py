@@ -2,7 +2,7 @@ from typing import Dict, Any, Optional, Iterable
 
 from aws.dynamodb import DynamoDb, not_exists_filter, TransactionRequest
 from events.event_types import EventType
-from lambda_pkg import LambdaInvoker
+from lambda_pkg.functions import LambdaInvoker
 from lambda_web_framework.web_exceptions import ConflictException
 from push_notification import SessionPushNotification
 from repos.aws import PUSH_NOTIFICATION_TABLE

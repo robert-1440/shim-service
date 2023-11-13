@@ -6,7 +6,7 @@ from typing import Callable, Dict, Any, List, Optional
 import app
 from bean import beans, InvocableBean
 from botomocks import assert_empty, AwsInvalidParameterResponseException
-from lambda_pkg import LambdaFunction
+from lambda_pkg.functions import LambdaFunction
 from support import thread_utils
 
 LambdaFunctionHandler = Callable[[Dict[str, Any], Any], None]
