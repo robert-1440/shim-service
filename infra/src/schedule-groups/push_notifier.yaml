@@ -1,0 +1,20 @@
+type: schedule-group
+
+name: push-notifier-group
+
+#
+# The name as it will appear in AWS.
+#
+group-name: ShimPushNotifierGroup
+
+#
+# Name of the environment variable to hold the schedule group name.
+# The role arn env name will be env-var-name_ROLE_ARN.
+#
+env-var-name: PUSH_NOTIFIER_GROUP
+
+#
+# Indicate the lambda to be invoked. Used for creating the appropriate role.
+#
+lambda: ShimServiceNotificationPublisher
+

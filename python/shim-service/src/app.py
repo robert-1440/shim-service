@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 from bean import BeanName, beans, Bean
 from bean.beans import inject
-from lambda_web_framework import WebRequestProcessor
+from lambda_web_framework import WebRequestProcessor, init_lambda
 from lambda_web_framework.request import LambdaHttpResponse
 from lambda_web_framework.web_exceptions import LambdaHttpException
 from utils import loghelper
@@ -14,6 +14,8 @@ from utils import loghelper
 TESTING = False
 
 logger = loghelper.get_logger(__name__)
+
+init_lambda(logger)
 
 __SERVER_ERROR_RESPONSE = {'statusCode': 500, 'body': {
     'errorMessage': "Internal Server Error"

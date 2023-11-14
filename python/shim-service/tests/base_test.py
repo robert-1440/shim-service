@@ -1,3 +1,4 @@
+from botomocks.scheduler_mock import MockSchedulerClient
 
 SQS_LIVE_AGENT_QUEUE_URL_ENV_NAME = "SQS_SHIMSERVICELIVEAGENTPOLLER_QUEUE_URL"
 SQS_LIVE_AGENT_QUEUE_URL = "https://somewhere.1440.io/live-agent-poller-queue"
@@ -20,7 +21,7 @@ bean.beans.RESETTABLE = True
 os.environ['AWS_ACCESS_KEY_ID'] = "invalid"
 os.environ['AWS_SECRET_ACCESS_KEY'] = "invalid"
 os.environ['ERROR_TOPIC_ARN'] = 'error:topic:arn'
-os.environ['SHIM_SERVICE_PUSH_NOTIFIER_ROLE_ARN'] = 'push:role'
+os.environ['PUSH_NOTIFIER_GROUP_ROLE_ARN'] = 'push:role'
 os.environ['INTERNAL_TESTING'] = "true"
 
 SQS_NOTIFICATION_PUBLISHER_ENV_NAME = "SQS_SHIMSERVICENOTIFICATIONPUBLISHER_QUEUE_URL"
@@ -215,6 +216,7 @@ class BaseTest(BetterTestCase):
     save_class: Any
     lambda_mock: Optional[MockLambdaClient]
     started: bool
+    scheduler_mock: MockSchedulerClient
 
     def __init__(self, method_name: str = None):
         super().__init__(method_name)
@@ -243,6 +245,7 @@ class BaseTest(BetterTestCase):
         secrets.install(self.http_session_mock)
         self.ddb_mock = MockDynamoDbClient()
         self.http_mock_session_list: List[ExtendedHttpMockSession] = []
+        self.scheduler_mock = MockSchedulerClient()
         self.sns_mock = MockSnsClient()
         self.sqs_mock = MockSqsClient()
 
@@ -256,6 +259,7 @@ class BaseTest(BetterTestCase):
         beans.override_bean(BeanName.HTTP_CLIENT_BUILDER, lambda: client_builder)
         beans.override_bean(BeanName.HTTP_CLIENT, self.create_http_client(self.http_session_mock))
         beans.override_bean(BeanName.DYNAMODB_CLIENT, self.ddb_mock)
+        beans.override_bean(BeanName.SCHEDULER_CLIENT, self.scheduler_mock)
         beans.override_bean(BeanName.SNS_CLIENT, self.sns_mock)
         beans.override_bean(BeanName.SQS_CLIENT, self.sqs_mock)
 

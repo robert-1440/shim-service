@@ -70,8 +70,20 @@ data "aws_iam_policy_document" "shim_service_notification_publisher_mirror" {
 
   statement {
     effect    = "Allow"
-    resources = [ "${aws_lambda_function.shim_service_notification_publisher.arn}" ]
-    actions   = [ "lambda:InvokeFunction" ]
+    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceNotificationPublisher" ]
+    actions   = [
+      "lambda:InvokeFunction",
+      "lambda:GetFunction"
+    ]
+  }
+
+  statement {
+    effect    = "Allow"
+    resources = [ "*" ]
+    actions   = [
+      "scheduler:CreateSchedule",
+      "scheduler:DeleteSchedule"
+    ]
   }
 }
 
@@ -119,6 +131,8 @@ resource "aws_lambda_function" "shim_service_notification_publisher_mirror" {
   environment {
     variables = {
       ACTIVE_PROFILES                 = "notification-publisher"
+      PUSH_NOTIFIER_GROUP             = "ShimPushNotifierGroup"
+      PUSH_NOTIFIER_GROUP_ROLE_ARN    = "${aws_iam_role.push_notifier_group.arn}"
       SQS_PUSH_NOTIFICATION_QUEUE_URL = "${aws_sqs_queue.push_notification.url}"
       ERROR_TOPIC_ARN                 = "${aws_sns_topic.shim_error.arn}"
       MIRROR_FUNCTION_NAME            = "ShimServiceNotificationPublisher"

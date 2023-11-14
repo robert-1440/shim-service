@@ -1,5 +1,5 @@
 import json
-from threading import Thread
+from threading import Thread, RLock
 from traceback import print_exc
 from typing import Callable, Dict, Any, List, Optional
 
@@ -29,16 +29,17 @@ class _LambdaFunction:
     def __init__(self, name: str, handler: LambdaFunctionHandler):
         self.name = name
         self.handler = handler
-        self.invocations: List[Dict[str, Any]] = []
         self.delayed_events: List[Dict[str, Any]] = []
         self.delayed = False
+        self.mutex = RLock()
 
     def invoke(self, event: Dict[str, Any], exception_list: List[Any], context: Any = None):
         try:
             self.handler(event, context)
         except BaseException as ex:
             print_exc()
-            exception_list.append(ex)
+            with self.mutex:
+                exception_list.append(ex)
 
     def create_threads_for_delayed(self, exception_list: List[Any], context: Any = None) -> List[Thread]:
         if len(self.delayed_events) == 0:
@@ -58,6 +59,7 @@ class MockLambdaClient:
         self.allow_all = allow_all
         self.invoke_callback: Optional[LambdaCallback] = None
         self.invocations: List[Invocation] = []
+        self.mutex = RLock()
 
     def set_invoke_callback(self, callback: Optional[LambdaCallback]):
         self.invoke_callback = callback
@@ -104,7 +106,8 @@ class MockLambdaClient:
         assert_empty(params)
 
         invocation = Invocation(function_name, invocation_type, payload)
-        self.invocations.append(invocation)
+        with self.mutex:
+            self.invocations.append(invocation)
         if invocation_type != 'Event':
             raise AwsInvalidParameterResponseException("InvokeFunction",
                                                        f"InvocationType {invocation_type} not supported.")

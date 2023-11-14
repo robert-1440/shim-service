@@ -1,7 +1,7 @@
 import json
 import time
 from threading import Thread, RLock
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Callable
 
 from bean import InvocableBean
 from config import Config
@@ -17,6 +17,7 @@ from session import SessionContext, ContextType
 from utils import loghelper, threading_utils, exception_utils
 from utils.date_utils import get_system_time_in_millis, format_elapsed_time_seconds
 from utils.signal_event import SignalEvent
+from utils.throttler import Throttler
 
 logger = loghelper.get_logger(__name__)
 
@@ -26,7 +27,7 @@ class LockAndEvent:
         self.event = event
         self.lock = lock
         self.failed = False
-        self.any_messages = False
+        self.after_release: Optional[Callable] = None
 
     @property
     def tenant_id(self) -> int:
@@ -38,6 +39,8 @@ class LockAndEvent:
 
     def release(self):
         self.lock.release()
+        if self.after_release is not None:
+            self.after_release()
 
     def __enter__(self):
         return self
@@ -66,6 +69,7 @@ class ProcessorGroup:
         self.invoker = invoker
         self.mutex = RLock()
         self.signal_event = SignalEvent()
+        self.invoke_throttler = Throttler(10000, self.invoker.invoke_live_agent_poller)
 
     def __poll(self, le: LockAndEvent, sfdc_session: SfdcSession, context: SessionContext):
         settings = LiveAgentPollerSettings.deserialize(context.session_data)
@@ -82,15 +86,15 @@ class ProcessorGroup:
                 self.dispatcher.dispatch_message_data(context, message)
             if message_data.is_shutdown_message():
                 return False
-            le.any_messages = True
             return True
 
         try:
             if inner_poll():
                 self.contexts_repo.update_session_context(context, settings)
                 self.pe_repo.update_action_time(le.event, 0)
-                self.invoke_again()
+                le.after_release = self.invoke_again
             else:
+                logger.info(f"Polling was shut down for {context}.")
                 self.contexts_repo.set_failed(context, "Polling was shutdown.")
                 self.pe_repo.delete_event(le.event)
         except BaseException as ex:
@@ -104,7 +108,13 @@ class ProcessorGroup:
             self.signal_event.notify()
 
     def invoke_again(self):
-        self.invoker.invoke_live_agent_poller()
+        self.invoke_throttler.add_invocation()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.invoke_throttler.close()
 
     def worker(self, event: PendingEvent):
         # First, try to lock the resource for the event
@@ -178,6 +188,7 @@ class ProcessorGroup:
 
     def __try_lock(self, event: PendingEvent) -> Optional[LockAndEvent]:
         name = f"lap/{event.tenant_id}-{event.session_id}"
+        logger.info(f"Attempting to lock resource {name} ...")
         lock = self.resource_lock_repo.try_acquire(name, self.refresh_seconds)
         if lock is None:
             return None
@@ -256,8 +267,9 @@ class LiveAgentPollingProcessor(InvocableBean):
         try:
             logger.info(f"Starting poll for {group.thread_count()} session(s) ...")
 
-            while not group.join(30):
-                elapsed = format_elapsed_time_seconds(start_time)
-                logger.info(f"Number of threads still running: {group.thread_count()}, up time={elapsed} seconds.")
+            with group:
+                while not group.join(30):
+                    elapsed = format_elapsed_time_seconds(start_time)
+                    logger.info(f"Number of threads still running: {group.thread_count()}, up time={elapsed} seconds.")
         finally:
             logger.info(f"Stopping, elapsed time = {format_elapsed_time_seconds(start_time)}.")

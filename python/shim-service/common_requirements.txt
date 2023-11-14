@@ -1,2 +1,4 @@
 retry
 cityhash
+boto3
+botocore

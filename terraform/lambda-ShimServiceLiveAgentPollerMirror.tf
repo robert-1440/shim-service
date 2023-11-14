@@ -67,14 +67,20 @@ data "aws_iam_policy_document" "shim_service_live_agent_poller_mirror" {
 
   statement {
     effect    = "Allow"
-    resources = [ "${aws_lambda_function.shim_service_live_agent_poller.arn}" ]
-    actions   = [ "lambda:InvokeFunction" ]
+    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceLiveAgentPoller" ]
+    actions   = [
+      "lambda:InvokeFunction",
+      "lambda:GetFunction"
+    ]
   }
 
   statement {
     effect    = "Allow"
-    resources = [ "${aws_lambda_function.shim_service_notification_publisher.arn}" ]
-    actions   = [ "lambda:InvokeFunction" ]
+    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceNotificationPublisher" ]
+    actions   = [
+      "lambda:InvokeFunction",
+      "lambda:GetFunction"
+    ]
   }
 }
 

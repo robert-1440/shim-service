@@ -8,7 +8,9 @@ from aws import AwsClient
 from bean import BeanName
 from lambda_pkg.functions import LambdaFunction
 from lambda_pkg.functions import LambdaInvoker
+from utils import loghelper
 
+logger = loghelper.get_logger(__name__)
 
 class InvokeResponse:
     def __init__(self, node: Dict[str, Any]):
@@ -52,11 +54,9 @@ class AwsLambdaInvoker(LambdaInvoker):
             'parameters': parameters
         }
 
-        name = function.value.name
-        if os.environ.get('AWS_LAMBDA_FUNCTION_NAME') == name:
-            name = os.environ.get('MIRROR_FUNCTION_NAME', name)
-
         payload = json.dumps(record).encode('utf-8')
+        name = function.value.effective_name
+        logger.info(f"Attempting to invoke lambda function {name}.")
         resp = self.client.invoke(
             FunctionName=name,
             InvocationType="Event",

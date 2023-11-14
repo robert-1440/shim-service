@@ -8,22 +8,20 @@ from utils.enum_utils import ReverseLookupEnum
 
 
 class LambdaFunction(ReverseLookupEnum):
-    Web = LambdaFunctionParameters("ShimServiceWeb", "SHIM_SERVICE_WEB",
+    Web = LambdaFunctionParameters("ShimServiceWeb",
                                    BeanName.SESSION_CONNECTOR)
     LiveAgentPoller = LambdaFunctionParameters(
         "ShimServiceLiveAgentPoller",
-        "SHIM_SERVICE_LIVE_AGENT_POLLER",
         BeanName.LIVE_AGENT_PROCESSOR)
 
     SfdcPubSubPoller = LambdaFunctionParameters(
         "ShimSfdcPubSubPoller",
-        "SHIM_SERVICE_SFDC_PUBSUB",
         BeanName.SFDC_PUBSUB_POLLER)
 
     PushNotifier = LambdaFunctionParameters(
         "ShimServiceNotificationPublisher",
-        "SHIM_SERVICE_PUSH_NOTIFIER",
-        BeanName.PUSH_NOTIFIER_PROCESSOR
+        BeanName.PUSH_NOTIFIER_PROCESSOR,
+        scheduler_group="PUSH_NOTIFIER_GROUP"
     )
 
     @classmethod

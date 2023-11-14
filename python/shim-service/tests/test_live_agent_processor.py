@@ -105,8 +105,7 @@ class TestLiveAgentPollingProcessor(BaseTest):
         messaging.assert_no_invocations()
 
         # Make sure it scheduled another invocation since it would have seen a lock
-        text = self.execute_and_capture_info_logs(
-            lambda: self.sqs_mock.invoke_schedules(BeanName.PUSH_NOTIFIER_PROCESSOR))
+        text = self.execute_and_capture_info_logs(lambda: self.scheduler_mock.invoke_schedules())
 
         self.assertIn("Total number notifications sent: 0.", text)
         pe_repo: PendingEventsRepo = beans.get_bean_instance(BeanName.PENDING_EVENTS_REPO)
@@ -173,14 +172,18 @@ class TestLiveAgentPollingProcessor(BaseTest):
         # We're intentionally forcing the shutdown to happen
         set_always_response(MockedResponse(400))
 
-        self.sqs_mock.clear_schedules(SQS_LIVE_AGENT_QUEUE_URL)
+        self.lambda_mock.clear_invocations()
         self.processor.invoke({})
         self.assertIn(f"Starting poll for {config.sessions_per_live_agent_poll_processor} session(s) ...",
                       self.info_logs)
 
-        # Make sure we saw the one invocation because we had more than the max events to be processed
-        self.sqs_mock.pop_schedule(SQS_LIVE_AGENT_QUEUE_URL)
-        self.sqs_mock.assert_no_schedules(SQS_LIVE_AGENT_QUEUE_URL)
+        # Make sure we had only one invocation, because we had more than the max events to be processed
+        # We should have no other invocations because we are shutting down each poller
+
+        invocation = self.lambda_mock.pop_invocation(POLLER_FUNCTION)
+        self.lambda_mock.assert_no_invocations(POLLER_FUNCTION)
+
+        self.assertEqual(POLLER_FUNCTION, invocation.function_name)
 
     def setUp(self) -> None:
         super().setUp()

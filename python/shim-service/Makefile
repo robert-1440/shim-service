@@ -68,10 +68,10 @@ lambda-zip-files: $(foreach profile, $(PROFILES), $(LAMBDA_ZIPS_DIR)$(profile).z
 
 
 build-all-layers: $(addprefix $(LAYERS_DIR),$(addsuffix -layer.zip, $(LAYERS)))
-    @:
+	@:
 
 layers: build-all-layers
-    @:
+	@:
 
 clean:
 	@rm -fr $(DIST) ; mkdir $(DIST)
