@@ -6,11 +6,11 @@ from bean import BeanName
 class LambdaFunctionParameters:
     def __init__(self, name: str,
                  default_bean_name: BeanName,
-                 scheduler_group: str = None):
+                 scheduler_group_env_name: str = None):
         self.__name = name
         self.__default_bean_name = default_bean_name
         self.__queue_url = os.environ.get(f"SQS_{self.__name.upper()}_QUEUE_URL", "")
-        self.__scheduler_group = scheduler_group
+        self.__scheduler_group_env_name = scheduler_group_env_name
 
     @property
     def effective_name(self) -> str:
@@ -41,10 +41,10 @@ class LambdaFunctionParameters:
 
     @property
     def scheduler_role_arn(self) -> str:
-        assert self.__scheduler_group is not None
-        return os.environ[f"{self.__scheduler_group}_ROLE_ARN"]
+        assert self.__scheduler_group_env_name is not None
+        return os.environ[f"{self.__scheduler_group_env_name}_ROLE_ARN"]
 
     @property
     def scheduler_group(self) -> str:
-        assert self.__scheduler_group is not None
-        return self.__scheduler_group
+        assert self.__scheduler_group_env_name is not None
+        return os.environ.get(self.__scheduler_group_env_name)

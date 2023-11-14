@@ -1,3 +1,20 @@
+resource "aws_iam_role" "shim_service_notification_publisher" {
+  name = "lambda-ShimServiceNotificationPublisher"
+
+  assume_role_policy = jsonencode({
+   "Version": "2012-10-17",
+   "Statement": [
+    {
+     "Effect": "Allow",
+     "Principal": {
+      "Service": "lambda.amazonaws.com"
+     },
+     "Action": "sts:AssumeRole"
+    }
+   ]
+  })
+}
+
 data "aws_iam_policy_document" "shim_service_notification_publisher" {
   statement {
     effect    = "Allow"
@@ -85,27 +102,16 @@ data "aws_iam_policy_document" "shim_service_notification_publisher" {
       "scheduler:DeleteSchedule"
     ]
   }
+
+  statement {
+    effect    = "Allow"
+    resources = [ "${aws_iam_role.push_notifier_group.arn}" ]
+    actions   = [ "iam:PassRole" ]
+  }
 }
 
 resource "aws_iam_policy" "shim_service_notification_publisher" {
   policy = data.aws_iam_policy_document.shim_service_notification_publisher.json
-}
-
-resource "aws_iam_role" "shim_service_notification_publisher" {
-  name = "lambda-ShimServiceNotificationPublisher"
-
-  assume_role_policy = jsonencode({
-   "Version": "2012-10-17",
-   "Statement": [
-    {
-     "Effect": "Allow",
-     "Principal": {
-      "Service": "lambda.amazonaws.com"
-     },
-     "Action": "sts:AssumeRole"
-    }
-   ]
-  })
 }
 
 resource "aws_iam_role_policy_attachment" "shim_service_notification_publisher" {

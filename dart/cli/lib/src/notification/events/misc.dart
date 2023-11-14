@@ -12,6 +12,11 @@ class AsyncResultEvent extends PollingEvent {
   }
 
   @override
+  String toString() {
+    return "$eventType: sequence=$sequence, success=$success";
+  }
+
+  @override
   Map<String, dynamic> toMap() {
     return {
       'sequence': sequence,

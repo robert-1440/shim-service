@@ -35,6 +35,17 @@ class WorkAssignment extends Mappable {
   WorkAssignment(this.workId, this.workTargetId, this.channelName);
 
   @override
+  operator ==(Object other) {
+    if (other is WorkAssignment) {
+      return workId == other.workId && workTargetId == other.workTargetId && channelName == other.channelName;
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode => workId.hashCode ^ workTargetId.hashCode ^ channelName.hashCode;
+
+  @override
   toMap() {
     return {"workId": workId, "workTargetId": workTargetId, "channelName": channelName};
   }
@@ -147,6 +158,17 @@ class SessionState extends Mappable {
     return _workAssignments[index];
   }
 
+  SessionState removeWorkAssignment(WorkAssignment wa) {
+    var clone = _cloneMe();
+    if (!clone._workAssignments.remove(wa)) {
+      return this;
+    }
+    clone._acceptedWorkIds.remove(wa.workId);
+
+    clone.save();
+    return clone;
+  }
+
   void save() {
     if (!homeDir.existsSync()) {
       homeDir.createSync(recursive: true);
@@ -181,6 +203,10 @@ class SessionState extends Mappable {
     var newState = _clone();
     newState.save();
     return newState;
+  }
+
+  SessionState _cloneMe() {
+    return _clone(token, presenceStatuses);
   }
 
   SessionState _clone([String token = "", List<PresenceStatus> presenceStatuses = const []]) {

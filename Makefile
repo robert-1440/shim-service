@@ -93,13 +93,15 @@ build-terraform bt: $(API_SPEC)
 			$(BT_ARGS) \
 			--aws ./infra/src
 
-.PHONY = package bp bt service-keys
+.PHONY = package bp bt service-keys prep_bp
 
 package:
 	@cd $(SERVICE_DIR); make package
 
-bp: oas package bt apply
+prep_bp: oas package bt
+	@:
 
+bp: prep_bp apply
 
 init:
 	$(MAKE_TERRAFORM) init

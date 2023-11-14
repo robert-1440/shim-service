@@ -19,6 +19,7 @@ final _commandLoaders = [
       () => Command("login", "Log in.", "", _login),
       () => Command("logout", "Log out.", "", _logout),
       () => Command("accept", "Accept work.", "<work number>", _acceptWork),
+      () => Command("decline", "Decline work.", "<work number>", _declineWork),
       () => Command("busy", "Set status to busy.", "", _busy),
       () => Command("send", "Send a message.", "<work number> <message>", _sendMessage),
       () => Command("close", "Close work.", "<work number>", _closeWork),
@@ -144,6 +145,21 @@ Future<void> _acceptWork(CommandLineProcessor processor) async {
   print("Work '$assignment' accepted.");
 }
 
+Future<void> _declineWork(CommandLineProcessor processor) async {
+  var workNumber = processor.nextInt("work number");
+  processor.assertNoMore();
+
+  var state = await _poll(processor);
+  var assignment = state.getWorkAssignment(workNumber);
+
+  var client = getClientManager(processor).getPresenceClient();
+  await client.declineWork(state.token, assignment.workId, assignment.workTargetId);
+  state.removeWorkAssignment(assignment);
+
+  print("Work '$assignment' declined.");
+}
+
+
 Future<void> _sendMessage(CommandLineProcessor processor) async {
   var workNumber = processor.nextInt("work number");
   var message = processor.next("message");
@@ -167,6 +183,7 @@ Future<void> _closeWork(CommandLineProcessor processor) async {
 
   var client = getClientManager(processor).getPresenceClient();
   await client.closeWork(state.token, assignment.workTargetId);
+  state.removeWorkAssignment(assignment);
 
   print("Work '$assignment' closed.");
 

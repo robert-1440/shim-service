@@ -70,6 +70,7 @@ class PushNotificationProcessor(InvocableBean):
             if not self.__process_record(settings, entry, record):
                 break
             count += 1
+
         logger.info(f"Total number notifications sent: {count}.")
 
     def invoke(self, parameters: Dict[str, Any]):

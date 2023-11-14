@@ -1,3 +1,20 @@
+resource "aws_iam_role" "shim_service_live_agent_poller" {
+  name = "lambda-ShimServiceLiveAgentPoller"
+
+  assume_role_policy = jsonencode({
+   "Version": "2012-10-17",
+   "Statement": [
+    {
+     "Effect": "Allow",
+     "Principal": {
+      "Service": "lambda.amazonaws.com"
+     },
+     "Action": "sts:AssumeRole"
+    }
+   ]
+  })
+}
+
 data "aws_iam_policy_document" "shim_service_live_agent_poller" {
   statement {
     effect    = "Allow"
@@ -86,23 +103,6 @@ data "aws_iam_policy_document" "shim_service_live_agent_poller" {
 
 resource "aws_iam_policy" "shim_service_live_agent_poller" {
   policy = data.aws_iam_policy_document.shim_service_live_agent_poller.json
-}
-
-resource "aws_iam_role" "shim_service_live_agent_poller" {
-  name = "lambda-ShimServiceLiveAgentPoller"
-
-  assume_role_policy = jsonencode({
-   "Version": "2012-10-17",
-   "Statement": [
-    {
-     "Effect": "Allow",
-     "Principal": {
-      "Service": "lambda.amazonaws.com"
-     },
-     "Action": "sts:AssumeRole"
-    }
-   ]
-  })
 }
 
 resource "aws_iam_role_policy_attachment" "shim_service_live_agent_poller" {

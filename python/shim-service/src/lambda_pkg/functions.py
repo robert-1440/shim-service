@@ -21,7 +21,7 @@ class LambdaFunction(ReverseLookupEnum):
     PushNotifier = LambdaFunctionParameters(
         "ShimServiceNotificationPublisher",
         BeanName.PUSH_NOTIFIER_PROCESSOR,
-        scheduler_group="PUSH_NOTIFIER_GROUP"
+        scheduler_group_env_name="PUSH_NOTIFIER_GROUP"
     )
 
     @classmethod

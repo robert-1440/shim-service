@@ -9,7 +9,6 @@ from utils import loghelper
 from utils.http_client import HttpException
 from utils.path_utils import Path
 
-
 logger = loghelper.get_logger(__name__)
 
 class Method(Enum):

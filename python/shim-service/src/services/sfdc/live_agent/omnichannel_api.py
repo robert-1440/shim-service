@@ -206,12 +206,15 @@ class _OmniChannelApi(OmniChannelApi):
     def __build_conversation_uri(action: str):
         return "rest/Conversational/" + action
 
-    def close_work(self, work_target_id: str):
-        work_id = self.work_id_repo.get_work_id(
+    def __get_work_id(self, work_target_id: str):
+        return self.work_id_repo.get_work_id(
             self.sfdc_session.tenant_id,
             self.sfdc_session.user_id,
             work_target_id
         )
+
+    def close_work(self, work_target_id: str):
+        work_id = self.__get_work_id(work_target_id)
         if not work_target_id.startswith('a17'):
             self.__end_conversation(work_target_id)
             self.__start_after_conversation_work(work_id)
@@ -246,6 +249,10 @@ class _OmniChannelApi(OmniChannelApi):
         logger.info(f"Response to {action} request: {resp.to_string()}")
 
     def send_work_message(self, message: WorkMessage):
+
+        # Let's prevent sending a 500 from SF in the event it is an invalid work target id
+        self.__get_work_id(message.work_target_id)
+
         # Yes, it's actually work target id we need to send here
         body = message.to_body(message.work_target_id)
         event_data = {'messageId': message.message_id}

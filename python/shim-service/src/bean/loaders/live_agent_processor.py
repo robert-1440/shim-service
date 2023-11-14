@@ -6,7 +6,6 @@ from poll.live_agent.processor import LiveAgentPollingProcessor
 from repos.pending_event_repo import PendingEventsRepo
 from repos.resource_lock import ResourceLockRepo
 from repos.session_contexts import SessionContextsRepo
-from scheduler import Scheduler
 from services.sfdc.live_agent.message_dispatcher import LiveAgentMessageDispatcher
 
 

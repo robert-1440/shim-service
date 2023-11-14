@@ -25,6 +25,12 @@ class PresenceClient extends CredsBasedClient {
         contentType: MediaType.JSON, body: jsonEncode({"workId": workId, "workTargetId": workTargetId}));
   }
 
+  Future<void> declineWork(String token, String workId, String workTargetId) async {
+    await postWithToken("decline-work", token, MediaType.ALL,
+        contentType: MediaType.JSON, body: jsonEncode({"workId": workId, "workTargetId": workTargetId}));
+  }
+
+
   Future<void> closeWork(String token, String workTargetId) async {
     await postWithToken("close-work", token, MediaType.ALL,
         contentType: MediaType.JSON, body: jsonEncode({"workTargetId": workTargetId}));
