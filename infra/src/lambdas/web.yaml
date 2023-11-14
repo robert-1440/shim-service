@@ -51,13 +51,14 @@ layers:
 #
 # true means create an SQS queue that will trigger this lambda
 #
-event-queue: true
+event-queue: false
 
 mirror: true
 
 permissions:
 
   lambdas:
+    - self
     - ShimServiceLiveAgentPoller
 
   secrets:

@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Dict, Any, Optional
 
 from botocore.response import StreamingBody
@@ -51,9 +52,13 @@ class AwsLambdaInvoker(LambdaInvoker):
             'parameters': parameters
         }
 
+        name = function.value.name
+        if os.environ.get('AWS_LAMBDA_FUNCTION_NAME') == name:
+            name = os.environ.get('MIRROR_FUNCTION_NAME', name)
+
         payload = json.dumps(record).encode('utf-8')
         resp = self.client.invoke(
-            FunctionName=function.value.name,
+            FunctionName=name,
             InvocationType="Event",
             Payload=payload
         )

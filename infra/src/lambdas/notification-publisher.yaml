@@ -47,7 +47,7 @@ mirror: true
 #
 # true means create an SQS queue that will trigger this lambda
 #
-event-queue: true
+event-queue: false
 
 layers:
   - common-layer
@@ -60,6 +60,9 @@ permissions:
       manage: false
       actions:
         - "sns:Publish"
+
+  lambdas:
+    - self
 
   queues:
     - name: push-notification

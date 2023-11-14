@@ -48,8 +48,11 @@ layers:
 #
 # true means create an SQS queue that will trigger this lambda
 #
-event-queue: true
+event-queue: false
 
+#
+# true to create a mirror lambda function, to allow recursive calls without upsetting AWS.
+#
 mirror: true
 
 permissions:
@@ -60,6 +63,7 @@ permissions:
         - "sns:Publish"
 
   lambdas:
+    - self
     - ShimServiceNotificationPublisher
 
   dynamodb-tables:

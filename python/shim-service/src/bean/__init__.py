@@ -65,6 +65,7 @@ class BeanName(Enum):
                                                                   'var': SQS_PUSH_NOTIFICATION_QUEUE_URL}
     PUSH_NOTIFICATION_MANAGER = 38, WEB_PROFILE | PUSH_NOTIFIER_PROFILE
     WORK_ID_MAP_REPO = 39, WEB_PROFILE, {'type': BeanType.EVENT_LISTENER}
+    SCHEDULER_CLIENT = 40, ALL_PROFILES
 
 
 BeanSupplier = Supplier[T]

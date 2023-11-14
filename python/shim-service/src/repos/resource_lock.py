@@ -172,14 +172,22 @@ class ResourceLockRepo(metaclass=abc.ABCMeta):
 
 
 @inject(bean_instances=BeanName.SCHEDULER)
-def __schedule_lambda(key: SessionKey,
+def __schedule_lambda(lock_type: str,
+                      key: SessionKey,
                       function: LambdaFunction,
                       minutes: Optional[int],
                       scheduler: Scheduler):
     if minutes is None:
         minutes = 1
+    name = f"l-{lock_type}-{key.tenant_id}-{key.session_id}"
     event = key.to_key_dict()
-    scheduler.schedule_lambda(function, event, seconds_in_future=minutes * 60)
+    event['fromSchedule'] = True
+    scheduler.schedule_lambda_minutes(
+        name,
+        minutes,
+        function,
+        event
+    )
 
 
 def __attempt_session_lock(
@@ -201,6 +209,7 @@ def __attempt_session_lock(
     if lock is None:
         if lambda_function is not None:
             __schedule_lambda(
+                lock_type,
                 key,
                 lambda_function,
                 schedule_minutes

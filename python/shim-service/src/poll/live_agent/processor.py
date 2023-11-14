@@ -5,11 +5,11 @@ from typing import Dict, Any, Optional, List
 
 from bean import InvocableBean
 from config import Config
+from lambda_pkg.functions import LambdaInvoker
 from pending_event import PendingEventType, PendingEvent
 from repos.pending_event_repo import PendingEventsRepo
 from repos.resource_lock import ResourceLock, ResourceLockRepo
 from repos.session_contexts import SessionContextsRepo
-from scheduler import Scheduler
 from services.sfdc.live_agent import LiveAgentPollerSettings
 from services.sfdc.live_agent.message_dispatcher import LiveAgentMessageDispatcher
 from services.sfdc.sfdc_session import SfdcSessionAndContext, load_with_context, SfdcSession
@@ -53,7 +53,7 @@ class ProcessorGroup:
                  refresh_seconds: int,
                  max_working_count: int,
                  dispatcher: LiveAgentMessageDispatcher,
-                 scheduler: Scheduler):
+                 invoker: LambdaInvoker):
         self.contexts_repo = contexts_repo
         self.resource_lock_repo = resource_lock_repo
         self.max_working_count = max_working_count
@@ -63,7 +63,7 @@ class ProcessorGroup:
         self.threads: List[Thread] = []
         self.submit_count = 0
         self.working_count = 0
-        self.scheduler = scheduler
+        self.invoker = invoker
         self.mutex = RLock()
         self.signal_event = SignalEvent()
 
@@ -87,10 +87,9 @@ class ProcessorGroup:
 
         try:
             if inner_poll():
-                delay = 5 if le.any_messages else 10
                 self.contexts_repo.update_session_context(context, settings)
                 self.pe_repo.update_action_time(le.event, 0)
-                self.invoke_again(delay)
+                self.invoke_again()
             else:
                 self.contexts_repo.set_failed(context, "Polling was shutdown.")
                 self.pe_repo.delete_event(le.event)
@@ -104,8 +103,8 @@ class ProcessorGroup:
             self.submit_count -= 1
             self.signal_event.notify()
 
-    def invoke_again(self, delay_seconds: int = None):
-        self.scheduler.schedule_live_agent_poller(delay_seconds)
+    def invoke_again(self):
+        self.invoker.invoke_live_agent_poller()
 
     def worker(self, event: PendingEvent):
         # First, try to lock the resource for the event
@@ -197,13 +196,13 @@ class LiveAgentPollingProcessor(InvocableBean):
     def __init__(self, pending_events_repo: PendingEventsRepo,
                  resource_lock_repo: ResourceLockRepo,
                  contexts_repo: SessionContextsRepo,
-                 scheduler: Scheduler,
+                 invoker: LambdaInvoker,
                  config: Config,
                  dispatcher: LiveAgentMessageDispatcher):
         self.pe_repo = pending_events_repo
         self.resource_lock_repo = resource_lock_repo
         self.contexts_repo = contexts_repo
-        self.scheduler = scheduler
+        self.invoker = invoker
         self.max_sessions = config.sessions_per_live_agent_poll_processor
         self.refresh_seconds = config.live_agent_poll_session_seconds
         self.dispatcher = dispatcher
@@ -216,7 +215,7 @@ class LiveAgentPollingProcessor(InvocableBean):
             self.refresh_seconds,
             self.max_sessions,
             self.dispatcher,
-            self.scheduler
+            self.invoker
         )
         # Sleep for a bit, so we can get as many as possible
         time.sleep(.5)
@@ -242,7 +241,7 @@ class LiveAgentPollingProcessor(InvocableBean):
 
         if full or next_token is not None:
             # This means we have more than the max out there, let another process grab them
-            group.invoke_again(0)
+            group.invoke_again()
 
         return group
 

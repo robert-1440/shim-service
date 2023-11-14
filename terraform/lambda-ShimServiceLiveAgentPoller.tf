@@ -1,9 +1,3 @@
-resource "aws_sqs_queue" "shim_service_live_agent_poller_queue" {
-  name                       = "ShimServiceLiveAgentPoller-lambda-invoker"
-  visibility_timeout_seconds = 900
-  delay_seconds              = 10
-}
-
 data "aws_iam_policy_document" "shim_service_live_agent_poller" {
   statement {
     effect    = "Allow"
@@ -23,23 +17,6 @@ data "aws_iam_policy_document" "shim_service_live_agent_poller" {
       "sns:GetSubscriptionAttributes",
       "sns:Subscribe",
       "sns:Unsubscribe"
-    ]
-  }
-
-  statement {
-    effect    = "Allow"
-    resources = [ aws_sqs_queue.shim_service_live_agent_poller_mirror_queue.arn ]
-    actions   = [ "sqs:SendMessage" ]
-  }
-
-  statement {
-    effect    = "Allow"
-    resources = [ aws_sqs_queue.shim_service_live_agent_poller_queue.arn ]
-    actions   = [
-      "sqs:ReceiveMessage",
-      "sqs:DeleteMessage",
-      "sqs:GetQueueAttributes",
-      "sqs:GetQueueUrl"
     ]
   }
 
@@ -86,6 +63,12 @@ data "aws_iam_policy_document" "shim_service_live_agent_poller" {
     effect    = "Allow"
     resources = [ aws_dynamodb_table.shim_service_event.arn ]
     actions   = [ "dynamodb:PutItem" ]
+  }
+
+  statement {
+    effect    = "Allow"
+    resources = [ "${aws_lambda_function.shim_service_live_agent_poller_mirror.arn}" ]
+    actions   = [ "lambda:InvokeFunction" ]
   }
 
   statement {
@@ -138,9 +121,9 @@ resource "aws_lambda_function" "shim_service_live_agent_poller" {
 
   environment {
     variables = {
-      ACTIVE_PROFILES                          = "live-agent-poller"
-      SQS_SHIMSERVICELIVEAGENTPOLLER_QUEUE_URL = "${aws_sqs_queue.shim_service_live_agent_poller_mirror_queue.url}"
-      ERROR_TOPIC_ARN                          = "${aws_sns_topic.shim_error.arn}"
+      ACTIVE_PROFILES      = "live-agent-poller"
+      ERROR_TOPIC_ARN      = "${aws_sns_topic.shim_error.arn}"
+      MIRROR_FUNCTION_NAME = "ShimServiceLiveAgentPollerMirror"
     }
   }
   depends_on = [ aws_iam_role_policy_attachment.shim_service_live_agent_poller ]
@@ -149,6 +132,13 @@ resource "aws_lambda_function" "shim_service_live_agent_poller" {
 resource "aws_cloudwatch_log_group" "shim_service_live_agent_poller" {
   name              = "/aws/lambda/${aws_lambda_function.shim_service_live_agent_poller.function_name}"
   retention_in_days = 30
+}
+
+resource "aws_lambda_permission" "shim_service_live_agent_poller_shim_service_live_agent_poller_mirror" {
+  principal     = "lambda.amazonaws.com"
+  action        = "lambda:InvokeFunction"
+  source_arn    = "${aws_lambda_function.shim_service_live_agent_poller_mirror.arn}"
+  function_name = aws_lambda_function.shim_service_live_agent_poller.function_name
 }
 
 resource "aws_lambda_permission" "shim_service_live_agent_poller_shim_service_web" {
@@ -163,11 +153,4 @@ resource "aws_lambda_permission" "shim_service_live_agent_poller_shim_service_we
   action        = "lambda:InvokeFunction"
   source_arn    = "${aws_lambda_function.shim_service_web_mirror.arn}"
   function_name = aws_lambda_function.shim_service_live_agent_poller.function_name
-}
-
-resource "aws_lambda_event_source_mapping" "shim_service_live_agent_poller" {
-  event_source_arn = aws_sqs_queue.shim_service_live_agent_poller_queue.arn
-  function_name    = "ShimServiceLiveAgentPoller"
-  batch_size       = 1
-  depends_on = [ aws_lambda_function.shim_service_live_agent_poller ]
 }

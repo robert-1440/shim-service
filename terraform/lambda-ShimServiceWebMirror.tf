@@ -1,9 +1,3 @@
-resource "aws_sqs_queue" "shim_service_web_mirror_queue" {
-  name                       = "ShimServiceWebMirror-lambda-invoker"
-  visibility_timeout_seconds = 90
-  delay_seconds              = 10
-}
-
 data "aws_iam_policy_document" "shim_service_web_mirror" {
   statement {
     effect    = "Allow"
@@ -23,23 +17,6 @@ data "aws_iam_policy_document" "shim_service_web_mirror" {
       "sns:GetSubscriptionAttributes",
       "sns:Subscribe",
       "sns:Unsubscribe"
-    ]
-  }
-
-  statement {
-    effect    = "Allow"
-    resources = [ aws_sqs_queue.shim_service_web_queue.arn ]
-    actions   = [ "sqs:SendMessage" ]
-  }
-
-  statement {
-    effect    = "Allow"
-    resources = [ aws_sqs_queue.shim_service_web_mirror_queue.arn ]
-    actions   = [
-      "sqs:ReceiveMessage",
-      "sqs:DeleteMessage",
-      "sqs:GetQueueAttributes",
-      "sqs:GetQueueUrl"
     ]
   }
 
@@ -102,6 +79,12 @@ data "aws_iam_policy_document" "shim_service_web_mirror" {
     resources = [ "${aws_lambda_function.shim_service_live_agent_poller.arn}" ]
     actions   = [ "lambda:InvokeFunction" ]
   }
+
+  statement {
+    effect    = "Allow"
+    resources = [ "${aws_lambda_function.shim_service_web.arn}" ]
+    actions   = [ "lambda:InvokeFunction" ]
+  }
 }
 
 resource "aws_iam_policy" "shim_service_web_mirror" {
@@ -151,9 +134,9 @@ resource "aws_lambda_function" "shim_service_web_mirror" {
     variables = {
       ACTIVE_PROFILES                 = "web"
       CONFIG_SERVICE_URL              = "https://sswki1xsfd.execute-api.us-west-1.amazonaws.com"
-      SQS_SHIMSERVICEWEB_QUEUE_URL    = "${aws_sqs_queue.shim_service_web_queue.url}"
       SQS_PUSH_NOTIFICATION_QUEUE_URL = "${aws_sqs_queue.push_notification.url}"
       ERROR_TOPIC_ARN                 = "${aws_sns_topic.shim_error.arn}"
+      MIRROR_FUNCTION_NAME            = "ShimServiceWeb"
     }
   }
   depends_on = [ aws_iam_role_policy_attachment.shim_service_web_mirror ]
@@ -164,9 +147,9 @@ resource "aws_cloudwatch_log_group" "shim_service_web_mirror" {
   retention_in_days = 30
 }
 
-resource "aws_lambda_event_source_mapping" "shim_service_web_mirror" {
-  event_source_arn = aws_sqs_queue.shim_service_web_mirror_queue.arn
-  function_name    = "ShimServiceWebMirror"
-  batch_size       = 1
-  depends_on = [ aws_lambda_function.shim_service_web_mirror ]
+resource "aws_lambda_permission" "shim_service_web_mirror_shim_service_web" {
+  principal     = "lambda.amazonaws.com"
+  action        = "lambda:InvokeFunction"
+  source_arn    = "${aws_lambda_function.shim_service_web.arn}"
+  function_name = aws_lambda_function.shim_service_web_mirror.function_name
 }

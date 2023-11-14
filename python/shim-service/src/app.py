@@ -82,5 +82,5 @@ def handler(event: dict, context: Any):
     try:
         return _handler(event, context)
     except BaseException as ex:
-        print_exc()
+        logger.severe("Unexpected exception", ex=ex)
         raise ex

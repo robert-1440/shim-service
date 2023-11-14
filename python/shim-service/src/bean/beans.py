@@ -205,6 +205,7 @@ __BEANS: Dict[BeanName, _BeanImpl] = {
     BeanName.SESSION_CONNECTOR: _module(),
     BeanName.RESOURCE_LOCK_REPO: _module(),
     BeanName.LIVE_AGENT_PROCESSOR: _module(),
+    BeanName.SCHEDULER_CLIENT: _boto3('scheduler'),
     BeanName.SCHEDULER: _module(),
     BeanName.LIVE_AGENT_MESSAGE_DISPATCHER: _module(),
     BeanName.PENDING_EVENTS_REPO: _module(),
@@ -212,7 +213,7 @@ __BEANS: Dict[BeanName, _BeanImpl] = {
     BeanName.PUSH_NOTIFICATION_MANAGER: _module(),
     BeanName.SQS_PUSH_NOTIFIER: _module(),
     BeanName.WORK_ID_MAP_REPO: _module(),
-    BeanName.SQS_CLIENT: _boto3('sqs')
+    BeanName.SQS_CLIENT: _boto3('sqs'),
 }
 
 

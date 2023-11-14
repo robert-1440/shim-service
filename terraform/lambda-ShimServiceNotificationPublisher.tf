@@ -1,9 +1,3 @@
-resource "aws_sqs_queue" "shim_service_notification_publisher_queue" {
-  name                       = "ShimServiceNotificationPublisher-lambda-invoker"
-  visibility_timeout_seconds = 900
-  delay_seconds              = 10
-}
-
 data "aws_iam_policy_document" "shim_service_notification_publisher" {
   statement {
     effect    = "Allow"
@@ -25,23 +19,6 @@ data "aws_iam_policy_document" "shim_service_notification_publisher" {
     resources = [ aws_sqs_queue.push_notification.arn ]
     actions   = [
       "sqs:SendMessage",
-      "sqs:GetQueueUrl"
-    ]
-  }
-
-  statement {
-    effect    = "Allow"
-    resources = [ aws_sqs_queue.shim_service_notification_publisher_mirror_queue.arn ]
-    actions   = [ "sqs:SendMessage" ]
-  }
-
-  statement {
-    effect    = "Allow"
-    resources = [ aws_sqs_queue.shim_service_notification_publisher_queue.arn ]
-    actions   = [
-      "sqs:ReceiveMessage",
-      "sqs:DeleteMessage",
-      "sqs:GetQueueAttributes",
       "sqs:GetQueueUrl"
     ]
   }
@@ -90,6 +67,12 @@ data "aws_iam_policy_document" "shim_service_notification_publisher" {
     resources = [ aws_dynamodb_table.shim_service_event.arn ]
     actions   = [ "dynamodb:PutItem" ]
   }
+
+  statement {
+    effect    = "Allow"
+    resources = [ "${aws_lambda_function.shim_service_notification_publisher_mirror.arn}" ]
+    actions   = [ "lambda:InvokeFunction" ]
+  }
 }
 
 resource "aws_iam_policy" "shim_service_notification_publisher" {
@@ -135,10 +118,10 @@ resource "aws_lambda_function" "shim_service_notification_publisher" {
 
   environment {
     variables = {
-      ACTIVE_PROFILES                                = "notification-publisher"
-      SQS_SHIMSERVICENOTIFICATIONPUBLISHER_QUEUE_URL = "${aws_sqs_queue.shim_service_notification_publisher_mirror_queue.url}"
-      SQS_PUSH_NOTIFICATION_QUEUE_URL                = "${aws_sqs_queue.push_notification.url}"
-      ERROR_TOPIC_ARN                                = "${aws_sns_topic.shim_error.arn}"
+      ACTIVE_PROFILES                 = "notification-publisher"
+      SQS_PUSH_NOTIFICATION_QUEUE_URL = "${aws_sqs_queue.push_notification.url}"
+      ERROR_TOPIC_ARN                 = "${aws_sns_topic.shim_error.arn}"
+      MIRROR_FUNCTION_NAME            = "ShimServiceNotificationPublisherMirror"
     }
   }
   depends_on = [ aws_iam_role_policy_attachment.shim_service_notification_publisher ]
@@ -147,6 +130,13 @@ resource "aws_lambda_function" "shim_service_notification_publisher" {
 resource "aws_cloudwatch_log_group" "shim_service_notification_publisher" {
   name              = "/aws/lambda/${aws_lambda_function.shim_service_notification_publisher.function_name}"
   retention_in_days = 30
+}
+
+resource "aws_lambda_permission" "shim_service_notification_publisher_shim_service_notification_publisher_mirror" {
+  principal     = "lambda.amazonaws.com"
+  action        = "lambda:InvokeFunction"
+  source_arn    = "${aws_lambda_function.shim_service_notification_publisher_mirror.arn}"
+  function_name = aws_lambda_function.shim_service_notification_publisher.function_name
 }
 
 resource "aws_lambda_permission" "shim_service_notification_publisher_shim_service_live_agent_poller" {
@@ -161,11 +151,4 @@ resource "aws_lambda_permission" "shim_service_notification_publisher_shim_servi
   action        = "lambda:InvokeFunction"
   source_arn    = "${aws_lambda_function.shim_service_live_agent_poller_mirror.arn}"
   function_name = aws_lambda_function.shim_service_notification_publisher.function_name
-}
-
-resource "aws_lambda_event_source_mapping" "shim_service_notification_publisher" {
-  event_source_arn = aws_sqs_queue.shim_service_notification_publisher_queue.arn
-  function_name    = "ShimServiceNotificationPublisher"
-  batch_size       = 1
-  depends_on = [ aws_lambda_function.shim_service_notification_publisher ]
 }
