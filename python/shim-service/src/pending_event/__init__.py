@@ -21,12 +21,14 @@ class PendingEvent(SessionKey):
                  tenant_id: int,
                  session_id: str,
                  event_time: Optional[EpochMilliseconds] = None,
-                 active_at: Optional[EpochMilliseconds] = None):
+                 active_at: Optional[EpochMilliseconds] = None,
+                 update_time: Optional[EpochMilliseconds] = None):
         self.event_type = event_type
         self.event_time = event_time or get_system_time_in_millis()
         self.tenant_id = tenant_id
         self.session_id = session_id
         self.active_at = active_at or self.event_time
+        self.update_time = update_time or self.event_time
 
     def to_record(self) -> Dict[str, Any]:
         return {
@@ -34,15 +36,17 @@ class PendingEvent(SessionKey):
             'eventTime': self.event_time,
             'tenantId': self.tenant_id,
             'sessionId': self.session_id,
-            'activeAt': self.active_at
+            'activeAt': self.active_at,
+            'updateTime': self.update_time
         }
 
     @classmethod
-    def key_from_dict(cls, record: Dict[str, Any]) -> 'PendingEvent':
+    def from_record(cls, record: Dict[str, Any]) -> 'PendingEvent':
         return cls(
             PendingEventType.value_of(record['eventType']),
             record['tenantId'],
             record['sessionId'],
             record['eventTime'],
-            record['activeAt']
+            record['activeAt'],
+            record.get('updateTime')
         )

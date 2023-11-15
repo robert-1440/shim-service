@@ -2,18 +2,21 @@ import json
 from traceback import print_exc
 from typing import Any, Dict
 
-from bean import BeanName, beans, Bean
+from bean import BeanName, beans
 from bean.beans import inject
 from lambda_web_framework import WebRequestProcessor, init_lambda
 from lambda_web_framework.request import LambdaHttpResponse
 from lambda_web_framework.web_exceptions import LambdaHttpException
 from utils import loghelper
+from utils.date_utils import get_system_time_in_millis
 
 # We use this below to raise unexpected exceptions
 
 TESTING = False
 
 logger = loghelper.get_logger(__name__)
+
+start_time = get_system_time_in_millis()
 
 init_lambda(logger)
 
@@ -48,23 +51,9 @@ def __call_bean(bean_name: str, event: Dict[str, Any]):
         return __SERVER_ERROR_RESPONSE
 
 
-@inject(beans=BeanName.SCHEDULER)
-def __check_event(event: dict, scheduler_bean: Bean) -> dict:
-    # Let's see if this came from SQS
-    records = event.get('Records')
-    if records is not None and len(records) == 1:
-        record = records[0]
-        if isinstance(record, dict):
-            if record.get('eventSource') == 'aws:sqs':
-                scheduler_bean.get_instance().process_sqs_event(record)
-                body = record.get('body')
-                if body is not None:
-                    return json.loads(body)
-    return event
-
-
 def _handler(event: dict, context: Any):
-    event = __check_event(event)
+    if event.get('command') == 'ping':
+        return {'statusCode': 200, 'body': {'pong': start_time}}
     bean_name = event.get('bean')
     if bean_name is not None:
         return __call_bean(bean_name, event)
@@ -82,7 +71,10 @@ def _handler(event: dict, context: Any):
 
 def handler(event: dict, context: Any):
     try:
-        return _handler(event, context)
+        result = _handler(event, context)
+        elapsed = get_system_time_in_millis() - start_time
+        logger.info(f"Total elapsed time: {elapsed / 1000:0.3f} seconds.")
+        return result
     except BaseException as ex:
         logger.severe("Unexpected exception", ex=ex)
         raise ex

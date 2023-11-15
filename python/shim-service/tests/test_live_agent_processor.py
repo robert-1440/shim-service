@@ -2,7 +2,7 @@ import json
 import time
 from typing import List
 
-from base_test import BaseTest, AsyncMode, SECOND_USER_ID, DEFAULT_USER_ID, SQS_LIVE_AGENT_QUEUE_URL
+from base_test import BaseTest, AsyncMode, SECOND_USER_ID, DEFAULT_USER_ID
 from bean import beans, BeanName
 from config import Config
 from mocks.gcp.firebase_admin import messaging
@@ -107,7 +107,7 @@ class TestLiveAgentPollingProcessor(BaseTest):
         # Make sure it scheduled another invocation since it would have seen a lock
         text = self.execute_and_capture_info_logs(lambda: self.scheduler_mock.invoke_schedules())
 
-        self.assertIn("Total number notifications sent: 0.", text)
+        self.assertIn("Total notifications sent: 0.", text)
         pe_repo: PendingEventsRepo = beans.get_bean_instance(BeanName.PENDING_EVENTS_REPO)
         result = pe_repo.query_events(PendingEventType.LIVE_AGENT_POLL, 100, None)
         self.assertHasLength(1, result.rows)

@@ -13,6 +13,7 @@ ACTIVE_AT = 'activeAt'
 
 logger = loghelper.get_logger(__name__)
 
+
 class AwsPendingEventsRepo(AwsVirtualRangeTableRepo, PendingEventsRepo):
     __hash_key_attributes__ = {
         'eventType': str
@@ -23,7 +24,7 @@ class AwsPendingEventsRepo(AwsVirtualRangeTableRepo, PendingEventsRepo):
         'tenantId': int,
         'sessionId': str
     }
-    __initializer__ = PendingEvent.key_from_dict
+    __initializer__ = PendingEvent.from_record
     __virtual_table__ = PENDING_EVENT_TABLE
 
     def __init__(self, ddb: DynamoDb):
@@ -51,11 +52,13 @@ class AwsPendingEventsRepo(AwsVirtualRangeTableRepo, PendingEventsRepo):
         return results
 
     def update_action_time(self, event: PendingEvent, seconds_in_future: int) -> bool:
-        new_action_at = get_system_time_in_millis() + (seconds_in_future * 1000)
+        now = get_system_time_in_millis()
+        new_action_at = now + (seconds_in_future * 1000)
         try:
             logger.info(f"Setting action time for {event} to {millis_to_timestamp(new_action_at)}.")
-            self.patch_with_condition(event, ACTIVE_AT, new_action_at)
+            self.patch_with_condition(event, ACTIVE_AT, new_action_at, patches={'updateTime': now})
             event.active_at = new_action_at
+            event.update_time = now
             return True
         except OptimisticLockException:
             return False

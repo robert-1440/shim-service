@@ -71,7 +71,7 @@ class PushNotificationProcessor(InvocableBean):
                 break
             count += 1
 
-        logger.info(f"Total number notifications sent: {count}.")
+        logger.info(f"Total notifications sent: {count}.")
 
     def invoke(self, parameters: Dict[str, Any]):
         session_key = SessionKey.key_from_dict(parameters)
