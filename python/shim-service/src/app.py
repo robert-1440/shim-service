@@ -43,6 +43,8 @@ def __dispatch_web_request(event: dict, web_router: WebRequestProcessor):
 
 def __call_bean(bean_name: str, event: Dict[str, Any]):
     try:
+        async_mode = event.get('async', False)
+        
         beans.invoke_bean_by_name(bean_name, event.get('parameters'))
         return {'StatusCode': 200}
     except BaseException as ex:
@@ -52,8 +54,6 @@ def __call_bean(bean_name: str, event: Dict[str, Any]):
 
 
 def _handler(event: dict, context: Any):
-    if event.get('command') == 'ping':
-        return {'statusCode': 200, 'body': {'pong': start_time}}
     bean_name = event.get('bean')
     if bean_name is not None:
         return __call_bean(bean_name, event)

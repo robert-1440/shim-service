@@ -39,7 +39,8 @@ class LambdaInvoker(metaclass=abc.ABCMeta):
     def invoke_function(self,
                         function: LambdaFunction,
                         parameters: Dict[str, Any],
-                        bean_name: BeanName = None):
+                        bean_name: BeanName = None,
+                        async_invoke: bool = True):
         raise NotImplementedError()
 
     def invoke_connect_session(self, session_key: SessionKey):

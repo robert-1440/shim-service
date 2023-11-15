@@ -38,47 +38,32 @@ class InvocationException(Exception):
         self.response = response
 
 
-_PING = "{\"command\":\"ping\"}".encode('utf-8')
-
 
 class AwsLambdaInvoker(LambdaInvoker):
 
     def __init__(self, client: AwsClient):
         self.client = client
 
-    def __check_uptime(self, function_name: str):
-        logger.info(f"Attempting to ping {function_name} ...")
-        resp = self.client.invoke(
-            FunctionName=function_name,
-            Payload=_PING
-        )
-        r = InvokeResponse(resp)
-        if r.status_code // 100 != 2:
-            raise InvocationException(r)
-        data = r.payload.read()
-        if isinstance(data, bytes):
-            data = data.decode('utf-8')
-        logger.info(f"Ping response was: {data}.")
-
     def invoke_function(self,
                         function: LambdaFunction,
                         parameters: Dict[str, Any],
-                        bean_name: BeanName = None):
+                        bean_name: BeanName = None,
+                        async_invoke: bool = False):
         if bean_name is None:
             bean_name = function.value.default_bean_name
         record = {
             'bean': bean_name.name,
-            'parameters': parameters
+            'parameters': parameters,
+            'async': async_invoke
         }
 
         payload = json.dumps(record).encode('utf-8')
         name = function.value.effective_name
-        if name != function.value.name:
-            self.__check_uptime(name)
-        logger.info(f"Attempting to invoke lambda function {name}.")
+        logger.info(f"Attempting to invoke lambda function {name} async={async_invoke}.")
+        invocation_type = "Event" if async_invoke else "RequestResponse"
         resp = self.client.invoke(
             FunctionName=name,
-            InvocationType="Event",
+            InvocationType=invocation_type,
             Payload=payload
         )
         r = InvokeResponse(resp)
