@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime
 from typing import Any, Dict
 
@@ -88,6 +89,12 @@ class AwsScheduler(Scheduler):
         return True
 
     def get_arn(self, function: LambdaFunction):
+        our_arn = os.environ.get('THIS_FUNCTION_ARN')
+        if our_arn is not None:
+            values = our_arn.split(':')
+            values[6] = function.value.effective_name
+            return ':'.join(values)
+
         resp = self.lambda_client.get_function(FunctionName=function.value.effective_name)
         return resp['Configuration']['FunctionArn']
 

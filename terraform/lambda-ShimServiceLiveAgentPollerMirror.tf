@@ -84,7 +84,7 @@ data "aws_iam_policy_document" "shim_service_live_agent_poller_mirror" {
 
   statement {
     effect    = "Allow"
-    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceLiveAgentPoller" ]
+    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceLambdaScheduler" ]
     actions   = [
       "lambda:InvokeFunction",
       "lambda:GetFunction"
@@ -114,7 +114,7 @@ resource "aws_lambda_function" "shim_service_live_agent_poller_mirror" {
   function_name    = "ShimServiceLiveAgentPollerMirror"
   description      = "Shim Service Live Agent Poller"
   handler          = "app.handler"
-  timeout          = 900
+  timeout          = 60
   memory_size      = var.live_agent_poller_lambda_memory_size
   filename         = "${path.module}/aws/resources/ShimServiceLiveAgentPollerMirror.zip"
   source_code_hash = filebase64sha256("${path.module}/aws/resources/ShimServiceLiveAgentPollerMirror.zip")
@@ -130,6 +130,7 @@ resource "aws_lambda_function" "shim_service_live_agent_poller_mirror" {
       ACTIVE_PROFILES      = "live-agent-poller"
       ERROR_TOPIC_ARN      = "${aws_sns_topic.shim_error.arn}"
       MIRROR_FUNCTION_NAME = "ShimServiceLiveAgentPoller"
+      THIS_FUNCTION_ARN    = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceLiveAgentPollerMirror"
     }
   }
   depends_on = [ aws_iam_role_policy_attachment.shim_service_live_agent_poller_mirror ]
@@ -140,9 +141,9 @@ resource "aws_cloudwatch_log_group" "shim_service_live_agent_poller_mirror" {
   retention_in_days = 30
 }
 
-resource "aws_lambda_permission" "shim_service_live_agent_poller_mirror_shim_service_live_agent_poller" {
+resource "aws_lambda_permission" "shim_service_live_agent_poller_mirror_shim_service_lambda_scheduler" {
   principal     = "lambda.amazonaws.com"
   action        = "lambda:InvokeFunction"
-  source_arn    = "${aws_lambda_function.shim_service_live_agent_poller.arn}"
+  source_arn    = "${aws_lambda_function.shim_service_lambda_scheduler.arn}"
   function_name = aws_lambda_function.shim_service_live_agent_poller_mirror.function_name
 }

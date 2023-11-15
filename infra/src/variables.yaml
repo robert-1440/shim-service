@@ -10,6 +10,11 @@ variables:
     export: true
     default: 1024
 
+  - name: scheduler_lambda_memory_size
+    description: Memory size to allocate for scheduler lambda (in megabytes)
+    export: true
+    default: 512
+
   - name: live_agent_poller_lambda_memory_size
     description: Memory size to allocate for the live agent poller lambda (in megabytes)
     export: true

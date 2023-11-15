@@ -43,8 +43,6 @@ def __dispatch_web_request(event: dict, web_router: WebRequestProcessor):
 
 def __call_bean(bean_name: str, event: Dict[str, Any]):
     try:
-        async_mode = event.get('async', False)
-        
         beans.invoke_bean_by_name(bean_name, event.get('parameters'))
         return {'StatusCode': 200}
     except BaseException as ex:
@@ -54,6 +52,9 @@ def __call_bean(bean_name: str, event: Dict[str, Any]):
 
 
 def _handler(event: dict, context: Any):
+    if event.get('command') == 'ping':
+        __log_elapsed_time("Saw ping request, our elapsed time is")
+        return {'statusCode': 200, 'body': {'pong': start_time}}
     bean_name = event.get('bean')
     if bean_name is not None:
         return __call_bean(bean_name, event)
@@ -69,11 +70,15 @@ def _handler(event: dict, context: Any):
     return r
 
 
+def __log_elapsed_time(message: str = "Total elapsed time"):
+    elapsed = get_system_time_in_millis() - start_time
+    logger.info(f"{message}: {elapsed / 1000:0.3f} seconds.")
+
+
 def handler(event: dict, context: Any):
     try:
         result = _handler(event, context)
-        elapsed = get_system_time_in_millis() - start_time
-        logger.info(f"Total elapsed time: {elapsed / 1000:0.3f} seconds.")
+        __log_elapsed_time()
         return result
     except BaseException as ex:
         logger.severe("Unexpected exception", ex=ex)

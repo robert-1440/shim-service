@@ -58,8 +58,8 @@ mirror: true
 permissions:
 
   lambdas:
-    - self
     - ShimServiceLiveAgentPoller
+    - ShimServiceLambdaScheduler
 
   secrets:
     - name: shim-service/*

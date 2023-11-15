@@ -101,14 +101,14 @@ class MockLambdaClient:
     def invoke(self, **kwargs):
         params = dict(kwargs)
         function_name = params.pop('FunctionName')
-        invocation_type = params.pop('InvocationType')
+        invocation_type = params.pop('InvocationType', 'RequestResponse')
         payload: bytes = params.pop('Payload')
         assert_empty(params)
 
         invocation = Invocation(function_name, invocation_type, payload)
         with self.mutex:
             self.invocations.append(invocation)
-        if invocation_type != 'Event':
+        if invocation_type not in ('Event', 'RequestResponse'):
             raise AwsInvalidParameterResponseException("InvokeFunction",
                                                        f"InvocationType {invocation_type} not supported.")
 

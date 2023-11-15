@@ -34,7 +34,7 @@ ephemeral-storage: 512
 # "15:00" - 15 minutes.
 #      10 - 10 seconds.
 #
-timeout: 900
+timeout: 60
 
 #
 # Log retention for the log group, in days.
@@ -63,8 +63,8 @@ permissions:
         - "sns:Publish"
 
   lambdas:
-    - self
     - ShimServiceNotificationPublisher
+    - ShimServiceLambdaScheduler
 
   dynamodb-tables:
     - table: ShimServiceSession

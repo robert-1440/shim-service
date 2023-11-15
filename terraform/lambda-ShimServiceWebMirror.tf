@@ -93,7 +93,7 @@ data "aws_iam_policy_document" "shim_service_web_mirror" {
 
   statement {
     effect    = "Allow"
-    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceLiveAgentPoller" ]
+    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceLambdaScheduler" ]
     actions   = [
       "lambda:InvokeFunction",
       "lambda:GetFunction"
@@ -102,7 +102,7 @@ data "aws_iam_policy_document" "shim_service_web_mirror" {
 
   statement {
     effect    = "Allow"
-    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceWeb" ]
+    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceLiveAgentPoller" ]
     actions   = [
       "lambda:InvokeFunction",
       "lambda:GetFunction"
@@ -143,6 +143,7 @@ resource "aws_lambda_function" "shim_service_web_mirror" {
       SQS_PUSH_NOTIFICATION_QUEUE_URL = "${aws_sqs_queue.push_notification.url}"
       ERROR_TOPIC_ARN                 = "${aws_sns_topic.shim_error.arn}"
       MIRROR_FUNCTION_NAME            = "ShimServiceWeb"
+      THIS_FUNCTION_ARN               = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceWebMirror"
     }
   }
   depends_on = [ aws_iam_role_policy_attachment.shim_service_web_mirror ]
@@ -153,9 +154,9 @@ resource "aws_cloudwatch_log_group" "shim_service_web_mirror" {
   retention_in_days = 30
 }
 
-resource "aws_lambda_permission" "shim_service_web_mirror_shim_service_web" {
+resource "aws_lambda_permission" "shim_service_web_mirror_shim_service_lambda_scheduler" {
   principal     = "lambda.amazonaws.com"
   action        = "lambda:InvokeFunction"
-  source_arn    = "${aws_lambda_function.shim_service_web.arn}"
+  source_arn    = "${aws_lambda_function.shim_service_lambda_scheduler.arn}"
   function_name = aws_lambda_function.shim_service_web_mirror.function_name
 }

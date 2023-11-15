@@ -16,6 +16,12 @@ variable "web_lambda_memory_size" {
   description = "Memory size to allocate for web lambda (in megabytes)"
 }
 
+variable "scheduler_lambda_memory_size" {
+  type        = number
+  default     = 512
+  description = "Memory size to allocate for scheduler lambda (in megabytes)"
+}
+
 variable "live_agent_poller_lambda_memory_size" {
   type        = number
   default     = 1024

@@ -24,6 +24,11 @@ class LambdaFunction(ReverseLookupEnum):
         scheduler_group_env_name="PUSH_NOTIFIER_GROUP"
     )
 
+    Scheduler = LambdaFunctionParameters(
+        "ShimServiceLambdaScheduler",
+        BeanName.LAMBDA_SCHEDULER_PROCESSOR
+    )
+
     @classmethod
     def value_of(cls, function_name: str) -> 'LambdaFunction':
         return cls._value_of(function_name, "lambda function")
@@ -39,8 +44,12 @@ class LambdaInvoker(metaclass=abc.ABCMeta):
     def invoke_function(self,
                         function: LambdaFunction,
                         parameters: Dict[str, Any],
-                        bean_name: BeanName = None,
-                        async_invoke: bool = True):
+                        bean_name: BeanName = None):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def manual_invoke(self, function_name: str,
+                      parameters: Dict[str, Any]):
         raise NotImplementedError()
 
     def invoke_connect_session(self, session_key: SessionKey):

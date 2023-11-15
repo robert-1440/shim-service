@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Dict, Any, Optional
 
 from botocore.response import StreamingBody
@@ -38,34 +39,47 @@ class InvocationException(Exception):
         self.response = response
 
 
+_PING = "{\"command\":\"ping\"}".encode('utf-8')
+
 
 class AwsLambdaInvoker(LambdaInvoker):
 
     def __init__(self, client: AwsClient):
         self.client = client
 
+    def manual_invoke(self, function_name: str,
+                      parameters: Dict[str, Any]):
+        logger.info(f"Attempting to invoke lambda function {function_name}.")
+        resp = self.client.invoke(
+            FunctionName=function_name,
+            InvocationType="Event",
+            Payload=json.dumps(parameters).encode('utf-8')
+        )
+        try:
+            r = InvokeResponse(resp)
+            if r.status_code // 100 != 2:
+                raise InvocationException(r)
+        except BaseException as ex:
+            logger.severe(f"Exception invoking lambda function {function_name}", ex)
+            raise ex
+
     def invoke_function(self,
                         function: LambdaFunction,
                         parameters: Dict[str, Any],
-                        bean_name: BeanName = None,
-                        async_invoke: bool = False):
+                        bean_name: BeanName = None):
         if bean_name is None:
             bean_name = function.value.default_bean_name
         record = {
             'bean': bean_name.name,
-            'parameters': parameters,
-            'async': async_invoke
+            'parameters': parameters
         }
 
-        payload = json.dumps(record).encode('utf-8')
         name = function.value.effective_name
-        logger.info(f"Attempting to invoke lambda function {name} async={async_invoke}.")
-        invocation_type = "Event" if async_invoke else "RequestResponse"
-        resp = self.client.invoke(
-            FunctionName=name,
-            InvocationType=invocation_type,
-            Payload=payload
-        )
-        r = InvokeResponse(resp)
-        if r.status_code // 100 != 2:
-            raise InvocationException(r)
+        if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+            record['targetFunction'] = name
+            record = {
+                'bean': BeanName.LAMBDA_SCHEDULER_PROCESSOR.name,
+                'parameters': record
+            }
+            name = LambdaFunction.Scheduler.value.name
+        self.manual_invoke(name, record)
