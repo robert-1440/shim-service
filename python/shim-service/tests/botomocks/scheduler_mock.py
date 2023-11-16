@@ -7,6 +7,7 @@ from lambda_web_framework.request import get_required_parameter, get_parameter
 
 _NAME_REGEX = re.compile(r"^[0-9a-zA-Z-_.]+$")
 _AT_REGEX = re.compile(r'at\((\d{4}-\d{2}-\d{2}T\d{2}:\d{2})\)')
+_RATE_REGEX = re.compile(r'^rate\((\d+(\.\d+)?) (minute|minutes)\)$')
 
 
 class Target:
@@ -25,6 +26,7 @@ class Schedule:
     start_date: Optional[datetime]
     target: Target
     flexible_time_window: Dict[str, str]
+    rate_minutes: Optional[int]
 
     def __init__(self, node: dict):
         node = dict(node)
@@ -34,6 +36,7 @@ class Schedule:
         self.target = Target(get_required_parameter(node, "Target", dict, remove=True))
         self.flexible_time_window = get_required_parameter(node, "FlexibleTimeWindow", dict, remove=True)
         self.after_action = get_parameter(node, "ActionAfterCompletion", str, remove=True)
+        self.rate_minutes = None
 
         assert_empty(node)
         assert 0 < len(self.name) < 65
@@ -44,7 +47,11 @@ class Schedule:
 
         match = re.search(_AT_REGEX, self.schedule_expression)
         if match is None:
-            raise NotImplementedError(f"Unsupported schedule expression: {self.schedule_expression}")
+            match = re.search(_RATE_REGEX, self.schedule_expression)
+            if match is None:
+                raise NotImplementedError(f"Unsupported schedule expression: {self.schedule_expression}")
+            else:
+                self.rate_minutes = int(match.group(1))
 
 
 class MockSchedulerClient(BaseMockClient):
@@ -59,6 +66,10 @@ class MockSchedulerClient(BaseMockClient):
 
     def find_schedule_by_session(self, group_name: str, name: str):
         key_id = KeyId(group_name, name)
+        return self.schedules.get(key_id)
+
+    def find_schedule(self, name: str) -> Schedule:
+        key_id = KeyId("default", name)
         return self.schedules.get(key_id)
 
     def create_schedule(self, **kwargs):

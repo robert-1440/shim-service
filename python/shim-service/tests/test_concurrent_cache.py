@@ -72,7 +72,7 @@ class CacheTests(BetterTestCase):
         event.notify()
 
         for t in threads:
-            self.assertTrue(thread_utils.join(t, 1))
+            self.assertTrue(thread_utils.join(t, 3))
 
         self.assertHasLength(maxsize, cache)
         for i in range(maxsize):

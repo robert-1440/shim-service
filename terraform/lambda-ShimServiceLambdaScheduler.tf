@@ -118,10 +118,9 @@ resource "aws_lambda_function" "shim_service_lambda_scheduler" {
 
   environment {
     variables = {
-      ACTIVE_PROFILES      = "scheduler"
-      AWS_XRAY_SDK_ENABLED = "false"
-      ERROR_TOPIC_ARN      = "${aws_sns_topic.shim_error.arn}"
-      THIS_FUNCTION_ARN    = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceLambdaScheduler"
+      ACTIVE_PROFILES   = "scheduler"
+      ERROR_TOPIC_ARN   = "${aws_sns_topic.shim_error.arn}"
+      THIS_FUNCTION_ARN = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceLambdaScheduler"
     }
   }
   depends_on = [ aws_iam_role_policy_attachment.shim_service_lambda_scheduler ]

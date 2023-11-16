@@ -69,4 +69,3 @@ permissions:
 environment:
   variables:
     ACTIVE_PROFILES: scheduler
-    AWS_XRAY_SDK_ENABLED: "false"
