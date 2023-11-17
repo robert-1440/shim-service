@@ -1,5 +1,4 @@
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from config import Config
 from lambda_pkg.functions import LambdaInvoker
 from poll.live_agent.processor import LiveAgentPollingProcessor

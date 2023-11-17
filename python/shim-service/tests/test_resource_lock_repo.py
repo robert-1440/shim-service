@@ -1,5 +1,6 @@
 from typing import Optional
 
+import bean
 from base_test import BaseTest
 from bean import beans, BeanName
 from repos.aws.aws_resource_lock import AwsResourceLockRepo, LocalDto
@@ -152,7 +153,7 @@ class ResourceLockTests(BaseTest):
 
     def setUp(self) -> None:
         super().setUp()
-        self.repo = beans.get_bean_instance(BeanName.RESOURCE_LOCK_REPO)
+        self.repo = bean.get_bean_instance(BeanName.RESOURCE_LOCK_REPO)
 
     def tearDown(self) -> None:
         beans.reset()

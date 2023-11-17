@@ -1,7 +1,6 @@
 import abc
 
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from instance import Instance
 from session import Session
 from utils.uri_utils import Uri

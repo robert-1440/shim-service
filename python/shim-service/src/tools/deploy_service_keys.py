@@ -7,11 +7,12 @@ from traceback import print_exc
 from typing import Dict, Any, Optional
 
 import adjust_path
+import bean
 from aws import AwsClient
 from bean import profiles, ALL_PROFILES
 
 profiles.set_active_profiles(ALL_PROFILES)
-from bean import beans, BeanName
+from bean import BeanName
 from repos.secrets import ServiceKeys, SecretsRepo, ServiceKey
 from tools.support.command_line import CommandLineProcessor
 from tools.support.utils import prompt_yes
@@ -70,7 +71,7 @@ def deserialize(token: str) -> ServiceKeys:
 
 
 def apply_keys(keys: ServiceKeys, current: Optional[ServiceKeys]):
-    client: AwsClient = beans.get_bean_instance(BeanName.SECRETS_MANAGER_CLIENT)
+    client: AwsClient = bean.get_bean_instance(BeanName.SECRETS_MANAGER_CLIENT)
     name = f"shim-service/service-keys"
     payload = keys.to_json()
     if current is None:
@@ -91,7 +92,7 @@ if profile is None:
     print("Need AWS_PROFILE set.", file=sys.stderr)
     exit(3)
 keys = deserialize(token)
-repo: SecretsRepo = beans.get_bean_instance(BeanName.SECRETS_REPO)
+repo: SecretsRepo = bean.get_bean_instance(BeanName.SECRETS_REPO)
 
 current = repo.find_service_keys()
 if current is not None and not force:

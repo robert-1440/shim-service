@@ -4,8 +4,7 @@ from typing import List, Optional
 from retry import retry
 
 from auth import Credentials
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from instance import Instance
 from lambda_pkg.functions import LambdaInvoker
 from lambda_web_framework.web_exceptions import NotAuthorizedException, GoneException, BadRequestException, \

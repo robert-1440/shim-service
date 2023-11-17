@@ -2,8 +2,7 @@ import abc
 import pickle
 from typing import Dict, Optional, Any
 
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from lambda_web_framework.web_exceptions import NotAuthorizedException, LambdaHttpException
 from services.sfdc import SfdcAuthenticator
 from services.sfdc.live_agent import live_agent

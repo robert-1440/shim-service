@@ -1,5 +1,4 @@
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from notification import Notifier
 
 

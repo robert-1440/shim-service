@@ -1,10 +1,11 @@
 import os
 
+import bean
 from bean.profiles import describe_profiles, ALL_PROFILES
 
 os.environ['ACTIVE_PROFILES'] = describe_profiles(ALL_PROFILES)
 
-from bean import InvocableBean, beans, BeanName
+from bean import InvocableBean, BeanName
 from manual import setup
 from manual.event_handler import OurEventListener
 from pending_event import PendingEventType
@@ -20,8 +21,8 @@ from utils.uri_utils import Uri
 
 
 def poll():
-    poller: InvocableBean = beans.get_bean_instance(BeanName.LIVE_AGENT_PROCESSOR)
-    pe_repo: PendingEventsRepo = beans.get_bean_instance(BeanName.PENDING_EVENTS_REPO)
+    poller: InvocableBean = bean.get_bean_instance(BeanName.LIVE_AGENT_PROCESSOR)
+    pe_repo: PendingEventsRepo = bean.get_bean_instance(BeanName.PENDING_EVENTS_REPO)
     event = {}
     while True:
         events = pe_repo.query_events(PendingEventType.LIVE_AGENT_POLL, 1)

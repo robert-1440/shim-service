@@ -1,8 +1,7 @@
 from typing import Any
 
 from aws.sns import Sns
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 
 
 @inject(BeanName.SNS_CLIENT)

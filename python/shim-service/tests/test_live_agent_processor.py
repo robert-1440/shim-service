@@ -2,8 +2,9 @@ import json
 import time
 from typing import List
 
+import bean
 from base_test import BaseTest, AsyncMode, SECOND_USER_ID, DEFAULT_USER_ID
-from bean import beans, BeanName
+from bean import BeanName
 from config import Config
 from mocks.gcp.firebase_admin import messaging
 from mocks.http_session_mock import set_always_response, MockedResponse
@@ -70,7 +71,7 @@ class TestLiveAgentPollingProcessor(BaseTest):
 
         self.processor.invoke({})
 
-        repo: SessionPushNotificationsRepo = beans.get_bean_instance(BeanName.PUSH_NOTIFICATION_REPO)
+        repo: SessionPushNotificationsRepo = bean.get_bean_instance(BeanName.PUSH_NOTIFICATION_REPO)
         sess = self.get_session_from_token(token)
         notifications = list(repo.query_notifications(sess))
         self.assertHasLength(2, notifications)
@@ -108,7 +109,7 @@ class TestLiveAgentPollingProcessor(BaseTest):
         text = self.execute_and_capture_info_logs(lambda: self.scheduler_mock.invoke_schedules())
 
         self.assertIn("Total notifications sent: 0.", text)
-        pe_repo: PendingEventsRepo = beans.get_bean_instance(BeanName.PENDING_EVENTS_REPO)
+        pe_repo: PendingEventsRepo = bean.get_bean_instance(BeanName.PENDING_EVENTS_REPO)
         result = pe_repo.query_events(PendingEventType.LIVE_AGENT_POLL, 100, None)
         self.assertHasLength(1, result.rows)
         event = result.rows[0]
@@ -122,7 +123,7 @@ class TestLiveAgentPollingProcessor(BaseTest):
         it is still locked (prevent flapping test).
         We do this by monkeying with the query_notifications method in the notifications repo.
         """
-        repo: SessionPushNotificationsRepo = beans.get_bean_instance(BeanName.PUSH_NOTIFICATION_REPO)
+        repo: SessionPushNotificationsRepo = bean.get_bean_instance(BeanName.PUSH_NOTIFICATION_REPO)
 
         save_func = repo.query_notifications
 
@@ -162,7 +163,7 @@ class TestLiveAgentPollingProcessor(BaseTest):
         """
         Here we create the max events allowed per session + 1
         """
-        config: Config = beans.get_bean_instance(BeanName.CONFIG)
+        config: Config = bean.get_bean_instance(BeanName.CONFIG)
         template_user_id = DEFAULT_USER_ID[0:len(DEFAULT_USER_ID) - 1:]
         for i in range(0, config.sessions_per_live_agent_poll_processor + 1):
             c = chr(i + 65)
@@ -188,7 +189,7 @@ class TestLiveAgentPollingProcessor(BaseTest):
     def setUp(self) -> None:
         super().setUp()
         self.info_logs = []
-        self.processor = beans.get_bean_instance(BeanName.LIVE_AGENT_PROCESSOR)
+        self.processor = bean.get_bean_instance(BeanName.LIVE_AGENT_PROCESSOR)
         loghelper.INFO_LOGGING_HOOK = self.info_log
 
     def info_log(self, message: str):

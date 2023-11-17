@@ -13,10 +13,11 @@ from typing import Dict, Any, Optional, Union, Tuple, List, Callable
 
 import app
 import bean
+bean.set_resettable(True)
 from botomocks.sqs_mock import MockSqsClient
 from lambda_pkg.functions import LambdaFunction
 
-bean.beans.RESETTABLE = True
+
 # Protect us from accidentally hitting an actual AWS account
 os.environ['AWS_ACCESS_KEY_ID'] = "invalid"
 os.environ['AWS_SECRET_ACCESS_KEY'] = "invalid"
@@ -31,8 +32,7 @@ os.environ[SQS_NOTIFICATION_PUBLISHER_ENV_NAME] = SQS_NOTIFICATION_PUBLISHER_QUE
 import bean.beans
 from auth import Credentials
 from aws.dynamodb import DynamoDb
-from bean import BeanName, beans
-from bean.beans import get_bean_instance
+from bean import BeanName, beans, get_bean_instance
 from bean.loaders import sessions_repo
 from better_test_case import BetterTestCase
 from botomocks.dynamodb_mock import MockDynamoDbClient
@@ -264,11 +264,11 @@ class BaseTest(BetterTestCase):
         beans.override_bean(BeanName.SQS_CLIENT, self.sqs_mock)
 
         setup_ddb(self.ddb_mock)
-        self.dynamodb: DynamoDb = beans.get_bean_instance(BeanName.DYNAMODB)
-        self.user_sessions_repo = beans.get_bean_instance(BeanName.USER_SESSIONS_REPO)
+        self.dynamodb: DynamoDb = bean.get_bean_instance(BeanName.DYNAMODB)
+        self.user_sessions_repo = bean.get_bean_instance(BeanName.USER_SESSIONS_REPO)
         self.save_class = sessions_repo.INVOKE_CLASS
         sessions_repo.INVOKE_CLASS = MockAwsSessionsRepo
-        self.sessions_repo = beans.get_bean_instance(BeanName.SESSIONS_REPO)
+        self.sessions_repo = bean.get_bean_instance(BeanName.SESSIONS_REPO)
 
         #        self.sessions_repo = MockAwsSessionsRepo(self.dynamodb, self.user_sessions_repo, self.worker_sessions_repo)
         #       beans.override_bean(BeanName.SESSIONS_REPO, self.sessions_repo)
@@ -279,7 +279,7 @@ class BaseTest(BetterTestCase):
         self.http_session_mock.add_credentials(ALTERNATE_CREDS)
 
         self.instance = get_bean_instance(BeanName.INSTANCE)
-        self.config = beans.get_bean_instance(BeanName.CONFIG)
+        self.config = bean.get_bean_instance(BeanName.CONFIG)
         self.put_organization()
 
         self.lambda_mock = configure_lambdas(self.lambdas_enabled())
@@ -631,7 +631,7 @@ class BaseTest(BetterTestCase):
 
     @staticmethod
     def query_events(session_key: SessionKey, event_type: EventType) -> List[Event]:
-        events_repo: EventsRepo = beans.get_bean_instance(BeanName.EVENTS_REPO)
+        events_repo: EventsRepo = bean.get_bean_instance(BeanName.EVENTS_REPO)
         last_seq_no = None
         events = []
         while True:

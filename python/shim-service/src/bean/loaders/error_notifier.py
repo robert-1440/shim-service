@@ -1,8 +1,7 @@
 import os
 
 from aws.sns import Sns
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from notification.aws.aws_notifier import AwsNotifier
 
 

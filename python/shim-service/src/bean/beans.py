@@ -1,25 +1,17 @@
-import functools
 import os
-import sys
-from functools import reduce
 from threading import RLock
 from traceback import print_exc
-from typing import Union, Callable, Any, Dict, Collection, Optional
+from typing import Union, Callable, Any, Dict, Collection, Optional, Iterable
 
 import boto3
 
-from bean import BeanName, Bean, BeanInitializationException, profiles, InvocableBean, BeanType
+from bean import BeanName, Bean, BeanInitializationException, profiles, BeanRegistry, BeanType, \
+    get_bean_instance, is_resettable
 from bean.profiles import get_active_profiles
 from config import Config
-from utils.collection_utils import to_collection
-from utils.supplier import MemoizedSupplier
+from utils.code_utils import import_module_and_get_attribute
 
 BeanValue = Union[Callable, Any]
-
-#
-# Set this to True when testing
-#
-RESETTABLE = False
 
 _GLOBAL_MUTEX = RLock()
 
@@ -43,10 +35,11 @@ class _LazyLoader:
 
     def invoke(self, preload: bool = False) -> Any:
         if self.init_function is None:
-            code = f"from bean.loaders import {self.name}\n\n"
-            local_vars = {}
-            exec(code, sys.modules[__name__].__dict__, local_vars)
-            self.init_function = local_vars[self.name].__dict__['init']
+            self.init_function = import_module_and_get_attribute(
+                self.name,
+                "init",
+                "bean.loaders"
+            )
 
         if self.bean_names is not None and len(self.bean_names) > 0:
             args = list(map(lambda n: get_bean_instance(n), self.bean_names))
@@ -73,7 +66,7 @@ class _BeanImpl(Bean):
 
     def _set_name(self, name: BeanName):
         self.name = name
-        if not RESETTABLE:
+        if not is_resettable():
             profile_bits = name.value[1]
             if get_active_profiles() & profile_bits == 0:
                 self.__disabled = True
@@ -82,7 +75,12 @@ class _BeanImpl(Bean):
             params: dict = name.value[2]
             bt = params.get('type')
             if bt is not None:
-                self.__bean_type_flags = bt.value
+                if type(bt) is tuple:
+                    self.__bean_type_flags = 0
+                    for b in bt:
+                        self.__bean_type_flags |= b.value
+                else:
+                    self.__bean_type_flags = bt.value
             if not profiles.should_ignore_vars():
                 env_var = params.get('var')
                 if env_var is not None:
@@ -106,7 +104,7 @@ class _BeanImpl(Bean):
         with m:
             if self.__mutex is not None:
                 caller()
-                if not RESETTABLE:
+                if not is_resettable():
                     self.__mutex = None
 
     def _preload(self):
@@ -149,7 +147,7 @@ class _BeanImpl(Bean):
         return self.__lazy
 
     def reset(self):
-        assert RESETTABLE
+        assert is_resettable()
         if self.__initialized:
             self.__value = None
             self.__initialized = False
@@ -174,7 +172,7 @@ def _boto3(name: str) -> _BeanImpl:
     return _BeanImpl(_Boto3Loader(name))
 
 
-__BEANS: Dict[BeanName, _BeanImpl] = {
+_BEANS: Dict[BeanName, _BeanImpl] = {
     BeanName.SECRETS_MANAGER_CLIENT: _boto3('secretsmanager'),
     BeanName.DYNAMODB_CLIENT: _boto3('dynamodb'),
     BeanName.HTTP_CLIENT: _module(),
@@ -221,18 +219,11 @@ __BEANS: Dict[BeanName, _BeanImpl] = {
 
 
 def __setup_beans():
-    for name, value in __BEANS.items():
+    for name, value in _BEANS.items():
         value._set_name(name)
 
 
 __setup_beans()
-
-
-def __get_bean_by_name(name: str) -> Bean:
-    for b in __BEANS.values():
-        if b.name.name == name:
-            return b
-    raise ValueError(f"Bean with name '{name}' not found.")
 
 
 def override_bean(name: BeanName, value: BeanValue):
@@ -243,96 +234,19 @@ def override_bean(name: BeanName, value: BeanValue):
     :param value: the value for the bean.
     """
     assert isinstance(name, BeanName)
-    b = __BEANS[name]
+    b = _BEANS[name]
     b.set_initializer(value)
 
 
 def reset():
-    assert RESETTABLE
+    assert is_resettable()
     setattr(profiles, "_active_profiles", None)
     """
     Use during unit tests only!
     """
-    for bean in __BEANS.values():
+    for bean in _BEANS.values():
         bean.reset()
     __setup_beans()
-
-
-def get_bean(name: BeanName) -> Bean:
-    return __BEANS[name]
-
-
-def get_bean_instance(name: BeanName) -> Any:
-    b = __BEANS.get(name)
-    if b is None:
-        raise BeanInitializationException(name, f"No bean registered for {name.name}")
-    return b.get_instance()
-
-
-def get_invocable_bean(name: BeanName) -> InvocableBean:
-    v = get_bean_instance(name)
-    assert isinstance(v, InvocableBean)
-    return v
-
-
-def _get_bean_type_flags(bean_types: Collection[BeanType]):
-    def reducer(a, b):
-        return a | b
-
-    return reduce(reducer, map(lambda b: b.value, bean_types), 0)
-
-
-def inject(bean_instances: Union[BeanName, Collection[BeanName]] = None,
-           beans: Union[BeanName, Collection[BeanName]] = None,
-           bean_types: Union[BeanType, Collection[BeanType]] = None):
-    """
-    Used to inject bean instances or beans into a function call. They will be added to the end of the argument list,
-    in the specified order (starting with instances then beans)
-    :param bean_instances: bean instances to inject.
-    :param beans: beans to inject
-    :param bean_types: bean types to inject instances for
-    """
-    bean_instances = to_collection(bean_instances)
-    beans = to_collection(beans)
-    bean_types = to_collection(bean_types)
-    if bean_instances is not None and len(bean_instances) == 0:
-        bean_instances = None
-    if beans is not None and len(beans) == 0:
-        beans = None
-
-    def load_bean_args():
-        bean_args = []
-        if bean_instances is not None:
-            for bv in bean_instances:
-                bean_args.append(get_bean_instance(bv))
-        if bean_types is not None:
-            for bv in bean_types:
-                flags = _get_bean_type_flags(to_collection(bv))
-                bean_list = map(lambda b: b.get_instance(),
-                                filter(lambda b: b.has_bean_type_flags(flags), __BEANS.values()))
-                bean_args.append(tuple(bean_list))
-        if beans is not None:
-            for bv in beans:
-                bean_args.append(get_bean(bv))
-        return bean_args
-
-    if RESETTABLE:
-        loader = load_bean_args
-    else:
-        supplier = MemoizedSupplier(load_bean_args)
-        loader = supplier.get
-
-    def decorator(wrapped_function):
-        @functools.wraps(wrapped_function)
-        def _inner_wrapper(*args):
-            args_copy = list(args)
-            args_to_copy = loader()
-            args_copy.extend(args_to_copy)
-            return wrapped_function(*args_copy)
-
-        return _inner_wrapper
-
-    return decorator
 
 
 def load_all_lazy():
@@ -341,10 +255,17 @@ def load_all_lazy():
     """
     impl: _BeanImpl
     profile_bits = get_active_profiles()
-    for impl in filter(lambda b: b.lazy and b.is_active(profile_bits), __BEANS.values()):
+    for impl in filter(lambda b: b.lazy and b.is_active(profile_bits), _BEANS.values()):
         impl._preload()
 
 
-def invoke_bean_by_name(name: str, parameters: Dict[str, Any]) -> Any:
-    b: InvocableBean = __get_bean_by_name(name).get_instance()
-    return b.invoke(parameters)
+class RegistryImpl(BeanRegistry):
+
+    def find_bean(self, bean_name: BeanName) -> Optional[Bean]:
+        return _BEANS.get(bean_name)
+
+    def get_beans_with_matching_type(self, bean_type: BeanType) -> Iterable[Bean]:
+        return filter(lambda b: b.has_bean_type_flags(bean_type.value), _BEANS.values())
+
+
+registry = RegistryImpl()

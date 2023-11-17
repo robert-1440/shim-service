@@ -1,7 +1,6 @@
 import json
 
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from cs_client.admin import AdminClient
 from repos.secrets import PushNotificationProviderCredentials
 

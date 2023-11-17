@@ -3,8 +3,7 @@ import json
 import pickle
 from typing import Optional, List, Dict, Any, Union
 
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from events.event_types import EventType
 from repos.sessions_repo import store_event
 from repos.sfdc_sessions_repo import SfdcSessionsRepo

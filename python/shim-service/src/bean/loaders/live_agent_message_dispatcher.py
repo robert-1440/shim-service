@@ -1,5 +1,4 @@
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from repos.session_push_notifications import SessionPushNotificationsRepo
 from services.sfdc.live_agent.message_dispatcher import LiveAgentMessageDispatcher
 

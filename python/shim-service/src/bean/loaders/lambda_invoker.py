@@ -1,6 +1,5 @@
 from aws import AwsClient
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from lambda_pkg.aws.aws_lambda_invoker import AwsLambdaInvoker
 
 

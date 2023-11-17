@@ -2,8 +2,8 @@ import json
 from traceback import print_exc
 from typing import Any, Dict, Optional
 
-from bean import BeanName, beans
-from bean.beans import inject
+import bean
+from bean import BeanName, inject
 from lambda_web_framework import WebRequestProcessor, init_lambda
 from lambda_web_framework.request import LambdaHttpResponse
 from lambda_web_framework.web_exceptions import LambdaHttpException
@@ -43,7 +43,7 @@ def __dispatch_web_request(event: dict, web_router: WebRequestProcessor):
 
 def __call_bean(bean_name: str, event: Dict[str, Any]):
     try:
-        beans.invoke_bean_by_name(bean_name, event.get('parameters'))
+        bean.invoke_bean_by_name(bean_name, event.get('parameters'))
         return {'StatusCode': 200}
     except BaseException as ex:
         logger.severe("Unexpected exception", ex)

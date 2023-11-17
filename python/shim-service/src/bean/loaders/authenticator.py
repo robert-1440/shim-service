@@ -1,6 +1,5 @@
 from auth.auth_handler import AuthenticatorImpl
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from instance import Instance
 
 

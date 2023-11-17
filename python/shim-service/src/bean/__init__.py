@@ -1,15 +1,25 @@
 import abc
+import functools
+import sys
 from enum import Enum
-from typing import Any, TypeVar, Dict
+from typing import Any, TypeVar, Dict, Collection, Union, Optional, Iterable
 
 from bean.profiles import WEB_PROFILE, LIVE_AGENT_PROCESSOR_PROFILE, PUBSUB_POLLER_PROFILE, PUSH_NOTIFIER_PROFILE, \
     ALL_PROFILES, NON_WEB_PROFILES, NON_PUSH_PROFILES, SCHEDULER_PROFILE, NON_SCHEDULER_PROFILES, TABLE_LISTENER_PROFILE
 from constants import SQS_PUSH_NOTIFICATION_QUEUE_URL
 from utils import exception_utils
+from utils.code_utils import import_module_and_get_attribute
+from utils.collection_utils import to_collection
+from utils.enum_utils import NameLookupEnum
 
 T = TypeVar("T")
 
 from utils.supplier import Supplier, MemoizedSupplier
+
+#
+# Set this to True when testing
+#
+RESETTABLE = False
 
 
 class InvocableBean(metaclass=abc.ABCMeta):
@@ -29,7 +39,7 @@ EVENTS_PROFILES = ALL_PROFILES ^ SCHEDULER_PROFILE ^ TABLE_LISTENER_PROFILE
 LAMBDA_PROFILES = ALL_PROFILES ^ SCHEDULER_PROFILE ^ TABLE_LISTENER_PROFILE
 
 
-class BeanName(Enum):
+class BeanName(NameLookupEnum):
     SECRETS_MANAGER_CLIENT = 0, WEB_PROFILE
     HTTP_CLIENT = 1, HTTP_CLIENT_PROFILES
     DYNAMODB_CLIENT = 2, ALL_PROFILES
@@ -97,3 +107,110 @@ class Bean(metaclass=abc.ABCMeta):
         return MemoizedSupplier(self.get_instance)
 
 
+class BeanRegistry(metaclass=abc.ABCMeta):
+
+    def find_bean_by_name(self, name: str) -> Optional[Bean]:
+        bean_name = BeanName._value_of(name, "Bean")
+        return self.find_bean(bean_name)
+
+    def get_bean_by_name(self, name: str) -> Bean:
+        bean = self.find_bean_by_name(name)
+        if bean is None:
+            raise ValueError(f"No bean with name '{name}' found.")
+        return bean
+
+    @abc.abstractmethod
+    def find_bean(self, bean_name: BeanName) -> Optional[Bean]:
+        raise NotImplementedError()
+
+    def get_bean(self, bean_name: BeanName) -> Bean:
+        bean = self.find_bean(bean_name)
+        if bean is None:
+            raise BeanInitializationException(bean_name, f"No bean registered for {bean_name.name}.")
+        return bean
+
+    @abc.abstractmethod
+    def get_beans_with_matching_type(self, bean_type: BeanType) -> Iterable[Bean]:
+        raise NotImplementedError()
+
+
+registry_supplier: Supplier[BeanRegistry] = MemoizedSupplier(lambda:
+                                                             import_module_and_get_attribute("beans",
+                                                                                             "registry",
+                                                                                             from_module="bean"))
+
+
+def inject(bean_instances: Union[BeanName, Collection[BeanName]] = None,
+           beans: Union[BeanName, Collection[BeanName]] = None,
+           bean_types: Union[BeanType, Collection[BeanType]] = None):
+    """
+    Used to inject bean instances or beans into a function call. They will be added to the end of the argument list,
+    in the specified order (starting with instances then beans)
+    :param bean_instances: bean instances to inject.
+    :param beans: beans to inject
+    :param bean_types: bean types to inject instances for
+    """
+    bean_instances = to_collection(bean_instances)
+    beans = to_collection(beans)
+    bean_types = to_collection(bean_types)
+    if bean_instances is not None and len(bean_instances) == 0:
+        bean_instances = None
+    if beans is not None and len(beans) == 0:
+        beans = None
+
+    def load_bean_args():
+        registry = registry_supplier.get()
+        bean_args = []
+        if bean_instances is not None:
+            for bv in bean_instances:
+                bean_args.append(get_bean_instance(bv))
+        if bean_types is not None:
+            for bv in bean_types:
+                bean_list = registry.get_beans_with_matching_type(bv)
+                bean_args.append(tuple(map(lambda b: b.get_instance(), bean_list)))
+        if beans is not None:
+            for bv in beans:
+                bean_args.append(registry_supplier.get().get_bean(bv))
+        return bean_args
+
+    if RESETTABLE:
+        loader = load_bean_args
+    else:
+        supplier = MemoizedSupplier(load_bean_args)
+        loader = supplier.get
+
+    def decorator(wrapped_function):
+        @functools.wraps(wrapped_function)
+        def _inner_wrapper(*args):
+            args_copy = list(args)
+            args_to_copy = loader()
+            args_copy.extend(args_to_copy)
+            return wrapped_function(*args_copy)
+
+        return _inner_wrapper
+
+    return decorator
+
+
+def invoke_bean_by_name(name: str, parameters: Dict[str, Any]) -> Any:
+    b: InvocableBean = registry_supplier.get().get_bean_by_name(name).get_instance()
+    return b.invoke(parameters)
+
+
+def get_bean_instance(name: BeanName) -> Any:
+    return registry_supplier.get().get_bean(name).get_instance()
+
+
+def get_invocable_bean(name: BeanName) -> InvocableBean:
+    v = get_bean_instance(name)
+    assert isinstance(v, InvocableBean)
+    return v
+
+
+def set_resettable(resettable: bool):
+    global RESETTABLE
+    RESETTABLE = resettable
+
+
+def is_resettable() -> bool:
+    return RESETTABLE

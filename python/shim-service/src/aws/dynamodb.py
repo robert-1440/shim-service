@@ -1,6 +1,6 @@
-import sys
 import abc
 import json
+import sys
 import threading
 import time
 from collections import namedtuple, defaultdict

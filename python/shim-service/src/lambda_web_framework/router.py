@@ -1,7 +1,6 @@
 from typing import Callable, Dict, Optional, Tuple, Collection
 
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from instance import Instance
 from lambda_web_framework.request import LambdaHttpRequest, BodyTransformer
 from lambda_web_framework.web_exceptions import NotFoundException, MethodNotAllowedException

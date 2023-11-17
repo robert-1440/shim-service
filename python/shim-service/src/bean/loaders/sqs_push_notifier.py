@@ -1,8 +1,7 @@
 import os
 
 from aws import AwsClient
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from constants import SQS_PUSH_NOTIFICATION_QUEUE_URL
 from push_notification.aws.sqs_notifier import AwsSqsPushNotifier
 

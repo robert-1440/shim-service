@@ -32,10 +32,12 @@ class ReverseLookupEnum(Enum):
     @classmethod
     def _value_of(cls, value: Any, thing: Optional[str] = None) -> Any:
         if cls.__reverse_table__ is None:
-            with cls.__mutex__:
-                if cls.__reverse_table__ is None:
-                    cls.__reverse_table__ = build_value_table(cls, cls.value_for_enum)
-            cls.__mutex__ = None
+            m = cls.__mutex__
+            if m is not None:
+                with m:
+                    if cls.__reverse_table__ is None:
+                        cls.__reverse_table__ = build_value_table(cls, cls.value_for_enum)
+                    cls.__mutex__ = None
 
         v = cls.__reverse_table__.get(value)
         if v is not None or thing is None:
@@ -45,3 +47,26 @@ class ReverseLookupEnum(Enum):
     @classmethod
     def value_for_enum(cls, v: Any) -> Any:
         return v
+
+
+class NameLookupEnum(Enum):
+    __name_table__ = None
+
+    __mutex__ = RLock()
+
+    @classmethod
+    def _value_of(cls, name: Any, thing: Optional[str] = None) -> Any:
+        if cls.__name_table__ is None:
+            m = cls.__mutex__
+            if m is not None:
+                with m:
+                    if cls.__name_table__ is None:
+                        cls.__name_table__ = {}
+                        for n in cls:
+                            cls.__name_table__[n.name] = n
+                    cls.__mutex__ = None
+
+        v = cls.__name_table__.get(name)
+        if v is not None or thing is None:
+            return v
+        raise ValueError(f"Invalid {thing}: '{name}'.")

@@ -1,7 +1,6 @@
 from typing import Collection
 
-from bean import BeanType
-from bean.beans import inject
+from bean import BeanType, inject
 from push_notification import PushNotifier
 from push_notification.manager import PushNotificationManager
 

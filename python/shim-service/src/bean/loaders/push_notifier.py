@@ -1,5 +1,4 @@
-from bean import BeanName, Bean
-from bean.beans import inject
+from bean import BeanName, Bean, inject
 from push_notification.gcp.gcp_notifier import GcpPushNotifier
 
 

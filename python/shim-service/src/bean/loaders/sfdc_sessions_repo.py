@@ -1,6 +1,5 @@
 from aws.dynamodb import DynamoDb
-from bean import BeanName, Bean
-from bean.beans import inject
+from bean import BeanName, Bean, inject
 from repos.aws.abstract_repo import AbstractAwsRepo
 from repos.aws.aws_sfdc_sessions_repo import AwsSfdcSessionsRepo
 

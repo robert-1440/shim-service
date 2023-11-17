@@ -1,7 +1,6 @@
 import os
 
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from cs_client import ServiceKeyCredentials
 from cs_client.admin import AdminClient
 from cs_client.profile import Profile

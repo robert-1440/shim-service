@@ -129,12 +129,12 @@ class TestSuite(BetterTestCase):
         multi = True
         submit_blocks_in_parallel(
             block * 2,
-            5,
+            10,
             5,
             receiver
         )
 
-        self.assertHasLength(3, threads_seen)
+        self.assertHasLength(2, threads_seen)
         self.assertEqual(20, total)
 
 

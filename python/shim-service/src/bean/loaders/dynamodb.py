@@ -1,8 +1,7 @@
 from typing import Any
 
 from aws.dynamodb import DynamoDb
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 
 
 @inject(bean_instances=BeanName.DYNAMODB_CLIENT)

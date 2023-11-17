@@ -7,8 +7,7 @@ from traceback import print_exception
 from types import ModuleType
 from typing import Union, Dict, Any, Callable, Optional
 
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from notification import Notifier
 from utils import exception_utils
 from utils.exception_utils import never_raise

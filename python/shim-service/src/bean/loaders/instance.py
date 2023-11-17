@@ -1,5 +1,4 @@
-from bean import BeanName, Bean
-from bean.beans import inject
+from bean import BeanName, Bean, inject
 from config import Config
 from instance import Instance
 from repos.secrets import SecretsRepo

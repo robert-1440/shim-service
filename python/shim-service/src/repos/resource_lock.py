@@ -5,8 +5,8 @@ from typing import Optional, Callable, Any, Tuple
 
 from retry.api import retry_call
 
-from bean import beans, BeanName
-from bean.beans import inject
+import bean
+from bean import BeanName, inject
 from lambda_pkg.functions import LambdaFunction
 from lambda_web_framework.web_exceptions import ConflictException
 from repos import OptimisticLockException
@@ -205,7 +205,7 @@ def __attempt_session_lock(
 
     name = f"{lock_type}/{key.tenant_id}/{key.session_id}"
 
-    lock = locker(beans.get_bean_instance(BeanName.RESOURCE_LOCK_REPO), name)
+    lock = locker(bean.get_bean_instance(BeanName.RESOURCE_LOCK_REPO), name)
     if lock is None:
         if lambda_function is not None:
             __schedule_lambda(

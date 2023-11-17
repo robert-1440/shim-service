@@ -1,6 +1,5 @@
 from aws import AwsClient
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from scheduler.aws_scheduler import AwsScheduler
 
 

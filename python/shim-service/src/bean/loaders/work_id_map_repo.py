@@ -1,6 +1,5 @@
 from aws.dynamodb import DynamoDb
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from config import Config
 from repos.aws.aws_work_id_map_repo import AwsWorkIdRepo
 

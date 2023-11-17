@@ -1,11 +1,18 @@
 import abc
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 import boto3
 import botocore
 
 from utils.loghelper import StandardLogger
+
+
+class RequestHandler(metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def process(self, event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        raise NotImplementedError()
 
 
 class WebRequestProcessor(metaclass=abc.ABCMeta):

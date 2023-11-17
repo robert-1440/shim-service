@@ -1,6 +1,5 @@
 from aws.dynamodb import DynamoDb
-from bean import Bean, BeanName
-from bean.beans import inject
+from bean import Bean, BeanName, inject
 from config import Config
 from repos.aws.aws_session_contexts import AwsSessionContextsRepo
 

@@ -2,8 +2,7 @@ import abc
 from copy import copy
 from typing import List, Optional, Any, Dict, Union
 
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from events.event_types import EventType
 from lambda_web_framework.web_exceptions import InvalidParameterException
 from repos.resource_lock import ResourceLock, ResourceLockRepo

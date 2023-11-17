@@ -1,5 +1,4 @@
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from push_notification.manager import PushNotificationManager
 from push_notification.processor import PushNotificationProcessor
 from repos.session_contexts import SessionContextsRepo

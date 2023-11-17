@@ -1,8 +1,7 @@
 import abc
 from typing import Optional, Any, Dict
 
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from events import EventType
 from lambda_web_framework.web_exceptions import BadRequestException, GoneException
 from session import Session, SessionStatus, verify_session_status, SessionKey

@@ -1,5 +1,4 @@
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from repos.session_contexts import SessionContextsRepo
 from table_listener.processor import TableListenerProcessor
 

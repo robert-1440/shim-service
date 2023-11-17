@@ -1,10 +1,11 @@
 from copy import copy
 from typing import Optional, List
 
+import bean
 from auth import Credentials
 from base_test import BaseTest, DEFAULT_TENANT_ID, create_credentials, GOOD_CREDS, DEFAULT_INSTANCE_URL, \
     DEFAULT_ACCESS_TOKEN, next_session_id
-from bean import beans, BeanName
+from bean import BeanName
 from botomocks.lambda_mock import Invocation
 from config import DEFAULT_MAX_SESSION_RETRIES
 from lambda_web_framework.web_exceptions import NotAuthorizedException, ForbiddenException, GoneException, \
@@ -71,7 +72,7 @@ class SessionManagerTest(BaseTest):
         # Make sure it verified the fcm token
         verification_utils.verify_dry_run(messaging.pop_invocation())
 
-        repo: AwsSessionContextsRepo = beans.get_bean_instance(BeanName.SESSION_CONTEXTS_REPO)
+        repo: AwsSessionContextsRepo = bean.get_bean_instance(BeanName.SESSION_CONTEXTS_REPO)
         ctx = repo.find_session_context(sess, ContextType.WEB)
         self.assertIsNotNone(ctx)
         self.validate_expiration(ctx)
@@ -267,7 +268,7 @@ class SessionManagerTest(BaseTest):
 
         session = self.create_session()
 
-        contexts_repo: SessionContextsRepo = beans.get_bean_instance(BeanName.SESSION_CONTEXTS_REPO)
+        contexts_repo: SessionContextsRepo = bean.get_bean_instance(BeanName.SESSION_CONTEXTS_REPO)
         current = contexts_repo.create_session_contexts
 
         hit = False
@@ -485,7 +486,7 @@ class SessionManagerTest(BaseTest):
         )
 
     def __verify_pending_events(self, session: Session):
-        repo: PendingEventsRepo = beans.get_bean_instance(BeanName.PENDING_EVENTS_REPO)
+        repo: PendingEventsRepo = bean.get_bean_instance(BeanName.PENDING_EVENTS_REPO)
         events = repo.query_events(
             PendingEventType.LIVE_AGENT_POLL,
             10, None).rows

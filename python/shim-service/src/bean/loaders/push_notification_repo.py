@@ -1,6 +1,5 @@
 from aws.dynamodb import DynamoDb
-from bean import BeanName
-from bean.beans import inject
+from bean import BeanName, inject
 from config import Config
 from lambda_pkg.functions import LambdaInvoker
 from repos.aws.aws_sequence import AwsSequenceRepo

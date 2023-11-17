@@ -1,6 +1,7 @@
 import json
 import os
 
+import bean
 from bean import beans, BeanName
 from botomocks.sqs_mock import MockSqsClient
 from constants import SQS_PUSH_NOTIFICATION_QUEUE_URL
@@ -22,10 +23,10 @@ class TestSuite(BaseTest):
         super().setUp()
 
     def test_sqs(self):
-        logged = self.execute_and_capture_info_logs(lambda: beans.get_bean_instance(BeanName.PUSH_NOTIFICATION_MANAGER))
+        logged = self.execute_and_capture_info_logs(lambda: bean.get_bean_instance(BeanName.PUSH_NOTIFICATION_MANAGER))
         self.assertIn("Found the following notifiers: sqs.", logged)
 
-        nm: PushNotificationManager = beans.get_bean_instance(BeanName.PUSH_NOTIFICATION_MANAGER)
+        nm: PushNotificationManager = bean.get_bean_instance(BeanName.PUSH_NOTIFICATION_MANAGER)
         self.assertIsNone(nm.test_push_notification("sqs::good"))
         self.assertIn("Invalid token", nm.test_push_notification("sqs::"))
 

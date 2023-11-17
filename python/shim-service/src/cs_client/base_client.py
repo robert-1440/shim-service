@@ -2,7 +2,8 @@ import abc
 import json
 from typing import Dict, Any, Optional
 
-from bean import beans, BeanName
+import bean
+from bean import BeanName
 from cs_client.profile import Profile
 from lambda_web_framework.web_exceptions import ForbiddenException, NotAuthorizedException, BadRequestException
 from utils.http_client import join_base_path, HttpMethod as Method, join_paths, HttpResponse, MediaType, \
@@ -13,7 +14,7 @@ class BaseClient(metaclass=abc.ABCMeta):
     def __init__(self, profile: Profile, uri: str = None):
         self.profile = profile
         self.base_url = join_base_path(profile.url, "configuration-service")
-        self.http_client: HttpClient = beans.get_bean_instance(BeanName.HTTP_CLIENT)
+        self.http_client: HttpClient = bean.get_bean_instance(BeanName.HTTP_CLIENT)
         if uri is not None:
             self.base_url = join_base_path(self.base_url, uri)
 

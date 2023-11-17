@@ -4,7 +4,8 @@ from traceback import print_exc
 from typing import Callable, Dict, Any, List, Optional
 
 import app
-from bean import beans, InvocableBean
+import bean
+from bean import InvocableBean
 from botomocks import assert_empty, AwsInvalidParameterResponseException
 from lambda_pkg.functions import LambdaFunction
 from support import thread_utils
@@ -81,7 +82,7 @@ class MockLambdaClient:
     def enable_function(self, name: str, delayed: bool = False):
         lf = LambdaFunction.value_of(name)
         params = lf.value
-        invoker = beans.get_invocable_bean(params.default_bean_name)
+        invoker = bean.get_invocable_bean(params.default_bean_name)
         assert isinstance(invoker, InvocableBean)
         f = self.functions.get(name)
         if f is None:
