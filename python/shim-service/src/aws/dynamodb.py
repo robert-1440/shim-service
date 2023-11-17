@@ -1,20 +1,25 @@
+import sys
 import abc
 import json
 import threading
 import time
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 from io import StringIO
 from typing import Any, Callable, Tuple, Union, Optional, List, Mapping, Dict, Collection, Iterable
 
 from aws import is_not_found_exception, is_exception
-from utils import date_utils, exception_utils, object_utils
+from utils import date_utils, exception_utils, object_utils, threading_utils
 from utils.dict_utils import get_or_create
+from utils.exception_utils import dump_ex
 
 DynamoDbRow = Dict[str, Any]
 DynamoDbItem = Dict[str, Dict[str, Any]]
 
 RangeKeyQuerySpecifier = namedtuple("RangeKeyQuerySpecifier", "attribute value operation")
 FilterNameType = Optional[str]
+TableAndKey = Tuple[str, DynamoDbRow]
+TablesAndDynamoDbKeys = Dict[str, List[DynamoDbItem]]
+TableAndDynamoDbKey = Tuple[str, DynamoDbItem]
 
 
 class FilterOperation:
@@ -642,6 +647,41 @@ class DynamoDb:
         table_requests = {table_name: requests}
         return self.__process_batch_write(table_requests)
 
+    def batch_delete(self, table_and_keys: Iterable[TableAndKey],
+                     on_submit: Callable[[List[TableAndKey]], None] = None,
+                     on_error: Callable[[BaseException], None] = None):
+        """
+        Performs a batch delete. If the number of items exceeds 25, then the batch is split into multiple batches
+        and submitted in parallel.
+
+        :param table_and_keys: the list of table and keys to delete.
+        :param on_submit: optional caller to call when submitting a batch
+        :param on_error: optional caller to call when an error occurs
+        """
+
+        def submit(list_of_keys: List[TableAndKey]):
+            table_requests: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+            for item in list_of_keys:
+                table_requests[item[0]].append({'DeleteRequest': {'Key': _to_ddb_item(item[1])}})
+
+            if on_submit is not None:
+                on_submit(list_of_keys)
+
+            try:
+                self.__process_batch_write(table_requests)
+            except BaseException as ex:
+                if on_error is not None:
+                    on_error(ex)
+                else:
+                    print(f"Error deleting batch {list_of_keys}: {dump_ex(ex)}", file=sys.stderr)
+
+        threading_utils.submit_blocks_in_parallel(
+            table_and_keys,
+            25,
+            25,
+            submit
+        )
+
     def __process_batch_write(self, table_requests: Dict[str, List[Dict[str, Any]]]) -> int:
         count = 0
         while len(table_requests) > 0:
@@ -658,10 +698,9 @@ class DynamoDb:
         :return: the number of iterations required to perform the batch write
         (due to 'unprocessed items' being returned)
         """
-        table_requests: Dict[str, List[Dict[str, Any]]] = {}
+        table_requests: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
         for item in items:
-            requests: List[Dict[str, Any]] = get_or_create(table_requests, item.table_name, list)
-            requests.append(item.to_ddb_batch_request())
+            table_requests[item.table_name].append(item.to_ddb_batch_request())
 
         return self.__process_batch_write(table_requests)
 

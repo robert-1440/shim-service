@@ -1,7 +1,7 @@
-import json
 from typing import Optional, List
 
-from aws.dynamodb import DynamoDb, TransactionRequest, UpdateItemRequest, DynamoDbRow, DynamoDbItem, _from_ddb_item
+from aws.dynamodb import DynamoDb, TransactionRequest, UpdateItemRequest, DynamoDbRow, DynamoDbItem, _from_ddb_item, \
+    TableAndKey
 from bean import BeanSupplier
 from config import Config
 from events.event_types import EventType
@@ -15,9 +15,9 @@ from repos.aws.aws_sessions import AwsSessionsRepo
 from repos.aws.aws_sfdc_sessions_repo import AwsSfdcSessionsRepo
 from repos.session_contexts import SessionContextsRepo, SessionContextAndFcmToken
 from session import Session, SessionStatus, ContextType, SessionContext, SessionKey
-from utils import loghelper, collection_utils, threading_utils
+from utils import loghelper
+from utils.collection_utils import flat_iterator
 from utils.date_utils import get_system_time_in_seconds
-from utils.exception_utils import dump_ex
 
 logger = loghelper.get_logger(__name__)
 
@@ -166,33 +166,17 @@ class AwsSessionContextsRepo(AwsVirtualRangeTableRepo, SessionContextsRepo):
         return self.create_update_item_request(context, patches={'sessionData': context.session_data})
 
     def delete_by_row_keys(self, row_keys: List[DynamoDbItem]):
-
-        def extend(rows: List[DynamoDbRow], row: DynamoDbItem):
+        def transform(row: DynamoDbItem) -> List[TableAndKey]:
             key = _from_ddb_item(row)
+            entries = []
             for ct in ContextType:
                 new_key = dict(key)
                 new_key['contextType'] = ct.value
                 # We are a virtual table, so we need to build the actual key
-                rows.append(self.primary_key.build_key_as_dict(new_key))
+                entries.append(TableAndKey(self.table_name, self.primary_key.build_key_as_dict(new_key)))
+            return entries
 
-        def submit(list_of_keys: List[DynamoDbRow]):
-            try:
-                logger.info(f"Attempting to delete {len(list_of_keys)} context record(s) ...")
-                self.ddb.batch_delete_from_table(self.table_name, list_of_keys)
-            except BaseException as ex:
-                logger.error(f"Failed to delete batch: {dump_ex(ex)}")
+        def on_submit(table_and_keys: List[TableAndKey]):
+            logger.info(f"Attempting to delete {len(table_and_keys)} context record(s) ...")
 
-        submit_list = []
-        for row in row_keys:
-            extend(submit_list, row)
-
-        logger.info(f"Keys to delete: {json.dumps(submit_list, indent=True)})")
-        if len(submit_list) < 25:
-            submit(submit_list)
-        else:
-            threads = []
-            for block in collection_utils.partition(submit_list, 25):
-                threads.append(threading_utils.start_thread(submit, block))
-
-            for t in threads:
-                t.join(10)
+        self.ddb.batch_delete(flat_iterator(row_keys, transform), on_submit=on_submit)

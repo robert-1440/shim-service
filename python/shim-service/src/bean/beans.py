@@ -11,6 +11,7 @@ import boto3
 from bean import BeanName, Bean, BeanInitializationException, profiles, InvocableBean, BeanType
 from bean.profiles import get_active_profiles
 from config import Config
+from utils.collection_utils import to_collection
 from utils.supplier import MemoizedSupplier
 
 BeanValue = Union[Callable, Any]
@@ -274,15 +275,6 @@ def get_invocable_bean(name: BeanName) -> InvocableBean:
     return v
 
 
-def _to_collection(thing: Any):
-    if thing is not None:
-        if not isinstance(thing, Collection):
-            return (thing,)
-        if len(thing) == 0:
-            return None
-    return thing
-
-
 def _get_bean_type_flags(bean_types: Collection[BeanType]):
     def reducer(a, b):
         return a | b
@@ -300,9 +292,9 @@ def inject(bean_instances: Union[BeanName, Collection[BeanName]] = None,
     :param beans: beans to inject
     :param bean_types: bean types to inject instances for
     """
-    bean_instances = _to_collection(bean_instances)
-    beans = _to_collection(beans)
-    bean_types = _to_collection(bean_types)
+    bean_instances = to_collection(bean_instances)
+    beans = to_collection(beans)
+    bean_types = to_collection(bean_types)
     if bean_instances is not None and len(bean_instances) == 0:
         bean_instances = None
     if beans is not None and len(beans) == 0:
@@ -315,7 +307,7 @@ def inject(bean_instances: Union[BeanName, Collection[BeanName]] = None,
                 bean_args.append(get_bean_instance(bv))
         if bean_types is not None:
             for bv in bean_types:
-                flags = _get_bean_type_flags(_to_collection(bv))
+                flags = _get_bean_type_flags(to_collection(bv))
                 bean_list = map(lambda b: b.get_instance(),
                                 filter(lambda b: b.has_bean_type_flags(flags), __BEANS.values()))
                 bean_args.append(tuple(bean_list))
