@@ -1,0 +1,70 @@
+#
+# Describes the Lambda Function
+#
+
+type: lambda-function
+
+name: ShimServiceTableListener
+
+description: "Shim Service Table Listener"
+
+#
+# The zip file that contains the code.
+#
+zip-file: "${lambda-zips-dir}/table-listener.zip"
+
+runtime: python3.11
+
+handler: app.handler
+
+#
+# Memory size in megabytes
+#
+memory-size: var.table_listener_lambda_memory_size
+
+
+#
+# Ephemeral storage size in megabytes
+#
+ephemeral-storage: 512
+
+#
+# Time-out, in minutes:seconds, or seconds.
+# i.e.
+# "15:00" - 15 minutes.
+#      10 - 10 seconds.
+#
+timeout: 90
+
+#
+# Log retention for the log group, in days.
+#
+log-retention-days: 30
+
+layers:
+  - common-layer
+
+
+#
+# true means create an SQS queue that will trigger this lambda
+#
+event-queue: false
+
+mirror: false
+
+permissions:
+
+  dynamodb-tables:
+    - table: ShimServiceVirtualRangeTable
+      actions:
+        - BatchWriteItem
+
+  topics:
+    - name: shim-error
+      actions:
+        - "sns:Publish"
+
+
+environment:
+  variables:
+    ACTIVE_PROFILES: table-listener

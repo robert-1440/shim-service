@@ -12,7 +12,7 @@ from repos.aws.aws_session_contexts import AwsSessionContextsRepo
 from repos.session_push_notifications import SessionPushNotificationsRepo
 from session import SessionContext, SessionKey
 from utils import string_utils, loghelper
-from utils.date_utils import EpochMilliseconds, get_system_time_in_millis
+from utils.date_utils import EpochMilliseconds, get_system_time_in_millis, EpochSeconds, get_system_time_in_seconds
 
 logger = loghelper.get_logger(__name__)
 
@@ -25,7 +25,8 @@ class LocalRecord:
                  message_type: str,
                  message_data: Optional[bytes],
                  time_created: EpochMilliseconds,
-                 sent: bool):
+                 sent: bool,
+                 expire_time: Optional[EpochSeconds]):
         self.tenant_id = tenant_id
         self.session_id = session_id
         self.seq_no = seq_no
@@ -34,6 +35,7 @@ class LocalRecord:
         self.message_data = message_data
         self.time_created = time_created
         self.sent = sent
+        self.expire_time = expire_time
 
     def to_notification(self) -> SessionPushNotification:
         if self.message_data is not None:
@@ -57,7 +59,8 @@ class LocalRecord:
             'sessionId': self.session_id,
             'seqNo': self.seq_no,
             'channelType': self.channel_type,
-            'timeCreated': self.time_created
+            'timeCreated': self.time_created,
+            'expireTime': self.expire_time
         }
         if self.message_type is not None:
             record['messageType'] = self.message_type
@@ -77,7 +80,8 @@ class LocalRecord:
             record.get('messageType'),
             record.get('messageData'),
             record['timeCreated'],
-            record.get('sent')
+            record.get('sent'),
+            record.get('expireTime')
         )
 
     @classmethod
@@ -90,7 +94,8 @@ class LocalRecord:
             n.message_type,
             string_utils.compress(n.message),
             n.time_created,
-            n.sent
+            n.sent,
+            None
         )
 
 
@@ -110,11 +115,13 @@ class AwsPushNotificationsRepo(AwsVirtualRangeTableRepo, SessionPushNotification
     def __init__(self, ddb: DynamoDb,
                  sequence_repo: AwsSequenceRepo,
                  session_contexts_repo: AwsSessionContextsRepo,
-                 lambda_invoker: LambdaInvoker):
+                 lambda_invoker: LambdaInvoker,
+                 expiration_seconds: int):
         super(AwsPushNotificationsRepo, self).__init__(ddb)
         self.sequence_repo = sequence_repo
         self.session_contexts_repo = session_contexts_repo
         self.lambda_invoker = lambda_invoker
+        self.expiration_seconds = expiration_seconds
 
     def submit(self, context: SessionContext, platform_channel_type: str, message_type: str, message: str):
         record = LocalRecord(
@@ -125,7 +132,8 @@ class AwsPushNotificationsRepo(AwsVirtualRangeTableRepo, SessionPushNotification
             message_type=message_type,
             message_data=string_utils.compress(message),
             time_created=get_system_time_in_millis(),
-            sent=False
+            sent=False,
+            expire_time=get_system_time_in_seconds() + self.expiration_seconds
         )
         request_list: Any = [None]
 

@@ -1,6 +1,6 @@
 import json
 from traceback import print_exc
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from bean import BeanName, beans
 from bean.beans import inject
@@ -51,10 +51,27 @@ def __call_bean(bean_name: str, event: Dict[str, Any]):
         return __SERVER_ERROR_RESPONSE
 
 
-def _handler(event: dict, context: Any):
+def _check_event(event: dict) -> Optional[dict]:
     if event.get('command') == 'ping':
         __log_elapsed_time("Saw ping request, our elapsed time is")
         return {'statusCode': 200, 'body': {'pong': start_time}}
+    records = event.get('Records')
+    if records is not None and type(records) is list and len(records) > 0:
+        record = records[0]
+        if 'dynamodb' in record:
+            new_event = {
+                'bean': BeanName.TABLE_LISTENER_PROCESSOR.name,
+                'parameters': dict(event)
+            }
+            event.clear()
+            event.update(new_event)
+    return None
+
+
+def _handler(event: dict, context: Any):
+    r = _check_event(event)
+    if r is not None:
+        return r
     bean_name = event.get('bean')
     if bean_name is not None:
         return __call_bean(bean_name, event)

@@ -11,6 +11,7 @@ InjectedAttribute = Tuple[str, str]
 AttributeType = Union[Type, Tuple[Type, int]]
 InjectedAttributeValue = namedtuple("InjectedAttributeValue", "name value")
 
+DEFAULT_DELIMITER = '\t'
 
 def _find_attribute(obj: Any, name: str) -> Optional[Any]:
     try:
@@ -133,7 +134,7 @@ class CompositeKey:
     def __init__(self,
                  attribute_name: str,
                  attributes_and_types: Dict[str, Union[Type, Tuple[Type, int]]],
-                 delimiter=":"):
+                 delimiter=DEFAULT_DELIMITER):
         self.attribute_name = attribute_name
         self.parts: Dict[str, CompositeKeyPart] = _transform_dict(attributes_and_types, CompositeKeyPart)
         self.original_parts = self.parts

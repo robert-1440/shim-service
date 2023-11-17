@@ -141,7 +141,7 @@ def __connect_to_sfdc(session: Session, live_agent_platform: PollingPlatform,
     contexts = [__construct_web_context(session), __construct_push_notification_context(session)]
     if session.has_live_agent_polling():
         contexts.append(live_agent_platform.create_session_context(session))
-    if not contexts_repo.create_session_contexts(session, sfdc_sess, contexts):
+    if not contexts_repo.create_session_contexts(session, sfdc_sess.serialize(), contexts):
         raise OptimisticLockException()
     if session.has_live_agent_polling():
         lambda_invoker.invoke_live_agent_poller()

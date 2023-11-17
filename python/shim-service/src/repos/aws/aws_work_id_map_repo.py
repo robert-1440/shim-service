@@ -36,7 +36,7 @@ class AwsWorkIdRepo(AwsVirtualRangeTableRepo, WorkIdMapRepo, EventListener):
         entry = WorkIdMap(event.tenant_id, event_data['userId'], event_data['workId'], event_data['workTargetId'])
         patch = {
             'workId': entry.work_id,
-            'expire_time': get_system_time_in_seconds() + self.ttl_seconds
+            'expireTime': get_system_time_in_seconds() + self.ttl_seconds
         }
 
         return self.create_update_item_request(

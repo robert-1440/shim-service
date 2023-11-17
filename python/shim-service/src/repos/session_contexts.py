@@ -1,9 +1,9 @@
 import abc
 from typing import Optional, List
 
+from aws.dynamodb import DynamoDbItem
 from pending_event import PendingEvent
 from repos import Serializable
-from services.sfdc.sfdc_session import SfdcSession
 from session import Session, ContextType, SessionContext, SessionKey
 
 
@@ -30,7 +30,7 @@ class SessionContextsRepo(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def create_session_contexts(self,
                                 session: Session,
-                                sfdc_session: SfdcSession,
+                                session_data: bytes,
                                 contexts: List[SessionContext]) -> bool:
         raise NotImplementedError()
 
@@ -67,3 +67,14 @@ class SessionContextsRepo(metaclass=abc.ABCMeta):
         :return: True if all records were found
         """
         raise NotImplementedError()
+
+    @abc.abstractmethod
+    def delete_by_row_keys(self, row_keys: List[DynamoDbItem]):
+        """
+        Delete contexts for the given row keys.  It is expected that the keys came directly from a DynamoDb stream
+        notification, and is already in DynamoDb format for the ServiceSession keys.
+
+        :param row_keys: the list of keys.
+        """
+        raise NotImplementedError()
+

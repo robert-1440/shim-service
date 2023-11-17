@@ -33,6 +33,13 @@ DEFAULT_LA_POLL_SESSION_TIME = 60
 #
 DEFAULT_MAX_WORK_ID_MAP_SECONDS = 3600 * 24 * 10
 
+#
+# How long to keep push notification records.
+#
+DEFAULT_MAX_PUSH_NOTIFICATION_SECONDS = 3600 * 24 * 7
+
+DEFAULT_MAX_CONTEXT_TTL_SECONDS = 3600 * 24 * 7
+
 
 class Config:
     """
@@ -47,8 +54,9 @@ class Config:
                  idle_polling_seconds: int = DEFAULT_IDLE_POLLING_SECONDS,
                  sessions_per_live_agent_poll_processor=DEFAULT_SESSIONS_PER_LA_POLL_PROCESSOR,
                  live_agent_poll_session_seconds=DEFAULT_LA_POLL_SESSION_TIME,
-                 max_work_id_map_seconds=DEFAULT_MAX_WORK_ID_MAP_SECONDS
-                 ):
+                 max_work_id_map_seconds=DEFAULT_MAX_WORK_ID_MAP_SECONDS,
+                 max_push_notification_seconds=DEFAULT_MAX_PUSH_NOTIFICATION_SECONDS,
+                 max_context_ttl_seconds=DEFAULT_MAX_CONTEXT_TTL_SECONDS):
         self.session_expiration_seconds = session_expiration_seconds
         self.worker_timeout_seconds = worker_timeout_seconds
         self.max_create_session_retries = max_create_session_retries
@@ -57,3 +65,5 @@ class Config:
         self.sessions_per_live_agent_poll_processor = sessions_per_live_agent_poll_processor
         self.live_agent_poll_session_seconds = live_agent_poll_session_seconds
         self.max_work_id_map_seconds = max_work_id_map_seconds
+        self.max_push_notification_seconds = max_push_notification_seconds
+        self.max_context_ttl_seconds = max_context_ttl_seconds

@@ -1,8 +1,10 @@
 resource "aws_dynamodb_table" "shim_service_session" {
-  name         = "ShimServiceSession"
-  hash_key     = "tenantId"
-  billing_mode = "PAY_PER_REQUEST"
-  range_key    = "sessionId"
+  name             = "ShimServiceSession"
+  hash_key         = "tenantId"
+  billing_mode     = "PAY_PER_REQUEST"
+  range_key        = "sessionId"
+  stream_enabled   = true
+  stream_view_type = "KEYS_ONLY"
 
   attribute {
     name = "tenantId"

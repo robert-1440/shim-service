@@ -214,7 +214,8 @@ __BEANS: Dict[BeanName, _BeanImpl] = {
     BeanName.SQS_PUSH_NOTIFIER: _module(),
     BeanName.WORK_ID_MAP_REPO: _module(),
     BeanName.SQS_CLIENT: _boto3('sqs'),
-    BeanName.LAMBDA_SCHEDULER_PROCESSOR: _module()
+    BeanName.LAMBDA_SCHEDULER_PROCESSOR: _module(),
+    BeanName.TABLE_LISTENER_PROCESSOR: _module()
 }
 
 

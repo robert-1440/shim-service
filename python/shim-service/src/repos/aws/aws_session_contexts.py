@@ -1,7 +1,9 @@
+import json
 from typing import Optional, List
 
-from aws.dynamodb import DynamoDb, TransactionRequest, UpdateItemRequest
+from aws.dynamodb import DynamoDb, TransactionRequest, UpdateItemRequest, DynamoDbRow, DynamoDbItem, _from_ddb_item
 from bean import BeanSupplier
+from config import Config
 from events.event_types import EventType
 from pending_event import PendingEventType, PendingEvent
 from repos import Serializable
@@ -12,10 +14,10 @@ from repos.aws.aws_sequence import AwsSequenceRepo
 from repos.aws.aws_sessions import AwsSessionsRepo
 from repos.aws.aws_sfdc_sessions_repo import AwsSfdcSessionsRepo
 from repos.session_contexts import SessionContextsRepo, SessionContextAndFcmToken
-from services.sfdc.sfdc_session import SfdcSession
 from session import Session, SessionStatus, ContextType, SessionContext, SessionKey
-from utils import loghelper
+from utils import loghelper, collection_utils, threading_utils
 from utils.date_utils import get_system_time_in_seconds
+from utils.exception_utils import dump_ex
 
 logger = loghelper.get_logger(__name__)
 
@@ -34,26 +36,32 @@ class AwsSessionContextsRepo(AwsVirtualRangeTableRepo, SessionContextsRepo):
     __virtual_table__ = SESSION_CONTEXT_TABLE
 
     def __init__(self, ddb: DynamoDb,
-                 sequence_repo: AwsSequenceRepo,
+                 sequence_repo_supplier: BeanSupplier[AwsSequenceRepo],
                  sessions_repo_supplier: BeanSupplier[AwsSessionsRepo],
                  sfdc_sessions_repo_supplier: BeanSupplier[AwsSfdcSessionsRepo],
-                 pending_event_repo_supplier: BeanSupplier[AwsPendingEventsRepo]):
+                 pending_event_repo_supplier: BeanSupplier[AwsPendingEventsRepo],
+                 config: Config):
         super(AwsSessionContextsRepo, self).__init__(ddb)
-        self.sequence_repo = sequence_repo
+        self.sequence_repo_supplier = sequence_repo_supplier
         self.sessions_repo_supplier = sessions_repo_supplier
         self.sfdc_sessions_repo_supplier = sfdc_sessions_repo_supplier
         self.pending_event_repo_supplier = pending_event_repo_supplier
+        self.expiration_seconds = config.max_context_ttl_seconds
 
     def create_session_context(self, context: SessionContext) -> bool:
         return self.create(context)
 
+    def prepare_put(self, item: DynamoDbRow):
+        item['expireTime'] = get_system_time_in_seconds() + self.expiration_seconds
+
     def __construct_create_requests(self, session: Session,
-                                    sfdc_session: SfdcSession,
+                                    session_data: bytes,
                                     contexts: List[SessionContext]):
         requests = list(map(lambda c: self.create_put_item_request(c), contexts))
         sfdc_repo: AwsSfdcSessionsRepo = self.sfdc_sessions_repo_supplier.get()
         requests.append(
-            sfdc_repo.create_put_request(sfdc_session, get_system_time_in_seconds() + session.expiration_seconds))
+            sfdc_repo.create_put_request(session, session_data,
+                                         get_system_time_in_seconds() + session.expiration_seconds))
 
         sess_repo = self.sessions_repo_supplier.get()
         requests.append(sess_repo.create_patch_with_state_check_request(session, {
@@ -73,11 +81,11 @@ class AwsSessionContextsRepo(AwsVirtualRangeTableRepo, SessionContextsRepo):
 
     def create_session_contexts(self,
                                 session: Session,
-                                sfdc_session: SfdcSession,
+                                session_data: bytes,
                                 contexts: List[SessionContext]) -> bool:
-        requests = self.__construct_create_requests(session, sfdc_session, contexts)
+        requests = self.__construct_create_requests(session, session_data, contexts)
 
-        bad_req: TransactionRequest = self.sequence_repo.execute_with_event(
+        bad_req: TransactionRequest = self.sequence_repo_supplier.get().execute_with_event(
             session.tenant_id,
             requests,
             EventType.SESSION_ACTIVATED,
@@ -156,3 +164,35 @@ class AwsSessionContextsRepo(AwsVirtualRangeTableRepo, SessionContextsRepo):
 
     def create_patch_session_data_request(self, context: SessionContext) -> UpdateItemRequest:
         return self.create_update_item_request(context, patches={'sessionData': context.session_data})
+
+    def delete_by_row_keys(self, row_keys: List[DynamoDbItem]):
+
+        def extend(rows: List[DynamoDbRow], row: DynamoDbItem):
+            key = _from_ddb_item(row)
+            for ct in ContextType:
+                new_key = dict(key)
+                new_key['contextType'] = ct.value
+                # We are a virtual table, so we need to build the actual key
+                rows.append(self.primary_key.build_key_as_dict(new_key))
+
+        def submit(list_of_keys: List[DynamoDbRow]):
+            try:
+                logger.info(f"Attempting to delete {len(list_of_keys)} context record(s) ...")
+                self.ddb.batch_delete_from_table(self.table_name, list_of_keys)
+            except BaseException as ex:
+                logger.error(f"Failed to delete batch: {dump_ex(ex)}")
+
+        submit_list = []
+        for row in row_keys:
+            extend(submit_list, row)
+
+        logger.info(f"Keys to delete: {json.dumps(submit_list, indent=True)})")
+        if len(submit_list) < 25:
+            submit(submit_list)
+        else:
+            threads = []
+            for block in collection_utils.partition(submit_list, 25):
+                threads.append(threading_utils.start_thread(submit, block))
+
+            for t in threads:
+                t.join(10)

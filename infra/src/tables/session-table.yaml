@@ -16,3 +16,24 @@ ttl-attribute: expireTime
 
 pay-per-request: true
 
+stream-view-type: keys
+
+trigger-lambdas:
+  - name: ShimServiceTableListener
+    # The maximum number of records Lambda will attempt to read from your Stream at once.
+    # Minimum value of 1 and Maximum value of 10,000. Note that there is a maximum of 6MB worth of
+    # data that can be passed to your Lambda Function at once. Default is 100.
+    batch-size: 100
+
+    # Whether upon enabling the trigger, you would like to process only new records added to the stream (LATEST)
+    # or processing all records that exist in the stream (TRIM_HORIZON).
+    starting-position: LATEST
+
+    # Whether you would like the trigger enabled immediately upon creation or not.
+    enabled: true
+
+    # The maximum amount of time to spend gathering records before function invocation in seconds.
+    batch-window: 60
+
+    # The maximum number of times to retry when the function returns an error.
+    retry-attempts: 10

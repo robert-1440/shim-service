@@ -14,20 +14,21 @@ DynamoDbRow = Dict[str, Any]
 DynamoDbItem = Dict[str, Dict[str, Any]]
 
 RangeKeyQuerySpecifier = namedtuple("RangeKeyQuerySpecifier", "attribute value operation")
+FilterNameType = Optional[str]
 
 
 class FilterOperation:
-    def __init__(self, name: str, value: Any, operation: str):
+    def __init__(self, name: FilterNameType, value: Any, operation: str):
         self.name = name
         self.value = value
         self.operation = operation
 
 
-def eq_filter(name: str, value: Any) -> FilterOperation:
+def eq_filter(name: FilterNameType, value: Any) -> FilterOperation:
     return FilterOperation(name, value, '=')
 
 
-def le_filter(name: str, value: Any) -> FilterOperation:
+def le_filter(name: FilterNameType, value: Any) -> FilterOperation:
     return FilterOperation(name, value, '<=')
 
 
@@ -117,6 +118,25 @@ class TransactionCancelledException(Exception):
         self.reasons = list(map(CancelReason, nodes))
 
 
+def _build_list(att_value: Any):
+    values = []
+    for x in att_value:
+        values.append(convert_value(x))
+    return values
+
+
+_DDB_ATTRIBUTE_TO_VALUE_MAP = {
+    "S": lambda x: x,
+    "BOOL": lambda x: x,
+    "B": lambda x: x,
+    "N": lambda x: float(x) if "." in x else int(x),
+    "M": lambda x: build_map(x),
+    "L": lambda x: _build_list(x),
+    "NULL": lambda x: None
+
+}
+
+
 def convert_value(value: dict):
     keys = list(value.keys())
     if len(keys) > 1:
@@ -124,21 +144,9 @@ def convert_value(value: dict):
     att_type = keys[0]
     att_value = value[keys[0]]
 
-    if att_type == "S" or att_type == "BOOL" or att_type == "B":
-        return att_value
-    if att_type == "N":
-        if "." in att_value:
-            return float(att_value)
-        return int(att_value)
-    if att_type == "M":
-        return build_map(att_value)
-    if att_type == "L":
-        values = []
-        for x in att_value:
-            values.append(convert_value(x))
-        return values
-    if att_type == "NULL":
-        return None
+    handler = _DDB_ATTRIBUTE_TO_VALUE_MAP.get(att_type)
+    if handler is not None:
+        return handler(att_value)
     raise ValueError(f"Don't know how to handle {att_type}")
 
 
@@ -161,35 +169,33 @@ def _to_attribute_value_map(entry: DynamoDbRow) -> DynamoDbItem:
     return new_record
 
 
+def _to_list(value: Any):
+    arr = []
+    for x in value:
+        t, v = _to_attribute_value(x)
+        arr.append({t: v})
+    return arr
+
+
+_CONVERSION_MAP = {
+    str: lambda x: ("S", x),
+    bool: lambda x: ("BOOL", x),
+    float: lambda x: ("N", str(x)),
+    int: lambda x: ("N", str(x)),
+    list: lambda x: ("L", _to_list(x)),
+    dict: lambda x: ("M", _to_attribute_value_map(x)),
+    bytes: lambda x: ("B", x)
+}
+
+
 def _to_attribute_value(value: Any):
     if value is None:
         return "NULL", True
     t = type(value)
-    if t is int or t is float:
-        attribute_type = "N"
-        attribute_value = str(value)
-    elif t is str:
-        attribute_type = "S"
-        attribute_value = value
-    elif t is bool:
-        attribute_type = "BOOL"
-        attribute_value = value
-    elif t is list:
-        attribute_type = "L"
-        arr = []
-        for x in value:
-            t, v = _to_attribute_value(x)
-            arr.append({t: v})
-        attribute_value = arr
-    elif t is dict:
-        attribute_type = "M"
-        attribute_value = _to_attribute_value_map(value)
-    elif t is bytes:
-        attribute_type = "B"
-        attribute_value = value
-    else:
-        raise Exception(f"Don't know how to handle {t}")
-    return attribute_type, attribute_value
+    handler = _CONVERSION_MAP.get(t)
+    if handler is not None:
+        return handler(value)
+    raise Exception(f"Don't know how to handle {t}")
 
 
 def _to_attribute_value_dict(value: Any):
@@ -627,6 +633,23 @@ class DynamoDb:
         item_list = list(map(lambda item: item.to_ddb_request(), items))
         return self._execute_and_wrap(lambda: self.__client.transact_write_items(TransactItems=item_list))
 
+    def batch_delete_from_table(self, table_name: str, row_keys: List[DynamoDbRow]):
+        requests = []
+
+        for item in row_keys:
+            requests.append({'DeleteRequest': {'Key': _to_ddb_item(item)}})
+
+        table_requests = {table_name: requests}
+        return self.__process_batch_write(table_requests)
+
+    def __process_batch_write(self, table_requests: Dict[str, List[Dict[str, Any]]]) -> int:
+        count = 0
+        while len(table_requests) > 0:
+            resp = self._execute_and_wrap(lambda: self.__client.batch_write_item(RequestItems=table_requests))
+            table_requests = resp['UnprocessedItems']
+            count += 1
+        return count
+
     def batch_write(self, items: List[BatchCapableRequest]):
         """
         Performs a batch write.
@@ -640,12 +663,7 @@ class DynamoDb:
             requests: List[Dict[str, Any]] = get_or_create(table_requests, item.table_name, list)
             requests.append(item.to_ddb_batch_request())
 
-        count = 0
-        while len(table_requests) > 0:
-            resp = self._execute_and_wrap(lambda: self.__client.batch_write_item(RequestItems=table_requests))
-            table_requests = resp['UnprocessedItems']
-            count += 1
-        return count
+        return self.__process_batch_write(table_requests)
 
     def batch_get(self, requests: List[GetItemRequest]) -> Dict[str, List[DynamoDbRow]]:
         table_requests: Dict[str, Dict[str, Any]] = {}

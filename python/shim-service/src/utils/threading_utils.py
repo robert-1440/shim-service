@@ -2,16 +2,24 @@ import threading
 from threading import Thread
 from typing import Callable, Any, List
 
+from utils import loghelper
+from utils.exception_utils import dump_ex
+
+logger = loghelper.get_logger(__name__)
+
 
 def create_thread(function_to_call: Callable,
                   daemon=True,
                   user_object: Any = None,
                   name: str = None) -> threading.Thread:
     def wrapper():
-        if user_object is not None:
-            function_to_call(user_object)
-        else:
-            function_to_call()
+        try:
+            if user_object is not None:
+                function_to_call(user_object)
+            else:
+                function_to_call()
+        except BaseException as ex:
+            logger.error(f"Unhandled exception: {dump_ex(ex)})")
 
     t = threading.Thread(target=wrapper, daemon=daemon, name=name)
     return t

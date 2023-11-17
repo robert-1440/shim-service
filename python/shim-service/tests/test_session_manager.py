@@ -20,7 +20,7 @@ from repos.session_contexts import SessionContextsRepo
 from repos.sessions_repo import UserSessionExistsException
 from services.sfdc.live_agent import LiveAgentWebSettings, LiveAgentPollerSettings
 from services.sfdc.sfdc_session import load_with_context
-from session import manager, Session, SessionStatus, ContextType
+from session import manager, Session, SessionStatus, ContextType, SessionContext
 from session.exceptions import SessionNotActiveException
 from session.token import SessionToken
 from support import verification_utils
@@ -74,22 +74,31 @@ class SessionManagerTest(BaseTest):
         repo: AwsSessionContextsRepo = beans.get_bean_instance(BeanName.SESSION_CONTEXTS_REPO)
         ctx = repo.find_session_context(sess, ContextType.WEB)
         self.assertIsNotNone(ctx)
+        self.validate_expiration(ctx)
         settings = LiveAgentWebSettings.deserialize(ctx.session_data)
         self.assertEqual(1, settings.sequence)
 
         ctx = repo.find_session_context(sess, ContextType.LIVE_AGENT)
+        self.validate_expiration(ctx)
         poller_settings = LiveAgentPollerSettings.deserialize(ctx.session_data)
         self.assertEqual(-1, poller_settings.ack)
         self.assertEqual(0, poller_settings.pc)
         self.assertEmpty(poller_settings.message_list)
 
         ctx = repo.find_session_context(sess, ContextType.PUSH_NOTIFIER)
+        self.validate_expiration(ctx)
         ns = PushNotificationContextSettings.deserialize(ctx.session_data)
         self.assertIsNone(ns.last_seq_no)
 
         results = repo.query(sess.tenant_id)
         # Expect this to break when we start working on x1440, should be 4
         self.assertHasLength(3, results.rows)
+
+    def validate_expiration(self, ctx: SessionContext):
+        key = {'hashKey': f"d\t{ctx.tenant_id}", 'rangeKey': f"{ctx.session_id}\t{ctx.context_type.value}"}
+        item = self.dynamodb.find_item("ShimServiceVirtualRangeTable", keys=key)
+        self.assertIsNotNone(item)
+        self.assertGreater(item['expireTime'], get_system_time_in_seconds())
 
     def test_create_and_load_sfdc_session(self):
         sess = self.create_session(async_conn=False)
@@ -247,7 +256,7 @@ class SessionManagerTest(BaseTest):
 
     def _find_ddb_user_session(self, session: Session):
         return self.dynamodb.find_item("ShimServiceVirtualRangeTable",
-                                       keys={'hashKey': f"c:{session.tenant_id}",
+                                       keys={'hashKey': f"c\t{session.tenant_id}",
                                              'rangeKey': session.user_id})
 
     def test_finish_clash(self):

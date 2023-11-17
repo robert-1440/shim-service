@@ -4,9 +4,10 @@ from typing import Dict, Any, Optional, Tuple, Callable, List, Union, Collection
 from aws.dynamodb import DynamoDb, PrimaryKeyViolationException, PutItemRequest, TransactionCancelledException, \
     DynamoDbRow, PreconditionFailedException, DeleteItemRequest, TransactionRequest, UpdateItemRequest, \
     RangeKeyQuerySpecifier, GetItemRequest, DynamoDbItem, FilterOperation, BatchCapableRequest
-from aws.dynamodb_keys import create_primary_key, _find_attribute
+from aws.dynamodb_keys import create_primary_key, _find_attribute, CompoundKey
 from repos import OptimisticLockException, Record, QueryResult, QueryResultSet
 from repos.aws import VirtualTable
+from utils import loghelper
 from utils.date_utils import get_system_time_in_millis
 
 INITIALIZER_ATTRIBUTE = '__initializer__'
@@ -18,6 +19,8 @@ STATE_COUNTER_ATTRIBUTE = '__state_counter__'
 TABLE_NAME_ATTRIBUTE = "__table_name__"
 
 BatchGetResultItem = Optional[Union[Record, DynamoDbRow]]
+
+logger = loghelper.get_logger(__name__)
 
 
 class BatchGetResult:
@@ -41,6 +44,8 @@ class BatchGetResult:
 
 
 class AbstractAwsRepo(metaclass=abc.ABCMeta):
+    primary_key: CompoundKey
+
     def __init__(self, ddb: DynamoDb, virtual_table: Optional[VirtualTable] = None):
         if virtual_table is not None:
             self.__inject_hash_attribute__ = ('tableType', '__table_type__')
@@ -290,12 +295,20 @@ class AbstractAwsRepo(metaclass=abc.ABCMeta):
                   start_after=None,
                   limit: int = None,
                   last_evaluated_key=None,
-                  filters: Union[FilterOperation, Collection[FilterOperation]] = None
+                  range_filter: Optional[FilterOperation] = None,
+                  filters: Union[FilterOperation, Collection[FilterOperation]] = None,
                   ) -> QueryResultSet:
         att, value = self.primary_key.build_hash_key_from_args(*args)
         if start_after is not None:
             range_att, range_value = self.primary_key.build_range_key_from_args(start_after)
             rq = RangeKeyQuerySpecifier(range_att, range_value, ">")
+        elif range_filter is not None:
+            v = range_filter.value
+            if type(v) is tuple:
+                range_att, range_value = self.primary_key.build_range_key_from_args(*v)
+            else:
+                range_att, range_value = self.primary_key.build_range_key_from_args(v)
+            rq = RangeKeyQuerySpecifier(range_att, range_value, range_filter.operation)
         else:
             rq = None
 
@@ -317,6 +330,7 @@ class AbstractAwsRepo(metaclass=abc.ABCMeta):
               start_after=None,
               limit: int = None,
               last_evaluated_key=None,
+              range_filter: Optional[FilterOperation] = None,
               filters: Union[FilterOperation, Collection[FilterOperation]] = None
               ) -> QueryResult:
         rset = self.query_set(
@@ -325,6 +339,7 @@ class AbstractAwsRepo(metaclass=abc.ABCMeta):
             start_after=start_after,
             limit=limit,
             last_evaluated_key=last_evaluated_key,
+            range_filter=range_filter,
             filters=filters
         )
         return QueryResult(list(rset), rset.next_token)
@@ -338,10 +353,14 @@ class AbstractAwsRepo(metaclass=abc.ABCMeta):
         self.primary_key.prep_for_deserialization(item)
         return self.initializer(item)
 
+    def prepare_put(self, item: DynamoDbRow):
+        pass
+
     def create_put_item_request(self, entry: Record, **kwargs):
         item = self.prepare_item(entry)
         if len(kwargs) > 0:
             item.update(kwargs)
+        self.prepare_put(item)
         return PutItemRequest(
             self.table_name,
             item,
@@ -382,7 +401,7 @@ class AbstractAwsRepo(metaclass=abc.ABCMeta):
 
     def create_delete_item_request(self, entry: Record, must_exist: bool = False) -> DeleteItemRequest:
         item = self.prepare_item(entry)
-        key, _ = self.primary_key.build_key_as_dict(item, pre_serialized=True)
+        key = self.primary_key.build_key_as_dict(item, pre_serialized=True)
         return DeleteItemRequest(
             self.table_name,
             key,
@@ -403,3 +422,4 @@ class AbstractAwsRepo(metaclass=abc.ABCMeta):
                     return req
                 index += 1
             raise ex
+

@@ -18,7 +18,7 @@ from utils import loghelper
 from utils.date_utils import get_system_time_in_millis
 from utils.exception_utils import dump_ex
 from utils.http_client import HttpResponse, RequestBuilder, HttpMethod
-from utils.perf_timer import timer
+from utils.perf_timer import timer, execute_and_log
 
 logger = loghelper.get_logger(__name__)
 
@@ -66,6 +66,7 @@ class SfdcSession(SessionKey, metaclass=abc.ABCMeta):
                                     uri: str,
                                     body: Union[dict, str] = None,
                                     headers: Dict[str, str] = None) -> HttpResponse:
+        start_time = get_system_time_in_millis()
         resp = self.send_web_request(
             web_settings,
             method,
@@ -74,16 +75,21 @@ class SfdcSession(SessionKey, metaclass=abc.ABCMeta):
             response_on_error=True,
             headers=headers
         )
+        elapsed = get_system_time_in_millis() - start_time
+        logger.info(f"Web request to {method} {uri} took {elapsed} ms.")
+
         event_data = dict(event_data) if event_data is not None else {}
         event_data['sfdcResponse'] = resp.status_code
+        event_data['sfdcTime'] = elapsed
 
-        store_event(
-            self,
-            self.user_id,
-            self.expiration_seconds,
-            event_type,
-            event_data
-        )
+        execute_and_log(logger, f"Store {event_type.name} event",
+                        lambda: store_event(
+                            self,
+                            self.user_id,
+                            self.expiration_seconds,
+                            event_type,
+                            event_data
+                        ))
         if not resp.is_2xx():
             resp.check_exception()
         return resp

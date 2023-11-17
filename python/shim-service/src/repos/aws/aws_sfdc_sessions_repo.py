@@ -6,7 +6,6 @@ from repos.aws import SFDC_SESSION_TABLE
 from repos.aws.abstract_range_table_repo import AwsVirtualRangeTableRepo
 from repos.aws.abstract_repo import AbstractAwsRepo
 from repos.sfdc_sessions_repo import SfdcSessionsRepo, SfdcSessionDataAndContext
-from services.sfdc.sfdc_session import SfdcSession
 from session import ContextType, SessionContext, SessionStatus, SessionKey
 from session.exceptions import SessionNotActiveException
 from utils.byte_utils import compress, decompress
@@ -61,12 +60,12 @@ class AwsSfdcSessionsRepo(AwsVirtualRangeTableRepo, SfdcSessionsRepo):
         self.contexts_repo = contexts_repo
         self.sessions_repo_supplier = sessions_repo_supplier
 
-    def create_put_request(self, session: SfdcSession, expire_time: EpochSeconds) -> PutItemRequest:
+    def create_put_request(self, session_key: SessionKey, session_data: bytes, expire_time: EpochSeconds) -> PutItemRequest:
         record = LocalRecord(
-            session.tenant_id,
-            session.session_id,
+            session_key.tenant_id,
+            session_key.session_id,
             expire_time,
-            compress(session.serialize())
+            compress(session_data)
         )
         return self.create_put_item_request(record)
 

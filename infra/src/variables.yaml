@@ -15,6 +15,11 @@ variables:
     export: true
     default: 512
 
+  - name: table_listener_lambda_memory_size
+    description: Memory size to allocate for table listener lambda (in megabytes)
+    export: true
+    default: 512
+
   - name: live_agent_poller_lambda_memory_size
     description: Memory size to allocate for the live agent poller lambda (in megabytes)
     export: true

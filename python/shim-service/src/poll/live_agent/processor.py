@@ -18,8 +18,11 @@ from utils import loghelper, threading_utils, exception_utils
 from utils.date_utils import get_system_time_in_millis, format_elapsed_time_seconds
 from utils.signal_event import SignalEvent
 from utils.throttler import Throttler
+from utils.timer_utils import Timer
 
 logger = loghelper.get_logger(__name__)
+
+_MAX_COLLECT_SECONDS = 10
 
 
 class LockAndEvent:
@@ -118,9 +121,13 @@ class ProcessorGroup:
 
     def worker(self, event: PendingEvent):
         # First, try to lock the resource for the event
-        le = self.__try_lock(event)
+        le = None
+        try:
+            le = self.__try_lock(event)
+        finally:
+            if le is None:
+                self.dec_submit_count()
         if le is None:
-            self.dec_submit_count()
             return
         with le:
             # Now, load the context
@@ -173,7 +180,8 @@ class ProcessorGroup:
         return len(self.threads) == 0
 
     def is_full(self, increment: bool = False):
-        while True:
+        timer = Timer(_MAX_COLLECT_SECONDS)
+        while timer.has_time_left():
             with self.mutex:
                 if self.working_count == self.max_working_count:
                     return True
@@ -184,7 +192,8 @@ class ProcessorGroup:
                     return False
             if not increment:
                 return False
-            self.signal_event.wait(5)
+            self.signal_event.wait(timer.get_delay_time_millis(50))
+        return True
 
     def __try_lock(self, event: PendingEvent) -> Optional[LockAndEvent]:
         name = f"lap/{event.tenant_id}-{event.session_id}"
@@ -257,7 +266,15 @@ class LiveAgentPollingProcessor(InvocableBean):
         return group
 
     def invoke(self, parameters: Dict[str, Any]):
-        group = self.collect()
+
+        # We want to lock during collection to avoid as many collisions on individual events found as possible
+        lock = self.resource_lock_repo.try_acquire("lap-collect", _MAX_COLLECT_SECONDS + 2)
+        if lock is None:
+            logger.info("Another poller is collecting sessions.")
+            return
+
+        with lock:
+            group = self.collect()
 
         if group.is_empty():
             logger.info("No sessions to poll.")
