@@ -47,6 +47,7 @@ layers:
   - crypto-layer
   - requests-layer
 
+arn-env-name: THIS_FUNCTION_ARN
 
 #
 # true means create an SQS queue that will trigger this lambda

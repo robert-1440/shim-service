@@ -20,6 +20,10 @@ __SERVER_ERROR_RESPONSE = {'statusCode': 500, 'body': {
     'errorMessage': "Internal Server Error"
 }}
 
+__CLIENT_ERROR_RESPONSE = {'statusCode': 400, 'body': {
+    'errorMessage': "Invalid Request"
+}}
+
 
 def _wrap(f):
     def wrapper(*args, **kwargs):
@@ -58,7 +62,7 @@ def _handler(event: dict, context: Any):
         r = __dispatch(event)
         if r is None:
             logger.severe(f"Unrecognized request: {json.dumps(event)}")
-            return __SERVER_ERROR_RESPONSE
+            return __CLIENT_ERROR_RESPONSE
         if isinstance(r, dict):
             r['isBase64Encoded'] = False
             body = r.get('body')

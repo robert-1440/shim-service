@@ -55,6 +55,8 @@ event-queue: false
 #
 mirror: true
 
+arn-env-name: THIS_FUNCTION_ARN
+
 permissions:
 
   topics:

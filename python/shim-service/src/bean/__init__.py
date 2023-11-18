@@ -22,6 +22,11 @@ from utils.supplier import Supplier, MemoizedSupplier
 RESETTABLE = os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is None
 
 
+def set_resettable(value: bool):
+    global RESETTABLE
+    RESETTABLE = value
+
+
 class InvocableBean(metaclass=abc.ABCMeta):
     bean_name: 'BeanName'
 
@@ -85,7 +90,7 @@ class BeanName(NameLookupEnum):
     PUSH_NOTIFICATION_MANAGER = 38, WEB_PROFILE | PUSH_NOTIFIER_PROFILE
     WORK_ID_MAP_REPO = 39, WEB_PROFILE, {'type': BeanType.EVENT_LISTENER}
     SCHEDULER_CLIENT = 40, EVENTS_PROFILES
-    LAMBDA_SCHEDULER_PROCESSOR = 41, SCHEDULER_PROFILE
+    LAMBDA_SCHEDULER_PROCESSOR = 41, SCHEDULER_PROFILE, {'type': BeanType.REQUEST_HANDLER}
     TABLE_LISTENER_PROCESSOR = 42, TABLE_LISTENER_PROFILE, {'type': BeanType.REQUEST_HANDLER}
 
 
@@ -179,7 +184,6 @@ def inject(bean_instances: Union[BeanName, Collection[BeanName]] = None,
     if RESETTABLE:
         loader = load_bean_args
     else:
-        assert RESETTABLE
         supplier = MemoizedSupplier(load_bean_args)
         loader = supplier.get
 

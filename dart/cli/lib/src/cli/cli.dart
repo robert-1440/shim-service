@@ -144,6 +144,10 @@ CommandLineRunner createRunner(List<String> args, App app, {bool? exitMode}) {
 }
 
 void init(List<String> args, App app, {bool? exitMode}) async {
+  stdin.echoMode = true;
+  stdin.lineMode = true;
+  stdin.echoNewlineMode = true;
+
   var runner = createRunner(args, app, exitMode: exitMode);
   app.setup(runner._cli);
   try {

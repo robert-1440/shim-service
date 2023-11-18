@@ -44,6 +44,8 @@ log-retention-days: 30
 
 mirror: true
 
+arn-env-name: THIS_FUNCTION_ARN
+
 #
 # true means create an SQS queue that will trigger this lambda
 #

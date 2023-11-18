@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -83,6 +84,8 @@ class SessionState extends Mappable {
 
   List<ConversationMessageEvent> _conversationMessages = [];
 
+  int _stateCounter = 0;
+
   SessionState(this.orgId, [this.token = "", this.presenceStatuses = const []]);
 
   @override
@@ -98,8 +101,11 @@ class SessionState extends Mappable {
       "acceptedWorkIds": _acceptedWorkIds,
       "chatMessages": _chatMessages.map((message) => message.toMap()).toList(),
       "conversationMessages": _conversationMessages.map((message) => message.toMap()).toList(),
+      "stateCounter": _stateCounter,
     };
   }
+
+  int get stateCounter => _stateCounter;
 
   String? get userName => _userName;
 
@@ -150,6 +156,14 @@ class SessionState extends Mappable {
     return this;
   }
 
+  WorkAssignment? findWorkAssignment(int assignmentNumber) {
+    int index = --assignmentNumber;
+    if (index < 0 || index >= _workAssignments.length) {
+      return null;
+    }
+    return _workAssignments[index];
+  }
+
   WorkAssignment getWorkAssignment(int assignmentNumber) {
     int index = --assignmentNumber;
     if (index < 0 || index >= _workAssignments.length) {
@@ -173,6 +187,7 @@ class SessionState extends Mappable {
     if (!homeDir.existsSync()) {
       homeDir.createSync(recursive: true);
     }
+    print("Saving session state, hasToken=${hasSession()}, counter=$_stateCounter ...");
     _file.writeAsStringSync(toString());
   }
 
@@ -187,6 +202,7 @@ class SessionState extends Mappable {
     state._chatMessages = List<ChatMessage>.from(map['chatMessages'].map((message) => ChatMessage(message)));
     state._conversationMessages =
         List<ConversationMessageEvent>.from(map['conversationMessages'].map((message) => ConversationMessageEvent(message)));
+    state._stateCounter = map['stateCounter'] ?? 0;
     return state;
   }
 
@@ -219,6 +235,7 @@ class SessionState extends Mappable {
       state._conversationMessages = List.of(_conversationMessages);
       state._workAssignments = List.of(_workAssignments);
       state._acceptedWorkIds = List.of(_acceptedWorkIds);
+      state._stateCounter++;
     }
     return state;
   }
@@ -303,9 +320,10 @@ class SessionState extends Mappable {
     return sw.toString();
   }
 
-  SessionState processMessage(String body) {
+  SessionState processMessage(String body, {StreamController<PushNotificationEvent>? eventStream}) {
     var pushEvent = parsePushNotificationEvent(body);
     var event = pushEvent.pollingEvent;
+    SessionState returnValue = this;
     if (event == null) {
       print("> Received message ${pushEvent.messageType}");
     } else {
@@ -315,10 +333,13 @@ class SessionState extends Mappable {
         var newState = _clone(token, presenceStatuses);
         handler(newState, event);
         newState.save();
-        return newState;
+        returnValue = newState;
       }
     }
-    return this;
+    if (eventStream != null) {
+      eventStream.add(pushEvent);
+    }
+    return returnValue;
   }
 
   bool hasSession() => token.isNotEmpty;

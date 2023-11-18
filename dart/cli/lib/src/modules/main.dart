@@ -1,28 +1,32 @@
 import 'dart:io';
 
+import 'package:cli/src/aws.dart';
 import 'package:cli/src/cli/cli.dart';
 import 'package:cli/src/cli/processor.dart';
 import 'package:cli/src/client/_init.dart';
 import 'package:cli/src/client/profile.dart';
+import 'package:cli/src/client/session_client.dart';
 import 'package:cli/src/client/support/channel.dart';
 import 'package:cli/src/client/support/exceptions.dart';
 import 'package:cli/src/client/support/presence.dart';
 import 'package:cli/src/client/support/session.dart';
 import 'package:cli/src/poll.dart';
+import 'package:cli/src/smoke.dart';
 import 'package:cli/src/state.dart';
 
 final _commandLoaders = [
-      () => Command("start", "Start a session.", "", _startSession),
-      () => Command("end", "End current session.", "", _endSession),
-      () => Command("ka", "Keep-alive.", "", _keepSessionAlive),
-      () => Command("state", "Show current state.", "", _showState),
-      () => Command("login", "Log in.", "", _login),
-      () => Command("logout", "Log out.", "", _logout),
-      () => Command("accept", "Accept work.", "<work number>", _acceptWork),
-      () => Command("decline", "Decline work.", "<work number>", _declineWork),
-      () => Command("busy", "Set status to busy.", "", _busy),
-      () => Command("send", "Send a message.", "<work number> <message>", _sendMessage),
-      () => Command("close", "Close work.", "<work number>", _closeWork),
+  () => Command("start", "Start a session.", "", _startSession),
+  () => Command("end", "End current session.", "", _endSession),
+  () => Command("ka", "Keep-alive.", "", _keepSessionAlive),
+  () => Command("state", "Show current state.", "", _showState),
+  () => Command("login", "Log in.", "", _login),
+  () => Command("logout", "Log out.", "", _logout),
+  () => Command("accept", "Accept work.", "<work number>", _acceptWork),
+  () => Command("decline", "Decline work.", "<work number>", _declineWork),
+  () => Command("busy", "Set status to busy.", "", _busy),
+  () => Command("send", "Send a message.", "<work number> <message>", _sendMessage),
+  () => Command("close", "Close work.", "<work number>", _closeWork),
+  () => Command("smoke", "Smoke test.", "", _smokeTest),
 ];
 
 class MainModule extends Module {
@@ -45,6 +49,12 @@ class MainModule extends Module {
 Future<void> _startSession(CommandLineProcessor processor) async {
   processor.assertNoMore();
   var client = getClientManager(processor).getSessionClient();
+  var request = await _createStartSessionRequest(client);
+  var state = loadFromProcessor(processor);
+  await startSession(state, client, request);
+}
+
+Future<StartSessionRequest> _createStartSessionRequest(SessionClient client) async {
   var authInfo = await client.getAuthInfo();
   var deviceToken = "sqs::${getCurrentUser()}";
   var request = StartSessionRequest(
@@ -54,8 +64,11 @@ Future<void> _startSession(CommandLineProcessor processor) async {
       deviceToken,
       authInfo.sessionId,
       ChannelPlatformType.values //
-  );
-  var state = loadFromProcessor(processor);
+      );
+  return request;
+}
+
+Future<SessionState> startSession(SessionState state, SessionClient client, StartSessionRequest request) async {
   try {
     var resp = await client.startSession(request);
     state = state.setSessionResponse(resp);
@@ -68,6 +81,7 @@ Future<void> _startSession(CommandLineProcessor processor) async {
     print("Session token: ${ex.token}");
     exit(1);
   }
+  return state;
 }
 
 Future<void> _endSession(CommandLineProcessor processor) async {
@@ -112,9 +126,7 @@ Future<void> _setPresenceStatus(CommandLineProcessor processor, StatusOption sta
   processor.assertNoMore();
   var state = await _poll(processor);
   var client = getClientManager(processor).getPresenceClient();
-  await client.setPresenceStatus(state.token, state
-      .getPresenceStatus(statusOption)
-      .id);
+  await client.setPresenceStatus(state.token, state.getPresenceStatus(statusOption).id);
 }
 
 Future<void> _login(CommandLineProcessor processor) async {
@@ -159,7 +171,6 @@ Future<void> _declineWork(CommandLineProcessor processor) async {
   print("Work '$assignment' declined.");
 }
 
-
 Future<void> _sendMessage(CommandLineProcessor processor) async {
   var workNumber = processor.nextInt("work number");
   var message = processor.next("message");
@@ -174,7 +185,6 @@ Future<void> _sendMessage(CommandLineProcessor processor) async {
   print("Message sent to '${assignment.workTargetId}'.");
 }
 
-
 Future<void> _closeWork(CommandLineProcessor processor) async {
   var workNumber = processor.nextInt("work number");
   processor.assertNoMore();
@@ -186,6 +196,15 @@ Future<void> _closeWork(CommandLineProcessor processor) async {
   state.removeWorkAssignment(assignment);
 
   print("Work '$assignment' closed.");
-
 }
 
+Future<void> _smokeTest(CommandLineProcessor processor) async {
+  processor.assertNoMore();
+  var cm = getClientManager(processor);
+  var state = loadFromProcessor(processor);
+  var sqs = getSqs(getProfile(processor));
+  var user = getCurrentUser();
+  var request = await _createStartSessionRequest(cm.getSessionClient());
+  var poller = Poller(user, sqs, state);
+  SmokeTester(cm, state, poller, request);
+}

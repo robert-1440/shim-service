@@ -2,6 +2,7 @@ import hashlib
 import os
 import sys
 
+
 os.environ['TZ'] = 'UTC'  # Set the time zone to UTC for consistency
 os.environ['SOURCE_DATE_EPOCH'] = '0'  # Set the source date epoch to a fixed value (e.g., 0)
 os.environ['IGNORE_VARS'] = 'true'
@@ -31,6 +32,9 @@ from zipfile import ZipInfo
 src_name = os.path.realpath(f"{__file__}/../src")
 if src_name not in sys.path:
     sys.path.insert(0, src_name)
+
+from bean import set_resettable
+set_resettable(False)
 
 import app
 from bean.beans import load_all_lazy

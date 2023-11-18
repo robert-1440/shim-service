@@ -543,10 +543,19 @@ bool promptYes(String prompt, {int? exitCode}) {
   }
 }
 
+void fatalErrorFromAsync(Object? error, StackTrace stackTrace) {
+  fatalError(error.toString());
+}
+
 ///
 /// Used to report a fatal error, and exit if [exitMode] is true
 ///
 Exception fatalError(String message) {
+  if (!stdin.echoMode) {
+    stdin.echoMode = true;
+    stdin.lineMode = true;
+    stdin.echoNewlineMode = true;
+  }
   message += '\n';
   if (exitMode) {
     stderr.writeln(message);
