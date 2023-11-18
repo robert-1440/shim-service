@@ -201,10 +201,13 @@ Future<void> _closeWork(CommandLineProcessor processor) async {
 Future<void> _smokeTest(CommandLineProcessor processor) async {
   processor.assertNoMore();
   var cm = getClientManager(processor);
+  var client = cm.getSessionClient();
+  var request = await _createStartSessionRequest(client);
   var state = loadFromProcessor(processor);
+  state = await startSession(state, client, request);
   var sqs = getSqs(getProfile(processor));
   var user = getCurrentUser();
-  var request = await _createStartSessionRequest(cm.getSessionClient());
   var poller = Poller(user, sqs, state);
-  SmokeTester(cm, state, poller, request);
+  var tester = SmokeTester(cm, state, poller);
+  tester.start();
 }

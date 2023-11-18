@@ -59,9 +59,12 @@ class Poller {
   late StreamController<PushNotificationEvent> _eventController;
 
   Poller(this.user, this.sqs, this.state) {
-    sqs.getQueueUrl(queueName: queueName).then((value) => _start(value.queueUrl!));
     _stateController = StreamController.broadcast();
     _eventController = StreamController.broadcast();
+  }
+
+  Future<void> start() async {
+    sqs.getQueueUrl(queueName: queueName).then((value) => _start(value.queueUrl!));
   }
 
   Future<void> _start(String url) async {

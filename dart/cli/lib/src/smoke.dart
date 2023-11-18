@@ -6,8 +6,6 @@ import 'package:cli/src/client/manager.dart';
 import 'package:cli/src/client/presence_client.dart';
 import 'package:cli/src/client/session_client.dart';
 import 'package:cli/src/client/support/presence.dart';
-import 'package:cli/src/client/support/session.dart';
-import 'package:cli/src/modules/main.dart';
 import 'package:cli/src/notification/base.dart';
 import 'package:cli/src/notification/events/agent.dart';
 import 'package:cli/src/poll.dart';
@@ -24,21 +22,15 @@ class SmokeTester {
 
   final Poller _poller;
 
-  final StartSessionRequest startSessionRequest;
-
   SessionState state;
 
   bool _started = false;
 
   bool _loggingIn = false;
 
-  bool _startingSession = false;
-
-  bool _sessionStarted = false;
-
   bool _loggedIn = false;
 
-  SmokeTester(ClientManager clientManager, this.state, this._poller, this.startSessionRequest)
+  SmokeTester(ClientManager clientManager, this.state, this._poller)
       : sessionClient = clientManager.getSessionClient(),
         presenceClient = clientManager.getPresenceClient(),
         conversationClient = clientManager.getConversationClient() {
@@ -46,27 +38,26 @@ class SmokeTester {
     _poller.eventStream.listen((event) => _notificationEvent(event));
   }
 
-  void _startSession() {
-    if (_startingSession) {
-      return;
+  void start() {
+    if (!_started) {
+      _setupKeyHandler();
+      _started = true;
     }
-    _startingSession = true;
-    print("Attempting to start session ...");
-    startSession(state, sessionClient, startSessionRequest).then(_stateChanged).onError(fatalErrorFromAsync);
+    _poller.start();
+  }
+
+  void _sendMessage(String workTargetId, String message) {
+    conversationClient.sendMessage(state.token, workTargetId, message).onError(fatalErrorFromAsync);
   }
 
   void _handleChatRequest(ChatRequestEvent event) {
     for (var message in event.messages) {
-      var match = acceptRegex.firstMatch(message.content);
-      if (match != null) {
-        var workNumber = int.parse(match.group(1)!);
-        var assignment = state.findWorkAssignment(workNumber);
-        if (assignment == null) {
-          print("Work $workNumber not found.");
-          continue;
+      if (message.content.toLowerCase() == "accept work") {
+        for (var assignment in state.workAssignments) {
+          presenceClient
+              .acceptWork(state.token, assignment.workId, assignment.workTargetId)
+              .then((_) => _sendMessage(assignment.workTargetId, "Hello, I'm here to help you."));
         }
-        print("Accepting work $workNumber ...");
-        presenceClient.acceptWork(state.token, assignment.workId, assignment.workTargetId).onError(fatalErrorFromAsync);
       }
     }
   }
@@ -96,22 +87,7 @@ class SmokeTester {
   }
 
   void _stateChanged(SessionState state) async {
-    print("Saw state change, state counter is ${state.stateCounter}.");
-    if (!_started) {
-      _started = true;
-      _setupKeyHandler();
-    }
-
     this.state = state;
-    if (!_sessionStarted) {
-      if (!state.hasSession()) {
-        _startSession();
-        return;
-      }
-      _sessionStarted = true;
-      _startingSession = false;
-    }
-
     if (!_loggedIn) {
       if (!state.isLoggedIn) {
         _login();

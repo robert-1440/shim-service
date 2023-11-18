@@ -105,6 +105,8 @@ class SessionState extends Mappable {
     };
   }
 
+  List<WorkAssignment> get workAssignments => _workAssignments;
+
   int get stateCounter => _stateCounter;
 
   String? get userName => _userName;
@@ -125,6 +127,7 @@ class SessionState extends Mappable {
 
   void _workAssigned(WorkAssignedEvent event) {
     _workAssignments.add(WorkAssignment(event.workId, event.workTargetId, event.channelName));
+    print("Work assigned as ${_workAssignments.length}: workId=${event.workId} workTargetId=${event.workTargetId}");
   }
 
   void _workAccepted(WorkAcceptedEvent event) {
