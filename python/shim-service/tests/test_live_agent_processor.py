@@ -141,6 +141,7 @@ class TestLiveAgentPollingProcessor(BaseTest):
     def test_invoke_with_error(self):
         token = self.create_web_session(async_mode=AsyncMode.NONE)
         self.processor.invoke({})
+
         # Make sure the session is in failed state
         sess = self.get_session_from_token(token, failure_ok=True)
         self.assertEqual(SessionStatus.FAILED, sess.status)
@@ -149,6 +150,9 @@ class TestLiveAgentPollingProcessor(BaseTest):
         self.info_logs.clear()
         self.processor.invoke({})
         self.assertEqual("No sessions to poll.", self.info_logs.pop(0))
+        # Unexpected GET request error was the error, for now it notifies
+        n = self.sns_mock.pop_notification()
+        self.assertContains("Unexpected request: GET", n.message)
 
     def test_invoke_multiple(self):
         self.create_web_session(async_mode=AsyncMode.NONE)

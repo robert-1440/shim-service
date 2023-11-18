@@ -3,9 +3,9 @@ import time
 from threading import Thread, RLock
 from typing import Dict, Any, Optional, List, Callable
 
-from bean import InvocableBean
 from config import Config
 from lambda_pkg.functions import LambdaInvoker
+from lambda_web_framework import InvocableBeanRequestHandler
 from pending_event import PendingEventType, PendingEvent
 from repos.pending_event_repo import PendingEventsRepo
 from repos.resource_lock import ResourceLock, ResourceLockRepo
@@ -211,7 +211,7 @@ class ProcessorGroup:
         return len(self.threads)
 
 
-class LiveAgentPollingProcessor(InvocableBean):
+class LiveAgentPollingProcessor(InvocableBeanRequestHandler):
 
     def __init__(self, pending_events_repo: PendingEventsRepo,
                  resource_lock_repo: ResourceLockRepo,

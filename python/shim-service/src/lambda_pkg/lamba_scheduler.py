@@ -7,7 +7,7 @@ from botocore.auth import SigV4Auth
 from botocore.awsrequest import AWSRequest
 from botocore.credentials import Credentials
 
-from bean import InvocableBean
+from lambda_web_framework import InvocableBeanRequestHandler
 from utils import loghelper
 from utils.supplier import MemoizedSupplier
 
@@ -65,7 +65,7 @@ def invoke(function_name: str, parameters: Dict[str, Any]):
         logger.severe(f"Failed to invoke lambda function {function_name}, code={code}, response={response.text}")
 
 
-class LambdaSchedulerProcessor(InvocableBean):
+class LambdaSchedulerProcessor(InvocableBeanRequestHandler):
 
     def invoke(self, parameters: Dict[str, Any]):
         target_function = parameters.pop('targetFunction')

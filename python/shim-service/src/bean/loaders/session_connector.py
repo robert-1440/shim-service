@@ -1,10 +1,10 @@
 from typing import Dict, Any
 
-from bean import InvocableBean
+from lambda_web_framework import InvocableBeanRequestHandler
 from session import manager
 
 
-class Invoker(InvocableBean):
+class Invoker(InvocableBeanRequestHandler):
 
     def invoke(self, parameters: Dict[str, Any]):
         manager.finish_connection(parameters['tenantId'], parameters['sessionId'])

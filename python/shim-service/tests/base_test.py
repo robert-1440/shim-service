@@ -1,5 +1,7 @@
 from botomocks.scheduler_mock import MockSchedulerClient
 
+from lambda_web_framework import app_handler
+
 SQS_LIVE_AGENT_QUEUE_URL_ENV_NAME = "SQS_SHIMSERVICELIVEAGENTPOLLER_QUEUE_URL"
 SQS_LIVE_AGENT_QUEUE_URL = "https://somewhere.1440.io/live-agent-poller-queue"
 import os
@@ -12,8 +14,6 @@ from io import StringIO
 from typing import Dict, Any, Optional, Union, Tuple, List, Callable
 
 import app
-import bean
-bean.set_resettable(True)
 from botomocks.sqs_mock import MockSqsClient
 from lambda_pkg.functions import LambdaFunction
 
@@ -61,7 +61,7 @@ from utils.date_utils import get_system_time_in_millis
 from utils.dict_utils import set_if_not_none
 from utils.http_client import create_client, HttpClient
 
-app.TESTING = True
+app_handler.TESTING = True
 sfdc_session.TESTING = True
 
 ROOT = "/shim-service/"
@@ -206,6 +206,7 @@ def setup_ddb(client: MockDynamoDbClient):
 
 
 class BaseTest(BetterTestCase):
+    ddb_mock: MockDynamoDbClient
     disable_notification_check: bool
     sqs_mock: MockSqsClient
     instance: Instance

@@ -148,4 +148,4 @@ def submit_blocks_in_parallel(
         on_submit=on_submit
     )
     group.add_all(object_list)
-    group.join(30)
+    group.join()

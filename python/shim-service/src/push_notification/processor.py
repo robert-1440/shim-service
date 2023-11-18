@@ -1,8 +1,8 @@
 import json
 from typing import Dict, Any
 
-from bean import InvocableBean
 from lambda_pkg.functions import LambdaFunction
+from lambda_web_framework import InvocableBeanRequestHandler
 from push_notification import PushNotificationContextSettings, SessionPushNotification
 from push_notification.manager import PushNotificationManager
 from repos.resource_lock import session_try_auto_lock, SessionLockedException
@@ -14,7 +14,7 @@ from utils import loghelper, date_utils
 logger = loghelper.get_logger(__name__)
 
 
-class PushNotificationProcessor(InvocableBean):
+class PushNotificationProcessor(InvocableBeanRequestHandler):
 
     def __init__(self, session_contexts_repo: SessionContextsRepo,
                  push_notification_repo: SessionPushNotificationsRepo,

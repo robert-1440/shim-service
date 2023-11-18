@@ -1,14 +1,18 @@
 import os.path
 import sys
 import unittest
+import re
 from copy import copy
 from functools import cmp_to_key
+from io import StringIO
 from typing import List, Iterable, Any, Callable, Optional, Tuple
 from unittest import TestCase, TestSuite
 
 from coverage import Coverage
 
 coverage = False
+
+_COVERAGE_PATTERN = re.compile(r'^(.+?)\s+(\d+)\s+(\d+)\s+(\d+%)\s+(.+)$')
 
 
 def get_class_name(obj: Any) -> str:
@@ -60,6 +64,34 @@ def split_tests(suite: TestSuite) -> Tuple[TestSuite]:
         setattr(right, '_tests', it_tests)
         results.append(right)
     return tuple(results)
+
+
+class DetailLine:
+    def __init__(self, coverage: int, line: str):
+        self.coverage = coverage
+        self.line = line
+
+
+def _parse_percent(value: str):
+    return int(value.replace("%", ""))
+
+
+def format_output(output: str):
+    lines = output.split("\n")
+    detail_lines = lines[2:]
+    new_detail_lines = []
+    other_lines = []
+    for line in detail_lines:
+        match = re.match(_COVERAGE_PATTERN, line)
+        if match:
+            new_detail_lines.append(DetailLine(_parse_percent(match.group(4)), line))
+        else:
+            other_lines.append(line)
+
+    new_detail_lines.sort(key=lambda n: n.coverage)
+    print("\n".join(lines[0:2]))
+    print("\n".join(map(lambda n: n.line, new_detail_lines)))
+    print("\n".join(other_lines))
 
 
 def sort_test(collection: Iterable[Any], comparator: Callable[[Any, Any], int]) -> List[Any]:
@@ -130,4 +162,6 @@ if __name__ == "__main__":
 
     if cov is not None:
         cov.stop()
-        cov.report(omit="*test*", show_missing=True, skip_empty=True, file=sys.stdout)
+        io = StringIO()
+        cov.report(omit="*test*", show_missing=True, skip_empty=True, file=io)
+        format_output(io.getvalue())

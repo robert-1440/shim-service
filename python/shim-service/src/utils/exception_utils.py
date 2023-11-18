@@ -1,5 +1,6 @@
 import functools
 import sys
+import traceback
 from io import StringIO
 from traceback import print_exc
 from typing import Any, Callable
@@ -56,3 +57,13 @@ def never_raise(notifier: Callable[[str, str], None] = None):
         return _inner_wrapper
 
     return decorator
+
+
+def print_exception(ex: BaseException):
+    try:
+        if sys.version_info >= (3, 10):
+            traceback.print_exception(ex, file=sys.stderr)
+        else:
+            traceback.print_exception(type(ex), ex, ex.__traceback__, file=sys.stderr)
+    except BaseException:
+        print_exc()

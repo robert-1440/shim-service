@@ -115,6 +115,9 @@ class PresenceTests(BaseTest):
             expected_error_message="SF call failed."
         )
 
+        # For now, that last error sends a notification
+        self.sns_mock.pop_notification('error:topic:arn')
+
         self.__accept_work(token)
         events = self.query_events_by_token(token, EventType.WORK_ACCEPTED)
         self.assertHasLength(2, events)

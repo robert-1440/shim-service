@@ -1,5 +1,6 @@
 import abc
 import random
+import sys
 from copy import deepcopy
 from threading import RLock
 from typing import List, Optional, Any, Dict, Tuple, Iterable, Callable
@@ -14,6 +15,9 @@ from botomocks.exceptions import ConditionalCheckFailedException, AwsExceptionRe
 from support.collection_stuff import binary_search
 from support.thread_utils import synchronized
 from utils.dict_utils import get_or_create, set_if_not_none
+
+# TableName, key
+DeleteListener = Callable[[str, dict], None]
 
 
 class KeyPart:
@@ -309,11 +313,19 @@ class MockDynamoDbClient:
     def __init__(self):
         self.tables: Dict[str, Table] = {}
         self.update_count = 0
+        self.delete_count = 0
         self.mutex = RLock()
         self.__update_callback: Optional[Callable] = None
         self.__delete_callback: Optional[Callable] = None
         self.__get_callback: Optional[Callable] = None
         self.__put_callback: Optional[Callable] = None
+        self.__delete_listeners: List[Callable] = []
+
+    def add_delete_listener(self, listener: DeleteListener):
+        self.__delete_listeners.append(listener)
+
+    def remove_delete_listener(self, listener: DeleteListener):
+        self.__delete_listeners.remove(listener)
 
     def set_get_callback(self, callback: Optional[Callable]):
         self.__get_callback = callback
@@ -402,6 +414,7 @@ class MockDynamoDbClient:
 
     @synchronized
     def delete_item(self, **kwargs):
+        self.delete_count += 1
         kwargs = dict(kwargs)
         table_name = kwargs.pop('TableName')
         key = kwargs.pop('Key')
@@ -430,6 +443,8 @@ class MockDynamoDbClient:
 
         if v is not None and rv == 'ALL_OLD':
             record['Attributes'] = v
+        for l in self.__delete_listeners:
+            l(table_name, key)
         return record
 
     @synchronized
@@ -466,6 +481,7 @@ class MockDynamoDbClient:
             raise AssertionError("too many items")
         assert_empty(kwargs)
         unprocessed = []
+
         for table_name, requests in items.items():
             for request in requests:
                 for action, item_request in request.items():

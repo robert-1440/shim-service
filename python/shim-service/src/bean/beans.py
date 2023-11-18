@@ -1,14 +1,14 @@
 import os
 from threading import RLock
-from traceback import print_exc
 from typing import Union, Callable, Any, Dict, Collection, Optional, Iterable
 
 import boto3
 
 from bean import BeanName, Bean, BeanInitializationException, profiles, BeanRegistry, BeanType, \
-    get_bean_instance, is_resettable
+    get_bean_instance, is_resettable, InvocableBean
 from bean.profiles import get_active_profiles
 from config import Config
+from utils import exception_utils
 from utils.code_utils import import_module_and_get_attribute
 
 BeanValue = Union[Callable, Any]
@@ -126,10 +126,12 @@ class _BeanImpl(Bean):
                 self.__value = initializer()
             else:
                 self.__value = initializer
+            if self.__bean_type_flags != 0 and isinstance(self.__value, InvocableBean):
+                self.__value.bean_name = self.name
             self.__initialized = True
             return
         except BaseException as ex:
-            print_exc()
+            exception_utils.print_exception(ex)
             ex_to_raise = BeanInitializationException(self.name)
         finally:
             self.__init_in_progress = False

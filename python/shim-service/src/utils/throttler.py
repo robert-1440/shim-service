@@ -1,8 +1,7 @@
 from threading import RLock, Thread
-from traceback import print_exception
 from typing import Callable, Optional
 
-from utils import threading_utils
+from utils import threading_utils, exception_utils
 from utils.date_utils import get_system_time_in_millis
 from utils.signal_event import SignalEvent
 
@@ -47,7 +46,7 @@ class Throttler:
                 try:
                     self.__caller()
                 except BaseException as ex:
-                    print_exception(ex)
+                    exception_utils.print_exception(ex)
 
             if self.__shutdown:
                 break

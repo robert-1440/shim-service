@@ -1,6 +1,6 @@
+import os
 import abc
 import functools
-import sys
 from enum import Enum
 from typing import Any, TypeVar, Dict, Collection, Union, Optional, Iterable
 
@@ -19,10 +19,12 @@ from utils.supplier import Supplier, MemoizedSupplier
 #
 # Set this to True when testing
 #
-RESETTABLE = False
+RESETTABLE = os.environ.get("AWS_LAMBDA_FUNCTION_NAME") is None
 
 
 class InvocableBean(metaclass=abc.ABCMeta):
+    bean_name: 'BeanName'
+
     @abc.abstractmethod
     def invoke(self, parameters: Dict[str, Any]):
         raise NotImplementedError()
@@ -31,6 +33,7 @@ class InvocableBean(metaclass=abc.ABCMeta):
 class BeanType(Enum):
     PUSH_NOTIFIER = 0x01
     EVENT_LISTENER = 0x02
+    REQUEST_HANDLER = 0x04
 
 
 HTTP_CLIENT_PROFILES = ALL_PROFILES ^ SCHEDULER_PROFILE ^ TABLE_LISTENER_PROFILE
@@ -49,7 +52,7 @@ class BeanName(NameLookupEnum):
     EVENTS_REPO = 6, EVENTS_PROFILES
     ADMIN_CLIENT = 7, WEB_PROFILE
     AUTHENTICATOR = 8, WEB_PROFILE
-    WEB_ROUTER = 9, WEB_PROFILE
+    WEB_ROUTER = 9, WEB_PROFILE, {'type': BeanType.REQUEST_HANDLER}
     SESSIONS_REPO = 10, ALL_PROFILES
     USER_SESSIONS_REPO = 11, ALL_PROFILES
     RESOURCE_LOCK_REPO = 12, ALL_PROFILES
@@ -68,22 +71,22 @@ class BeanName(NameLookupEnum):
     LIVE_AGENT_POLLER_PLATFORM = 25, WEB_PROFILE | LIVE_AGENT_PROCESSOR_PROFILE
     SFDC_SESSIONS_REPO = 26, ALL_PROFILES
     LAMBDA_INVOKER = 27, LAMBDA_PROFILES
-    SESSION_CONNECTOR = 28, WEB_PROFILE
+    SESSION_CONNECTOR = 28, WEB_PROFILE, {'type': BeanType.REQUEST_HANDLER}
     LAMBDA_CLIENT = 29, LAMBDA_PROFILES
-    LIVE_AGENT_PROCESSOR = 30, LIVE_AGENT_PROCESSOR_PROFILE
+    LIVE_AGENT_PROCESSOR = 30, LIVE_AGENT_PROCESSOR_PROFILE, {'type': BeanType.REQUEST_HANDLER}
     SFDC_PUBSUB_POLLER = 31, PUBSUB_POLLER_PROFILE
     SQS_CLIENT = 32, EVENTS_PROFILES
     SCHEDULER = 33, EVENTS_PROFILES
     LIVE_AGENT_MESSAGE_DISPATCHER = 34, LIVE_AGENT_PROCESSOR_PROFILE
     PENDING_EVENTS_REPO = 35, EVENTS_PROFILES
-    PUSH_NOTIFIER_PROCESSOR = 36, PUSH_NOTIFIER_PROFILE
+    PUSH_NOTIFIER_PROCESSOR = 36, PUSH_NOTIFIER_PROFILE, {'type': BeanType.REQUEST_HANDLER}
     SQS_PUSH_NOTIFIER = 37, WEB_PROFILE | PUSH_NOTIFIER_PROFILE, {'type': BeanType.PUSH_NOTIFIER,
                                                                   'var': SQS_PUSH_NOTIFICATION_QUEUE_URL}
     PUSH_NOTIFICATION_MANAGER = 38, WEB_PROFILE | PUSH_NOTIFIER_PROFILE
     WORK_ID_MAP_REPO = 39, WEB_PROFILE, {'type': BeanType.EVENT_LISTENER}
     SCHEDULER_CLIENT = 40, EVENTS_PROFILES
     LAMBDA_SCHEDULER_PROCESSOR = 41, SCHEDULER_PROFILE
-    TABLE_LISTENER_PROCESSOR = 42, TABLE_LISTENER_PROFILE
+    TABLE_LISTENER_PROCESSOR = 42, TABLE_LISTENER_PROFILE, {'type': BeanType.REQUEST_HANDLER}
 
 
 BeanSupplier = Supplier[T]
@@ -176,6 +179,7 @@ def inject(bean_instances: Union[BeanName, Collection[BeanName]] = None,
     if RESETTABLE:
         loader = load_bean_args
     else:
+        assert RESETTABLE
         supplier = MemoizedSupplier(load_bean_args)
         loader = supplier.get
 
@@ -205,11 +209,6 @@ def get_invocable_bean(name: BeanName) -> InvocableBean:
     v = get_bean_instance(name)
     assert isinstance(v, InvocableBean)
     return v
-
-
-def set_resettable(resettable: bool):
-    global RESETTABLE
-    RESETTABLE = resettable
 
 
 def is_resettable() -> bool:

@@ -3,7 +3,6 @@ import os.path
 import sys
 import threading
 from logging import Logger, Formatter, StreamHandler
-from traceback import print_exception
 from types import ModuleType
 from typing import Union, Dict, Any, Callable, Optional
 
@@ -56,7 +55,7 @@ def error_notify(subject: str, message: str, notifier: Notifier):
     try:
         notifier.notify(subject, message)
     except BaseException as ex:
-        print_exception(ex, file=sys.stderr)
+        exception_utils.print_exception(ex)
 
 
 class StandardLogger:

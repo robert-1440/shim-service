@@ -173,7 +173,7 @@ class AwsSessionContextsRepo(AwsVirtualRangeTableRepo, SessionContextsRepo):
                 new_key = dict(key)
                 new_key['contextType'] = ct.value
                 # We are a virtual table, so we need to build the actual key
-                entries.append(TableAndKey(self.table_name, self.primary_key.build_key_as_dict(new_key)))
+                entries.append((self.table_name, self.primary_key.build_key_as_dict(new_key)))
             return entries
 
         def on_submit(table_and_keys: List[TableAndKey]):

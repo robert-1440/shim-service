@@ -110,6 +110,10 @@ class LambdaHttpRequest:
     def get_url_parameter(self, name: str) -> str:
         return self.get_params().get(name)
 
+    @classmethod
+    def is_web_event(cls, event: Dict[str, Any]):
+        return "rawPath" in event or "path" in event
+
 
 BodyTransformer = Callable[[LambdaHttpRequest], Any]
 

@@ -77,3 +77,7 @@ class BetterTestCase(TestCase):
         actual = getattr(obj, attribute_name)
         if actual != expected:
             self.fail(f"attribute {attribute_name} value of {actual} != {expected}")
+
+    def assertContains(self, pattern: str, string: str):
+        if pattern not in string:
+            self.fail(f"Expected '{pattern}' to be in '{string}'.")
