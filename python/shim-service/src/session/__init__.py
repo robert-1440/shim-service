@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Optional, List, Any, Dict, Callable
 
 from lambda_web_framework.web_exceptions import ConflictException
-from platform_channels import OMNI_PLATFORM, PlatformChannel, X1440_PLATFORM
+from platform_channels import OMNI_PLATFORM, PlatformChannel
 from utils import loghelper
 from utils.date_utils import EpochMilliseconds, get_system_time_in_millis, EpochSeconds
 from utils.dict_utils import set_if_not_none
@@ -253,14 +253,11 @@ def verify_session_status(session: Session, pending_ok: bool = False, allow_fail
 class ContextType(ReverseLookupEnum):
     WEB = 'W'
     LIVE_AGENT = 'L'
-    X1440 = 'X'
     PUSH_NOTIFIER = 'P'
 
     def to_platform_channel(self) -> PlatformChannel:
         if self == ContextType.LIVE_AGENT:
             return OMNI_PLATFORM
-        if self == ContextType.X1440:
-            return X1440_PLATFORM
         raise ValueError(f"No platform for {self.value}")
 
     @classmethod

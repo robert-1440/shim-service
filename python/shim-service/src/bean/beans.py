@@ -216,7 +216,8 @@ _BEANS: Dict[BeanName, _BeanImpl] = {
     BeanName.WORK_ID_MAP_REPO: _module(),
     BeanName.SQS_CLIENT: _boto3('sqs'),
     BeanName.LAMBDA_SCHEDULER_PROCESSOR: _module(),
-    BeanName.TABLE_LISTENER_PROCESSOR: _module()
+    BeanName.TABLE_LISTENER_PROCESSOR: _module(),
+    BeanName.PENDING_TENANT_EVENTS_REPO: _module()
 }
 
 

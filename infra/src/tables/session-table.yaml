@@ -16,7 +16,12 @@ ttl-attribute: expireTime
 
 pay-per-request: true
 
-stream-view-type: keys
+# Options are:
+#   keys = only the keys of the modified item
+#    new = the entire item after it was modified
+#    old = the entire item as it appeared before it was modified
+#   both = both the new and the old images of the item
+stream-view-type: new
 
 trigger-lambdas:
   - name: ShimServiceTableListener
@@ -33,7 +38,7 @@ trigger-lambdas:
     enabled: true
 
     # The maximum amount of time to spend gathering records before function invocation in seconds.
-    batch-window: 60
+    batch-window: 10
 
     # The maximum number of times to retry when the function returns an error.
     retry-attempts: 10

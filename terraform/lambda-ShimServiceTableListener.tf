@@ -40,7 +40,10 @@ data "aws_iam_policy_document" "shim_service_table_listener" {
   statement {
     effect    = "Allow"
     resources = [ aws_dynamodb_table.shim_service_virtual_range_table.arn ]
-    actions   = [ "dynamodb:BatchWriteItem" ]
+    actions   = [
+      "dynamodb:BatchWriteItem",
+      "dynamodb:PutItem"
+    ]
   }
 
   statement {
@@ -94,7 +97,7 @@ resource "aws_lambda_event_source_mapping" "shim_service_table_listener_shim_ser
   event_source_arn                   = aws_dynamodb_table.shim_service_session.stream_arn
   function_name                      = "ShimServiceTableListener"
   batch_size                         = 100
-  maximum_batching_window_in_seconds = 60
+  maximum_batching_window_in_seconds = 10
   starting_position                  = "LATEST"
   maximum_retry_attempts             = 10
   depends_on = [ aws_lambda_function.shim_service_table_listener ]

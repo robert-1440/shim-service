@@ -1,6 +1,6 @@
 from typing import List
 
-from aws.dynamodb import _from_ddb_item
+from aws.dynamodb import from_ddb_item
 from base_test import BaseTest
 from support.dict_stuff import replace_properties_in_dict
 
@@ -53,13 +53,13 @@ class TestSuite(BaseTest):
 
         def listener(table_name: str, key: dict):
             assert table_name == "ShimServiceVirtualRangeTable"
-            entry = _from_ddb_item(key)
+            entry = from_ddb_item(key)
             value = entry['hashKey'] + "|" + entry['rangeKey']
             assert value not in keys, "Duplicate key: " + value
             keys.add(value)
 
         self.ddb_mock.add_delete_listener(listener)
         self.invoke_event(payload)
-        # There are currently 4 context types, so we expect 100 * 4 = 400 deletes to have been issued
-        self.assertHasLength(400, keys)
-        self.assertEqual(400, self.ddb_mock.delete_count)
+        # There are currently 3 context types, so we expect 100 * 3 = 300 deletes to have been issued
+        self.assertHasLength(300, keys)
+        self.assertEqual(300, self.ddb_mock.delete_count)

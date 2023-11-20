@@ -4,7 +4,7 @@ resource "aws_dynamodb_table" "shim_service_session" {
   billing_mode     = "PAY_PER_REQUEST"
   range_key        = "sessionId"
   stream_enabled   = true
-  stream_view_type = "KEYS_ONLY"
+  stream_view_type = "NEW_IMAGE"
 
   attribute {
     name = "tenantId"

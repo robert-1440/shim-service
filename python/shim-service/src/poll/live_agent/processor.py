@@ -1,58 +1,27 @@
 import json
-import time
-from threading import Thread, RLock
-from typing import Dict, Any, Optional, List, Callable
+from typing import Any
 
 from config import Config
 from lambda_pkg.functions import LambdaInvoker
-from lambda_web_framework import InvocableBeanRequestHandler
-from pending_event import PendingEventType, PendingEvent
+from pending_event import PendingEventType
+from poll.base_processor import BasePollingProcessor
+from poll.polling_group import AbstractProcessorGroup, LockAndEvent, E
+from repos import QueryResult
 from repos.pending_event_repo import PendingEventsRepo
-from repos.resource_lock import ResourceLock, ResourceLockRepo
+from repos.resource_lock import ResourceLockRepo
 from repos.session_contexts import SessionContextsRepo
 from services.sfdc.live_agent import LiveAgentPollerSettings
 from services.sfdc.live_agent.message_dispatcher import LiveAgentMessageDispatcher
-from services.sfdc.sfdc_session import SfdcSessionAndContext, load_with_context, SfdcSession
-from session import SessionContext, ContextType
-from utils import loghelper, threading_utils, exception_utils
-from utils.date_utils import get_system_time_in_millis, format_elapsed_time_seconds
-from utils.signal_event import SignalEvent
-from utils.throttler import Throttler
-from utils.timer_utils import Timer
+from services.sfdc.sfdc_session import SfdcSessionAndContext, load_with_context
+from session import ContextType
+from utils import loghelper, exception_utils
 
 logger = loghelper.get_logger(__name__)
 
 _MAX_COLLECT_SECONDS = 10
 
 
-class LockAndEvent:
-    def __init__(self, event: PendingEvent, lock: ResourceLock):
-        self.event = event
-        self.lock = lock
-        self.failed = False
-        self.after_release: Optional[Callable] = None
-
-    @property
-    def tenant_id(self) -> int:
-        return self.event.tenant_id
-
-    @property
-    def session_id(self) -> str:
-        return self.event.session_id
-
-    def release(self):
-        self.lock.release()
-        if self.after_release is not None:
-            self.after_release()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.release()
-
-
-class ProcessorGroup:
+class ProcessorGroup(AbstractProcessorGroup):
     def __init__(self, resource_lock_repo: ResourceLockRepo,
                  pending_event_repo: PendingEventsRepo,
                  contexts_repo: SessionContextsRepo,
@@ -60,21 +29,19 @@ class ProcessorGroup:
                  max_working_count: int,
                  dispatcher: LiveAgentMessageDispatcher,
                  invoker: LambdaInvoker):
+        super().__init__(resource_lock_repo, refresh_seconds, max_working_count, _MAX_COLLECT_SECONDS)
         self.contexts_repo = contexts_repo
-        self.resource_lock_repo = resource_lock_repo
-        self.max_working_count = max_working_count
         self.pe_repo = pending_event_repo
         self.dispatcher = dispatcher
-        self.refresh_seconds = refresh_seconds
-        self.threads: List[Thread] = []
-        self.submit_count = 0
-        self.working_count = 0
         self.invoker = invoker
-        self.mutex = RLock()
-        self.signal_event = SignalEvent()
-        self.invoke_throttler = Throttler(10000, self.invoker.invoke_live_agent_poller)
 
-    def __poll(self, le: LockAndEvent, sfdc_session: SfdcSession, context: SessionContext):
+    def invoke_lambda(self):
+        self.invoker.invoke_live_agent_poller()
+
+    def poll(self, le: LockAndEvent):
+        sc: SfdcSessionAndContext = le.user_object
+        sfdc_session = sc.session
+        context = sc.context
         settings = LiveAgentPollerSettings.deserialize(context.session_data)
 
         def inner_poll():
@@ -105,115 +72,30 @@ class ProcessorGroup:
             self.contexts_repo.set_failed(context, message_text)
             le.failed = True
 
-    def dec_submit_count(self):
-        with self.mutex:
-            self.submit_count -= 1
-            self.signal_event.notify()
-
-    def invoke_again(self):
-        self.invoke_throttler.add_invocation()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.invoke_throttler.close()
-
-    def worker(self, event: PendingEvent):
-        # First, try to lock the resource for the event
-        le = None
-        try:
-            le = self.__try_lock(event)
-        finally:
-            if le is None:
-                self.dec_submit_count()
-        if le is None:
-            return
-        with le:
-            le.after_release = self.invoke_again
-
-            # Now, load the context
-            sc: SfdcSessionAndContext = load_with_context(event, ContextType.LIVE_AGENT)
-            if sc is None:
-                self.dec_submit_count()
-                logger.info(f"Session {event} no longer exists.")
-                self.pe_repo.delete_event(event)
-                return
-
-            with self.mutex:
-                self.working_count += 1
-                self.submit_count -= 1
-                self.signal_event.notify()
-            try:
-                self.__poll(le, sc.session, sc.context)
-            except BaseException as ex:
-                logger.severe(f"Failed during poll: {exception_utils.dump_ex(ex)}")
-
-    def add(self, event: PendingEvent) -> bool:
-        """
-        Try to add the event for processing.
-
-        :param event: the event.
-        :return: False if we are processing the max events.
-        """
-        if not self.is_full(True):
-            t = threading_utils.start_thread(self.worker, user_object=event)
-            self.threads.append(t)
-            return True
-        return False
-
-    def is_empty(self) -> bool:
-        return len(self.threads) == 0
-
-    def join(self, timeout: float) -> bool:
-        if len(self.threads) == 0:
-            return True
-
-        for t in self.threads:
-            if not t.is_alive():
-                self.threads.remove(t)
-                return self.join(timeout)
-            else:
-                t.join(timeout)
-                if not t.is_alive():
-                    self.threads.remove(t)
-            break
-
-        return len(self.threads) == 0
-
-    def is_full(self, increment: bool = False):
-        timer = Timer(_MAX_COLLECT_SECONDS)
-        while timer.has_time_left():
-            with self.mutex:
-                if self.working_count == self.max_working_count:
-                    return True
-                total = self.working_count + self.submit_count
-                if total < self.max_working_count:
-                    if increment:
-                        self.submit_count += 1
-                    return False
-            if not increment:
-                return False
-            self.signal_event.wait(timer.get_delay_time_millis(50))
+    def should_poll(self, le: LockAndEvent) -> bool:
+        sc: SfdcSessionAndContext = load_with_context(le.event, ContextType.LIVE_AGENT)
+        if sc is None:
+            logger.info(f"Session {le.event} no longer exists.")
+            self.pe_repo.delete_event(le.event)
+            return False
+        le.user_object = sc
         return True
 
-    def __try_lock(self, event: PendingEvent) -> Optional[LockAndEvent]:
-        # We need to lock on tenant id and user id, since we do not want the same user to be polling more than once
-        name = f"lap/{event.tenant_id}-{event.user_id}"
-        logger.info(f"Attempting to lock resource {name} ...")
-        lock = self.resource_lock_repo.try_acquire(name, self.refresh_seconds)
-        if lock is None:
-            logger.info(f"{name} is currently locked.")
-        elif lock.execute_and_release_on_false(lambda:
-                                               self.pe_repo.update_action_time(event, self.refresh_seconds)):
-            return LockAndEvent(event, lock)
-        return None
+    def form_lock_name(self, event: E):
+        return f"lap/{event.tenant_id}-{event.user_id}"
 
-    def thread_count(self) -> int:
-        return len(self.threads)
+    def update_action_time(self, event: E, seconds_in_future: int) -> bool:
+        return self.pe_repo.update_action_time(event, seconds_in_future)
+
+    def query_events(self, limit: int, next_token: Any) -> QueryResult:
+        return self.pe_repo.query_events(
+            PendingEventType.LIVE_AGENT_POLL,
+            limit=limit,
+            next_token=next_token
+        )
 
 
-class LiveAgentPollingProcessor(InvocableBeanRequestHandler):
+class LiveAgentPollingProcessor(BasePollingProcessor):
 
     def __init__(self, pending_events_repo: PendingEventsRepo,
                  resource_lock_repo: ResourceLockRepo,
@@ -221,6 +103,7 @@ class LiveAgentPollingProcessor(InvocableBeanRequestHandler):
                  invoker: LambdaInvoker,
                  config: Config,
                  dispatcher: LiveAgentMessageDispatcher):
+        super().__init__(resource_lock_repo, _MAX_COLLECT_SECONDS)
         self.pe_repo = pending_events_repo
         self.resource_lock_repo = resource_lock_repo
         self.contexts_repo = contexts_repo
@@ -229,8 +112,12 @@ class LiveAgentPollingProcessor(InvocableBeanRequestHandler):
         self.refresh_seconds = config.live_agent_poll_session_seconds
         self.dispatcher = dispatcher
 
-    def collect(self) -> ProcessorGroup:
-        group = ProcessorGroup(
+    @classmethod
+    def lock_name(cls) -> str:
+        return "lap-collect"
+
+    def create_group(self) -> AbstractProcessorGroup:
+        return ProcessorGroup(
             self.resource_lock_repo,
             self.pe_repo,
             self.contexts_repo,
@@ -239,56 +126,3 @@ class LiveAgentPollingProcessor(InvocableBeanRequestHandler):
             self.dispatcher,
             self.invoker
         )
-        # Sleep for a bit, so we can get as many as possible
-        time.sleep(.5)
-        next_token = None
-        full = False
-        while not full:
-            result = self.pe_repo.query_events(
-                PendingEventType.LIVE_AGENT_POLL,
-                limit=self.max_sessions,
-                next_token=next_token
-            )
-            next_token = result.next_token
-            if len(result.rows) == 0:
-                if next_token is None:
-                    break
-            else:
-                for event in result.rows:
-                    if not group.add(event):
-                        full = True
-                        break
-            if full or next_token is None or group.is_full():
-                break
-
-        if full or next_token is not None:
-            # This means we have more than the max out there, let another process grab them
-            group.invoke_again()
-
-        return group
-
-    def invoke(self, parameters: Dict[str, Any]):
-
-        # We want to lock during collection to avoid as many collisions on individual events found as possible
-        lock = self.resource_lock_repo.try_acquire("lap-collect", _MAX_COLLECT_SECONDS + 2)
-        if lock is None:
-            logger.info("Another poller is collecting sessions.")
-            return
-
-        with lock:
-            group = self.collect()
-
-        if group.is_empty():
-            logger.info("No sessions to poll.")
-            return
-
-        start_time = get_system_time_in_millis()
-        try:
-            logger.info(f"Starting poll for {group.thread_count()} session(s) ...")
-
-            with group:
-                while not group.join(30):
-                    elapsed = format_elapsed_time_seconds(start_time)
-                    logger.info(f"Number of threads still running: {group.thread_count()}, up time={elapsed} seconds.")
-        finally:
-            logger.info(f"Stopping, elapsed time = {format_elapsed_time_seconds(start_time)}.")

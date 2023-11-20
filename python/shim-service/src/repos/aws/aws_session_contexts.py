@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from aws.dynamodb import DynamoDb, TransactionRequest, UpdateItemRequest, DynamoDbRow, DynamoDbItem, _from_ddb_item, \
+from aws.dynamodb import DynamoDb, TransactionRequest, UpdateItemRequest, DynamoDbRow, DynamoDbItem, from_ddb_item, \
     TableAndKey
 from bean import BeanSupplier
 from config import Config
@@ -168,7 +168,7 @@ class AwsSessionContextsRepo(AwsVirtualRangeTableRepo, SessionContextsRepo):
 
     def delete_by_row_keys(self, row_keys: List[DynamoDbItem]):
         def transform(row: DynamoDbItem) -> List[TableAndKey]:
-            key = _from_ddb_item(row)
+            key = from_ddb_item(row)
             entries = []
             for ct in ContextType:
                 new_key = dict(key)

@@ -58,6 +58,7 @@ permissions:
     - table: ShimServiceVirtualRangeTable
       actions:
         - BatchWriteItem
+        - PutItem
 
   topics:
     - name: shim-error

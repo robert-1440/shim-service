@@ -162,7 +162,7 @@ def build_map(entry: dict) -> dict:
     return new_record
 
 
-def _from_ddb_item(item: DynamoDbItem) -> DynamoDbRow:
+def from_ddb_item(item: DynamoDbItem) -> DynamoDbRow:
     return build_map(item)
 
 
@@ -535,7 +535,7 @@ class DynamoDb:
         item = record.get('Item')
         if item is None:
             raise ResourceNotFoundException()
-        return _from_ddb_item(item)
+        return from_ddb_item(item)
 
     def put_item(self, table_name: str,
                  item: DynamoDbRow,
@@ -721,7 +721,7 @@ class DynamoDb:
             responses: Dict[str, List[DynamoDbItem]] = resp['Responses']
             for table_name, row_items in responses.items():
                 rows: List[DynamoDbRow] = get_or_create(results, table_name, list)
-                rows.extend(map(lambda m: _from_ddb_item(m), row_items))
+                rows.extend(map(lambda m: from_ddb_item(m), row_items))
             table_requests = resp['UnprocessedKeys']
 
         return results
@@ -845,6 +845,6 @@ class ResultSet:
     def next(self) -> Dict[str, Any]:
         if not self.has_next():
             raise Exception("No more")
-        item = _from_ddb_item(self.__items[self.__counter])
+        item = from_ddb_item(self.__items[self.__counter])
         self.__counter += 1
         return item
