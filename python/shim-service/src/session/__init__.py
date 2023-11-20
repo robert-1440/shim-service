@@ -274,12 +274,14 @@ class SessionContext(SessionKey):
                  session_id: str,
                  user_id: str,
                  context_type: ContextType,
-                 session_data: bytes):
+                 session_data: bytes,
+                 update_time: int = None):
         self.__tenant_id = tenant_id
         self.__session_id = session_id
         self.__user_id = user_id
         self.__context_type = context_type
         self.__data = session_data
+        self.__update_time = update_time or get_system_time_in_millis()
 
     def to_record(self) -> Dict[str, Any]:
         return {
@@ -287,7 +289,8 @@ class SessionContext(SessionKey):
             "sessionId": self.__session_id,
             "userId": self.__user_id,
             "contextType": self.__context_type.value,
-            "sessionData": self.__data
+            "sessionData": self.__data,
+            "updateTime": self.__update_time
         }
 
     @classmethod
@@ -297,7 +300,8 @@ class SessionContext(SessionKey):
             record['sessionId'],
             record['userId'],
             ContextType.value_of(record['contextType']),
-            record['sessionData']
+            record['sessionData'],
+            record['updateTime']
         )
 
     @property
@@ -328,5 +332,6 @@ class SessionContext(SessionKey):
             self.__session_id,
             self.__user_id,
             self.__context_type,
-            data
+            data,
+            get_system_time_in_millis()
         )

@@ -1,7 +1,7 @@
 import os.path
+import re
 import sys
 import unittest
-import re
 from copy import copy
 from functools import cmp_to_key
 from io import StringIO

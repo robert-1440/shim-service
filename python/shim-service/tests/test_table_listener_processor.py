@@ -1,7 +1,6 @@
-import sys
 from typing import List
 
-from aws.dynamodb import _to_ddb_item, _from_ddb_item
+from aws.dynamodb import _from_ddb_item
 from base_test import BaseTest
 from support.dict_stuff import replace_properties_in_dict
 

@@ -54,7 +54,7 @@ arn-env-name: THIS_FUNCTION_ARN
 #
 event-queue: false
 
-mirror: true
+mirror: ${mirroring-enabled:false}
 
 permissions:
 

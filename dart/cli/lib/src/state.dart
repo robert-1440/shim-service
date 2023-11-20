@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -58,6 +57,20 @@ class WorkAssignment extends Mappable {
 
   factory WorkAssignment.fromMap(Map<String, dynamic> map) {
     return WorkAssignment(map['workId'], map['workTargetId'], map['channelName']);
+  }
+}
+
+bool _silent = false;
+
+bool setSilent(bool silent) {
+  var current = _silent;
+  _silent = silent;
+  return current;
+}
+
+void consoleOutput(String message) {
+  if (!_silent) {
+    print(message);
   }
 }
 
@@ -127,7 +140,7 @@ class SessionState extends Mappable {
 
   void _workAssigned(WorkAssignedEvent event) {
     _workAssignments.add(WorkAssignment(event.workId, event.workTargetId, event.channelName));
-    print("Work assigned as ${_workAssignments.length}: workId=${event.workId} workTargetId=${event.workTargetId}");
+    consoleOutput("Work assigned as ${_workAssignments.length}: workId=${event.workId} workTargetId=${event.workTargetId}");
   }
 
   void _workAccepted(WorkAcceptedEvent event) {
@@ -190,7 +203,6 @@ class SessionState extends Mappable {
     if (!homeDir.existsSync()) {
       homeDir.createSync(recursive: true);
     }
-    print("Saving session state, hasToken=${hasSession()}, counter=$_stateCounter ...");
     _file.writeAsStringSync(toString());
   }
 
@@ -323,14 +335,14 @@ class SessionState extends Mappable {
     return sw.toString();
   }
 
-  SessionState processMessage(String body, {StreamController<PushNotificationEvent>? eventStream}) {
+  SessionState processMessage(String body, {List<PushNotificationEvent>? eventList}) {
     var pushEvent = parsePushNotificationEvent(body);
     var event = pushEvent.pollingEvent;
     SessionState returnValue = this;
     if (event == null) {
-      print("> Received message ${pushEvent.messageType}");
+      consoleOutput("> Received message ${pushEvent.messageType}");
     } else {
-      print("> Received $event");
+      consoleOutput("> Received $event");
       var handler = mapper[event.eventType];
       if (handler != null) {
         var newState = _clone(token, presenceStatuses);
@@ -339,8 +351,8 @@ class SessionState extends Mappable {
         returnValue = newState;
       }
     }
-    if (eventStream != null) {
-      eventStream.add(pushEvent);
+    if (eventList != null) {
+      eventList.add(pushEvent);
     }
     return returnValue;
   }

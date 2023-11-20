@@ -16,8 +16,7 @@ class LambdaFunctionParameters:
     def effective_name(self) -> str:
         """
         This is the name that should be used for the lambda function for the purpose of invoking or scheduling it.
-        It checks to see if the current function name is this one, and if so returns the name of the mirror function,
-        to avoid the recursive invocation problem where AWS disables it.
+        If we have mirroring enabled, and we are invoking "ourself", then the mirror function name will be returned.
         :return: the effective function name.
         """
         name = self.name

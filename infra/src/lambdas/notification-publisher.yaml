@@ -41,8 +41,7 @@ timeout: 60
 #
 log-retention-days: 30
 
-
-mirror: true
+mirror: ${mirroring-enabled:false}
 
 arn-env-name: THIS_FUNCTION_ARN
 

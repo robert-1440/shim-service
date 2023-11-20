@@ -20,6 +20,7 @@ class PendingEvent(SessionKey):
                  event_type: PendingEventType,
                  tenant_id: int,
                  session_id: str,
+                 user_id: Optional[str],
                  event_time: Optional[EpochMilliseconds] = None,
                  active_at: Optional[EpochMilliseconds] = None,
                  update_time: Optional[EpochMilliseconds] = None):
@@ -27,6 +28,7 @@ class PendingEvent(SessionKey):
         self.event_time = event_time or get_system_time_in_millis()
         self.tenant_id = tenant_id
         self.session_id = session_id
+        self.user_id = user_id
         self.active_at = active_at or self.event_time
         self.update_time = update_time or self.event_time
 
@@ -36,6 +38,7 @@ class PendingEvent(SessionKey):
             'eventTime': self.event_time,
             'tenantId': self.tenant_id,
             'sessionId': self.session_id,
+            'userId': self.user_id,
             'activeAt': self.active_at,
             'updateTime': self.update_time
         }
@@ -46,6 +49,7 @@ class PendingEvent(SessionKey):
             PendingEventType.value_of(record['eventType']),
             record['tenantId'],
             record['sessionId'],
+            record.get('userId'),
             record['eventTime'],
             record['activeAt'],
             record.get('updateTime')

@@ -48,15 +48,6 @@ data "aws_iam_policy_document" "shim_service_lambda_scheduler" {
 
   statement {
     effect    = "Allow"
-    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceLiveAgentPollerMirror" ]
-    actions   = [
-      "lambda:InvokeFunction",
-      "lambda:GetFunction"
-    ]
-  }
-
-  statement {
-    effect    = "Allow"
     resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceNotificationPublisher" ]
     actions   = [
       "lambda:InvokeFunction",
@@ -66,25 +57,7 @@ data "aws_iam_policy_document" "shim_service_lambda_scheduler" {
 
   statement {
     effect    = "Allow"
-    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceNotificationPublisherMirror" ]
-    actions   = [
-      "lambda:InvokeFunction",
-      "lambda:GetFunction"
-    ]
-  }
-
-  statement {
-    effect    = "Allow"
     resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceWeb" ]
-    actions   = [
-      "lambda:InvokeFunction",
-      "lambda:GetFunction"
-    ]
-  }
-
-  statement {
-    effect    = "Allow"
-    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceWebMirror" ]
     actions   = [
       "lambda:InvokeFunction",
       "lambda:GetFunction"
@@ -137,13 +110,6 @@ resource "aws_lambda_permission" "shim_service_lambda_scheduler_shim_service_not
   function_name = aws_lambda_function.shim_service_lambda_scheduler.function_name
 }
 
-resource "aws_lambda_permission" "shim_service_lambda_scheduler_shim_service_notification_publisher_mirror" {
-  principal     = "lambda.amazonaws.com"
-  action        = "lambda:InvokeFunction"
-  source_arn    = "${aws_lambda_function.shim_service_notification_publisher_mirror.arn}"
-  function_name = aws_lambda_function.shim_service_lambda_scheduler.function_name
-}
-
 resource "aws_lambda_permission" "shim_service_lambda_scheduler_shim_service_live_agent_poller" {
   principal     = "lambda.amazonaws.com"
   action        = "lambda:InvokeFunction"
@@ -151,23 +117,9 @@ resource "aws_lambda_permission" "shim_service_lambda_scheduler_shim_service_liv
   function_name = aws_lambda_function.shim_service_lambda_scheduler.function_name
 }
 
-resource "aws_lambda_permission" "shim_service_lambda_scheduler_shim_service_live_agent_poller_mirror" {
-  principal     = "lambda.amazonaws.com"
-  action        = "lambda:InvokeFunction"
-  source_arn    = "${aws_lambda_function.shim_service_live_agent_poller_mirror.arn}"
-  function_name = aws_lambda_function.shim_service_lambda_scheduler.function_name
-}
-
 resource "aws_lambda_permission" "shim_service_lambda_scheduler_shim_service_web" {
   principal     = "lambda.amazonaws.com"
   action        = "lambda:InvokeFunction"
   source_arn    = "${aws_lambda_function.shim_service_web.arn}"
-  function_name = aws_lambda_function.shim_service_lambda_scheduler.function_name
-}
-
-resource "aws_lambda_permission" "shim_service_lambda_scheduler_shim_service_web_mirror" {
-  principal     = "lambda.amazonaws.com"
-  action        = "lambda:InvokeFunction"
-  source_arn    = "${aws_lambda_function.shim_service_web_mirror.arn}"
   function_name = aws_lambda_function.shim_service_lambda_scheduler.function_name
 }

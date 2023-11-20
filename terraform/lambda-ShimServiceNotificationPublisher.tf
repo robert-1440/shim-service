@@ -141,7 +141,6 @@ resource "aws_lambda_function" "shim_service_notification_publisher" {
       PUSH_NOTIFIER_GROUP_ROLE_ARN    = "${aws_iam_role.push_notifier_group.arn}"
       SQS_PUSH_NOTIFICATION_QUEUE_URL = "${aws_sqs_queue.push_notification.url}"
       ERROR_TOPIC_ARN                 = "${aws_sns_topic.shim_error.arn}"
-      MIRROR_FUNCTION_NAME            = "ShimServiceNotificationPublisherMirror"
       THIS_FUNCTION_ARN               = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceNotificationPublisher"
     }
   }
@@ -164,12 +163,5 @@ resource "aws_lambda_permission" "shim_service_notification_publisher_shim_servi
   principal     = "lambda.amazonaws.com"
   action        = "lambda:InvokeFunction"
   source_arn    = "${aws_lambda_function.shim_service_live_agent_poller.arn}"
-  function_name = aws_lambda_function.shim_service_notification_publisher.function_name
-}
-
-resource "aws_lambda_permission" "shim_service_notification_publisher_shim_service_live_agent_poller_mirror" {
-  principal     = "lambda.amazonaws.com"
-  action        = "lambda:InvokeFunction"
-  source_arn    = "${aws_lambda_function.shim_service_live_agent_poller_mirror.arn}"
   function_name = aws_lambda_function.shim_service_notification_publisher.function_name
 }

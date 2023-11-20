@@ -5,10 +5,7 @@ resource "aws_scheduler_schedule_group" "push_notifier_group" {
 data "aws_iam_policy_document" "push_notifier_group" {
   statement {
     effect    = "Allow"
-    resources = [
-      "${aws_lambda_function.shim_service_notification_publisher.arn}",
-      "${aws_lambda_function.shim_service_notification_publisher_mirror.arn}"
-    ]
+    resources = [ "${aws_lambda_function.shim_service_notification_publisher.arn}" ]
     actions   = [
       "lambda:InvokeFunction",
       "lambda:InvokeAsync"

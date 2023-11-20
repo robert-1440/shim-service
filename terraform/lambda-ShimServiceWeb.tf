@@ -142,7 +142,6 @@ resource "aws_lambda_function" "shim_service_web" {
       CONFIG_SERVICE_URL              = "https://sswki1xsfd.execute-api.us-west-1.amazonaws.com"
       SQS_PUSH_NOTIFICATION_QUEUE_URL = "${aws_sqs_queue.push_notification.url}"
       ERROR_TOPIC_ARN                 = "${aws_sns_topic.shim_error.arn}"
-      MIRROR_FUNCTION_NAME            = "ShimServiceWebMirror"
       THIS_FUNCTION_ARN               = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceWeb"
     }
   }

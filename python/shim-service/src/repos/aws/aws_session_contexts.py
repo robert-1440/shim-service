@@ -17,7 +17,7 @@ from repos.session_contexts import SessionContextsRepo, SessionContextAndFcmToke
 from session import Session, SessionStatus, ContextType, SessionContext, SessionKey
 from utils import loghelper
 from utils.collection_utils import flat_iterator
-from utils.date_utils import get_system_time_in_seconds
+from utils.date_utils import get_system_time_in_seconds, get_system_time_in_millis
 
 logger = loghelper.get_logger(__name__)
 
@@ -73,7 +73,8 @@ class AwsSessionContextsRepo(AwsVirtualRangeTableRepo, SessionContextsRepo):
             event = PendingEvent(
                 PendingEventType.LIVE_AGENT_POLL,
                 session.tenant_id,
-                session.session_id
+                session.session_id,
+                session.user_id
             )
             requests.append(pe_repo.create_put_item_request(event))
 
@@ -138,7 +139,7 @@ class AwsSessionContextsRepo(AwsVirtualRangeTableRepo, SessionContextsRepo):
             new_bytes = serialized
         else:
             new_bytes = context.session_data
-        return self.patch(context, {'sessionData': new_bytes})
+        return self.patch(context, {'sessionData': new_bytes, 'updateTime': get_system_time_in_millis()})
 
     def delete_session_context(self,
                                session_key: SessionKey,

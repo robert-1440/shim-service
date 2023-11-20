@@ -127,10 +127,9 @@ resource "aws_lambda_function" "shim_service_live_agent_poller" {
 
   environment {
     variables = {
-      ACTIVE_PROFILES      = "live-agent-poller"
-      ERROR_TOPIC_ARN      = "${aws_sns_topic.shim_error.arn}"
-      MIRROR_FUNCTION_NAME = "ShimServiceLiveAgentPollerMirror"
-      THIS_FUNCTION_ARN    = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceLiveAgentPoller"
+      ACTIVE_PROFILES   = "live-agent-poller"
+      ERROR_TOPIC_ARN   = "${aws_sns_topic.shim_error.arn}"
+      THIS_FUNCTION_ARN = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceLiveAgentPoller"
     }
   }
   depends_on = [ aws_iam_role_policy_attachment.shim_service_live_agent_poller ]
@@ -152,12 +151,5 @@ resource "aws_lambda_permission" "shim_service_live_agent_poller_shim_service_we
   principal     = "lambda.amazonaws.com"
   action        = "lambda:InvokeFunction"
   source_arn    = "${aws_lambda_function.shim_service_web.arn}"
-  function_name = aws_lambda_function.shim_service_live_agent_poller.function_name
-}
-
-resource "aws_lambda_permission" "shim_service_live_agent_poller_shim_service_web_mirror" {
-  principal     = "lambda.amazonaws.com"
-  action        = "lambda:InvokeFunction"
-  source_arn    = "${aws_lambda_function.shim_service_web_mirror.arn}"
   function_name = aws_lambda_function.shim_service_live_agent_poller.function_name
 }

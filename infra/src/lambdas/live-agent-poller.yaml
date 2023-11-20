@@ -53,7 +53,7 @@ event-queue: false
 #
 # true to create a mirror lambda function, to allow recursive calls without upsetting AWS.
 #
-mirror: true
+mirror: ${mirroring-enabled:false}
 
 arn-env-name: THIS_FUNCTION_ARN
 

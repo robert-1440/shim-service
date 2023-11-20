@@ -31,7 +31,7 @@ Future<SessionState> poll(Profile profile, SessionState state) async {
 const atts = [QueueAttributeName.all];
 
 Future<Pair<SessionState, bool>> _pollQueue(String user, Sqs sqs, String queueUrl, SessionState state,
-    {StreamController<PushNotificationEvent>? eventStream}) async {
+    {StreamController<Pair<SessionState, List<PushNotificationEvent>>>? stateChangeStream}) async {
   var response = await sqs.receiveMessage(queueUrl: queueUrl, attributeNames: atts, maxNumberOfMessages: 1, waitTimeSeconds: 0);
   if (response.messages == null || response.messages!.isEmpty) {
     return Pair.of(state, false);
@@ -41,8 +41,12 @@ Future<Pair<SessionState, bool>> _pollQueue(String user, Sqs sqs, String queueUr
   if (groupId == null || groupId != user) {
     await sqs.changeMessageVisibility(queueUrl: queueUrl, receiptHandle: message.receiptHandle!, visibilityTimeout: 10);
   } else {
-    state = state.processMessage(message.body!, eventStream: eventStream);
+    List<PushNotificationEvent> events = [];
+    state = state.processMessage(message.body!, eventList: events);
     await sqs.deleteMessage(queueUrl: queueUrl, receiptHandle: message.receiptHandle!);
+    if (stateChangeStream != null) {
+      stateChangeStream.add(Pair.of(state, events));
+    }
   }
   return Pair.of(state, true);
 }
@@ -54,13 +58,14 @@ class Poller {
 
   SessionState state;
 
-  late StreamController<SessionState> _stateController;
+  late StreamController<Pair<SessionState, List<PushNotificationEvent>>> _stateController;
 
-  late StreamController<PushNotificationEvent> _eventController;
+  bool _end = false;
+
+  void Function()? _endFunction;
 
   Poller(this.user, this.sqs, this.state) {
     _stateController = StreamController.broadcast();
-    _eventController = StreamController.broadcast();
   }
 
   Future<void> start() async {
@@ -68,19 +73,26 @@ class Poller {
   }
 
   Future<void> _start(String url) async {
-    _stateController.add(state);
-    for (;;) {
-      print("Checking for messages ...");
-      var result = await _pollQueue(user, sqs, url, state, eventStream: _eventController);
+    _stateController.add(Pair.of(state, []));
+    while(!_end) {
+      var result = await _pollQueue(user, sqs, url, state, stateChangeStream: _stateController);
       state = result.left;
-      _stateController.add(state);
       if (!result.right) {
         await Future.delayed(Duration(seconds: 5));
       }
     }
+    state = state.clearSession();
+    state.save();
+    if (_endFunction != null) {
+      _endFunction!();
+    }
   }
 
-  Stream<SessionState> get stateStream => _stateController.stream;
+  Stream<Pair<SessionState, List<PushNotificationEvent>>> get stateStream => _stateController.stream;
 
-  Stream<PushNotificationEvent> get eventStream => _eventController.stream;
+  void close([void Function()? endFunction]) {
+    _endFunction = endFunction;
+    _end = true;
+    _stateController.close();
+  }
 }

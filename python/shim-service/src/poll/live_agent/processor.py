@@ -130,6 +130,8 @@ class ProcessorGroup:
         if le is None:
             return
         with le:
+            le.after_release = self.invoke_again
+
             # Now, load the context
             sc: SfdcSessionAndContext = load_with_context(event, ContextType.LIVE_AGENT)
             if sc is None:
@@ -196,14 +198,14 @@ class ProcessorGroup:
         return True
 
     def __try_lock(self, event: PendingEvent) -> Optional[LockAndEvent]:
-        name = f"lap/{event.tenant_id}-{event.session_id}"
+        # We need to lock on tenant id and user id, since we do not want the same user to be polling more than once
+        name = f"lap/{event.tenant_id}-{event.user_id}"
         logger.info(f"Attempting to lock resource {name} ...")
         lock = self.resource_lock_repo.try_acquire(name, self.refresh_seconds)
         if lock is None:
-            return None
-        if (lock is not None and
-                lock.execute_and_release_on_false(lambda:
-                                                  self.pe_repo.update_action_time(event, self.refresh_seconds))):
+            logger.info(f"{name} is currently locked.")
+        elif lock.execute_and_release_on_false(lambda:
+                                               self.pe_repo.update_action_time(event, self.refresh_seconds)):
             return LockAndEvent(event, lock)
         return None
 

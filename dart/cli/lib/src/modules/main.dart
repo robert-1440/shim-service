@@ -199,12 +199,26 @@ Future<void> _closeWork(CommandLineProcessor processor) async {
 }
 
 Future<void> _smokeTest(CommandLineProcessor processor) async {
+  var verbose = processor.hasOptionalArg("-v");
   processor.assertNoMore();
   var cm = getClientManager(processor);
   var client = cm.getSessionClient();
   var request = await _createStartSessionRequest(client);
   var state = loadFromProcessor(processor);
+  if (state.hasSession()) {
+    print("Ending current session...");
+    try {
+      await client.endSession(state.orgId, state.token);
+    } on SessionGoneException {}
+    state = state.clearSession();
+    state.save();
+  }
+  if (!verbose) {
+    setSilent(true);
+  }
+  print("Starting session ...");
   state = await startSession(state, client, request);
+
   var sqs = getSqs(getProfile(processor));
   var user = getCurrentUser();
   var poller = Poller(user, sqs, state);
