@@ -25,6 +25,11 @@ variables:
     export: true
     default: 1024
 
+  - name: pubsub_poller_lambda_memory_size
+    description: Memory size to allocate for the pubsub poller lambda (in megabytes)
+    export: true
+    default: 1024
+
   - name: notification_publisher_lambda_memory_size
     description: Memory size to allocate for the notification publisher lambda (in megabytes)
     export: true

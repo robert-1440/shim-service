@@ -3,6 +3,7 @@ import re
 from typing import Dict, Any, List, Optional, Set
 
 from aws.dynamodb import DynamoDbRow, DynamoDbItem, from_ddb_item
+from lambda_pkg.functions import LambdaInvoker
 from lambda_web_framework import InvocableBeanRequestHandler, SUCCESS_RESPONSE
 from platform_channels import X1440_PLATFORM
 from repos.session_contexts import SessionContextsRepo
@@ -31,31 +32,41 @@ def _extract_table_name(arn: str) -> Optional[str]:
 
 
 class PendingEventHandler:
-    def __init__(self, tenant_event_repo: PendingTenantEventRepo, tenant_ids: Set[int]):
+    def __init__(self, tenant_event_repo: PendingTenantEventRepo,
+                 lambda_invoker: LambdaInvoker,
+                 tenant_ids: Set[int]):
         self.tenant_event_repo = tenant_event_repo
+        self.lambda_invoker = lambda_invoker
         self.errors = False
         self.tenant_ids = tenant_ids
         self.thread = start_thread(self.process)
+        self.good_count = 0
 
     def process(self):
         for t in self.tenant_ids:
             event = PendingTenantEvent(PendingTenantEventType.X1440_POLL, t)
             try:
                 self.tenant_event_repo.update_or_create(event)
+                self.good_count += 1
             except BaseException as ex:
                 logger.severe(f"Error creating pending tenant event for {t}: {dump_ex(ex)}")
                 self.errors = True
 
     def join(self):
         self.thread.join(30)
+        if self.good_count > 0:
+            self.lambda_invoker.invoke_sfdc_pubsub_poller()
         if self.errors:
             raise RuntimeError("Error creating pending tenant events.")
 
 
 class TableListenerProcessor(InvocableBeanRequestHandler):
-    def __init__(self, repo: SessionContextsRepo, tenant_event_repo: PendingTenantEventRepo):
+    def __init__(self, repo: SessionContextsRepo,
+                 tenant_event_repo: PendingTenantEventRepo,
+                 lambda_invoker: LambdaInvoker):
         self.repo = repo
         self.tenant_event_repo = tenant_event_repo
+        self.lambda_invoker = lambda_invoker
 
     def handle(self, event: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         records = event.get('Records')
@@ -95,7 +106,7 @@ class TableListenerProcessor(InvocableBeanRequestHandler):
         )
 
         if len(tenant_ids) > 0:
-            pe_handler = PendingEventHandler(self.tenant_event_repo, tenant_ids)
+            pe_handler = PendingEventHandler(self.tenant_event_repo, self.lambda_invoker, tenant_ids)
         else:
             pe_handler = None
 

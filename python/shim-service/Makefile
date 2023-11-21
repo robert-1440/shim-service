@@ -13,7 +13,7 @@ DIST=dist/
 LAYERS_DIR = $(DIST)layers/
 LAMBDA_ZIPS_DIR=$(DIST)lambda-zips/
 PROFILES = web pubsub-poller live-agent-poller notification-publisher scheduler table-listener
-LAYERS = requests common gcp crypto
+LAYERS = requests common gcp crypto platform-events
 
 .PHONY: default qp fast-package package lambda-zips lambda-zip-files clean-lambda-zips layers clean build-all-layers service-keys
 

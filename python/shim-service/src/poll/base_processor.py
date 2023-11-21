@@ -24,6 +24,7 @@ class BasePollingProcessor(InvocableBeanRequestHandler, metaclass=abc.ABCMeta):
     def lock_name(cls) -> str:
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def create_group(self) -> AbstractProcessorGroup:
         raise NotImplementedError()
 

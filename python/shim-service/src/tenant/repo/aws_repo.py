@@ -52,7 +52,7 @@ class AwsPendingTenantEventRepo(AwsVirtualRangeTableRepo, PendingTenantEventRepo
         assert 0 < limit < 100000
         now = get_system_time_in_millis()
         results = QueryResult([], next_token)
-        filter_op = le_filter('activeAt', now)
+        filter_op = le_filter(ACTIVE_AT, now)
         while True:
             result = self.query(
                 event_type.value,

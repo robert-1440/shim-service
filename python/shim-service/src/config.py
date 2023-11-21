@@ -23,6 +23,8 @@ DEFAULT_IDLE_POLLING_SECONDS = 300
 #
 DEFAULT_SESSIONS_PER_LA_POLL_PROCESSOR = 20
 
+DEFAULT_SESSIONS_PER_PUBSUB_POLL_PROCESSOR = 20
+
 #
 # Max seconds we expect a poll to take for live agent
 #
@@ -56,7 +58,11 @@ class Config:
                  live_agent_poll_session_seconds=DEFAULT_LA_POLL_SESSION_TIME,
                  max_work_id_map_seconds=DEFAULT_MAX_WORK_ID_MAP_SECONDS,
                  max_push_notification_seconds=DEFAULT_MAX_PUSH_NOTIFICATION_SECONDS,
-                 max_context_ttl_seconds=DEFAULT_MAX_CONTEXT_TTL_SECONDS):
+                 max_context_ttl_seconds=DEFAULT_MAX_CONTEXT_TTL_SECONDS,
+                 pubsub_poll_session_seconds=DEFAULT_MAX_POLLING_SECONDS,
+                 pubsub_poll_processor_sessions=DEFAULT_SESSIONS_PER_PUBSUB_POLL_PROCESSOR):
+        self.pubsub_poll_session_seconds = pubsub_poll_session_seconds
+        self.sessions_per_pubsub_poll_processor = pubsub_poll_processor_sessions
         self.session_expiration_seconds = session_expiration_seconds
         self.worker_timeout_seconds = worker_timeout_seconds
         self.max_create_session_retries = max_create_session_retries

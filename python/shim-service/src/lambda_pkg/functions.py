@@ -61,6 +61,12 @@ class LambdaInvoker(metaclass=abc.ABCMeta):
             parameters={}
         )
 
+    def invoke_sfdc_pubsub_poller(self):
+        self.invoke_function(
+            LambdaFunction.SfdcPubSubPoller,
+            parameters={}
+        )
+
     def invoke_notification_poller(self, session_key: SessionKey):
         return self.invoke_function(
             LambdaFunction.PushNotifier,

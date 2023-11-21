@@ -41,6 +41,10 @@ class SessionsRepo(metaclass=abc.ABCMeta):
         return session
 
     @abc.abstractmethod
+    def find_most_recent_access_token(self, tenant_id: int) -> Optional[str]:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def find_session(self, session_key: SessionKey) -> Optional[Session]:
         raise NotImplementedError()
 

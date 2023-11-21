@@ -110,7 +110,7 @@ class AwsSessionsRepo(SessionsRepo, AbstractAwsRepo):
                                                                          must_exist=True),
             self.sfdc_sessions_repo.create_patch_request(key.tenant_id, key.session_id, patch)
         )
-        
+
         error_request: TransactionRequest = self.sequence_repo.execute_with_event(
             key.tenant_id,
             request_list,
@@ -162,3 +162,18 @@ class AwsSessionsRepo(SessionsRepo, AbstractAwsRepo):
             consistent=consistent,
             attributes_to_get=attributes_to_get
         )
+
+    def find_most_recent_access_token(self, tenant_id: int) -> Optional[str]:
+        entry = None
+        result_set = self.query_set(
+            tenant_id,
+            consistent=True,
+            select_attributes=['accessToken', 'updateTime']
+        )
+
+        for row in result_set:
+            update_time = row['updateTime']
+            if entry is None or update_time > entry[0]:
+                entry = (update_time, row['accessToken'])
+
+        return entry[1] if entry is not None else None

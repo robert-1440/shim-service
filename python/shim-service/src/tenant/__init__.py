@@ -63,16 +63,16 @@ class PendingTenantEvent:
 
 class TenantContext:
 
-    def __init__(self, context_type: TenantContextType, tenant_id: int, session_count: int):
+    def __init__(self, context_type: TenantContextType, tenant_id: int, data: bytes):
         self.context_type = context_type
         self.tenant_id = tenant_id
-        self.session_count = session_count
+        self.data = data
 
     def to_record(self) -> Dict[str, Any]:
         return {
             'contextType': self.context_type.value,
             'tenantId': self.tenant_id,
-            'sessionCount': self.session_count
+            'contextData': self.data
         }
 
     @classmethod
@@ -80,5 +80,5 @@ class TenantContext:
         return cls(
             TenantContextType.value_of(record['contextType']),
             record['tenantId'],
-            record['sessionCount']
+            record['contextData']
         )

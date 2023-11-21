@@ -1,0 +1,31 @@
+type: lambda-layer
+
+#
+# Name of our resource
+#
+name: platform-events-layer
+
+#
+# Name of the layer when deploying to AWS
+#
+layer-name: platform-events-shim
+
+#
+# Description of the layer as sent to AWS
+#
+description: Contains 3rd party packages needed by shim-service for platform events.
+
+
+zip-file: "${lambda-layers-dir}/platform-events-layer.zip"
+
+architectures: [ "x86_64" ]
+
+
+#
+# Compatible runtimes
+# Options can be found here: https://docs.aws.amazon.com/lambda/latest/dg/API_PublishLayerVersion.html#SSS-PublishLayerVersion-request-CompatibleRuntimes
+#
+runtimes:
+  - python3.11
+
+
