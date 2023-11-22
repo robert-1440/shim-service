@@ -1,3 +1,5 @@
+from typing import Any, List, Dict
+
 from lambda_web_framework.web_exceptions import BadRequestException
 
 _CHANNELS = {}
@@ -30,3 +32,16 @@ def get_platform_channel(name: str) -> PlatformChannel:
 def assert_valid_platform_channel(name: str) -> bool:
     get_platform_channel(name)
     return True
+
+
+def deserialize_platform_channels(record: Dict[str, Any]) -> List[str]:
+    results = []
+    for channel in _CHANNELS.keys():
+        if record.get(f'pt_{channel}'):
+            results.append(channel)
+    return results
+
+
+def serialize_platform_channels(channel_types: List[str], record: Dict[str, Any]):
+    for pt in channel_types:
+        record[f"pt_{pt}"] = True

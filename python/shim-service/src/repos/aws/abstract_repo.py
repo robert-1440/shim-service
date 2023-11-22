@@ -297,7 +297,8 @@ class AbstractAwsRepo(metaclass=abc.ABCMeta):
                   last_evaluated_key=None,
                   range_filter: Optional[FilterOperation] = None,
                   filters: Union[FilterOperation, Collection[FilterOperation]] = None,
-                  select_attributes: List[str] = None
+                  select_attributes: List[str] = None,
+                  count_only: bool = False,
                   ) -> QueryResultSet:
         att, value = self.primary_key.build_hash_key_from_args(*args)
         if start_after is not None:
@@ -322,11 +323,11 @@ class AbstractAwsRepo(metaclass=abc.ABCMeta):
             range_key_qualifier=rq,
             limit=limit,
             last_evaluated_key=last_evaluated_key,
-            filter_operations=filters
+            filter_operations=filters,
+            count_only=count_only
         )
-        if select_attributes is None:
-            rset = map(self.deserialize_record, rset)
-        return QueryResultSet(rset, lambda: rset.next_key)
+        results = rset if select_attributes is not None else map(self.deserialize_record, rset)
+        return QueryResultSet(rset.count_returned, results, lambda: rset.next_key)
 
     def query(self,
               *args,

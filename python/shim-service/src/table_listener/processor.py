@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Dict, Any, List, Optional, Set
+from typing import Dict, Any, List, Optional, Collection
 
 from aws.dynamodb import DynamoDbRow, DynamoDbItem, from_ddb_item
 from lambda_pkg.functions import LambdaInvoker
@@ -31,25 +31,39 @@ def _extract_table_name(arn: str) -> Optional[str]:
     return None
 
 
+class ReconstructedSession:
+    def __init__(self, row: DynamoDbRow):
+        self.tenant_id = row['tenantId']
+        self.org_id = row['orgId']
+        self.access_token = row['accessToken']
+        self.instance_url = row['instanceUrl']
+
+
 class PendingEventHandler:
     def __init__(self, tenant_event_repo: PendingTenantEventRepo,
                  lambda_invoker: LambdaInvoker,
-                 tenant_ids: Set[int]):
+                 new_sessions: Collection[ReconstructedSession]):
         self.tenant_event_repo = tenant_event_repo
         self.lambda_invoker = lambda_invoker
+        self.new_sessions = new_sessions
         self.errors = False
-        self.tenant_ids = tenant_ids
         self.thread = start_thread(self.process)
         self.good_count = 0
 
     def process(self):
-        for t in self.tenant_ids:
-            event = PendingTenantEvent(PendingTenantEventType.X1440_POLL, t)
+        for session in self.new_sessions:
+            event = PendingTenantEvent(
+                PendingTenantEventType.X1440_POLL,
+                session.org_id,
+                session.tenant_id,
+                session.access_token,
+                session.instance_url
+            )
             try:
                 self.tenant_event_repo.update_or_create(event)
                 self.good_count += 1
             except BaseException as ex:
-                logger.severe(f"Error creating pending tenant event for {t}: {dump_ex(ex)}")
+                logger.severe(f"Error creating pending tenant event for {session.tenant_id}: {dump_ex(ex)}")
                 self.errors = True
 
     def join(self):
@@ -83,8 +97,7 @@ class TableListenerProcessor(InvocableBeanRequestHandler):
         if records is None:
             return
         logger.info(f"Received event:\n{json.dumps(records, indent=2)}")
-
-        tenant_ids = set()
+        new_sessions: Dict[str, ReconstructedSession] = {}
 
         def local_filter(record: Dict[str, Any]) -> bool:
             table = _extract_table_name(record['eventSourceARN'])
@@ -95,7 +108,8 @@ class TableListenerProcessor(InvocableBeanRequestHandler):
                 if event_name == 'INSERT':
                     try:
                         if has_x1440_platform(record):
-                            tenant_ids.add(int(record['dynamodb']['Keys']['tenantId']['N']))
+                            session = ReconstructedSession(record['dynamodb']['NewImage'])
+                            new_sessions[session.tenant_id] = session
                     except BaseException as ex:
                         logger.severe(f"Failed: {dump_ex(ex)}")
 
@@ -105,8 +119,8 @@ class TableListenerProcessor(InvocableBeanRequestHandler):
             map(lambda r: r['dynamodb']['Keys'], filter(local_filter, records))
         )
 
-        if len(tenant_ids) > 0:
-            pe_handler = PendingEventHandler(self.tenant_event_repo, self.lambda_invoker, tenant_ids)
+        if len(new_sessions) > 0:
+            pe_handler = PendingEventHandler(self.tenant_event_repo, self.lambda_invoker, new_sessions.values())
         else:
             pe_handler = None
 

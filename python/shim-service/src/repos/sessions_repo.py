@@ -1,9 +1,10 @@
 import abc
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, Iterable
 
 from bean import BeanName, inject
 from events import EventType
 from lambda_web_framework.web_exceptions import BadRequestException, GoneException
+from repos import QueryResultSet
 from session import Session, SessionStatus, verify_session_status, SessionKey
 from utils.date_utils import EpochSeconds
 
@@ -39,10 +40,6 @@ class SessionsRepo(metaclass=abc.ABCMeta):
         if session.status != SessionStatus.ACTIVE:
             verify_session_status(session, pending_ok=allow_pending, allow_failure=allow_failure)
         return session
-
-    @abc.abstractmethod
-    def find_most_recent_access_token(self, tenant_id: int) -> Optional[str]:
-        raise NotImplementedError()
 
     @abc.abstractmethod
     def find_session(self, session_key: SessionKey) -> Optional[Session]:
@@ -88,10 +85,22 @@ class SessionsRepo(metaclass=abc.ABCMeta):
         finally:
             session.session_id = save_session_id
 
+    @abc.abstractmethod
     def fix_orphaned_user_session(self, session: Session) -> bool:
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def delete_session(self, session: Session):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def has_sessions_with_platform_channel_type(self, tenant_id: int, channel_type: str):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def query_session_ids_with_platform_channel_type(self,
+                                                     tenant_id: int,
+                                                     channel_type: str) -> Iterable[str]:
         raise NotImplementedError()
 
 

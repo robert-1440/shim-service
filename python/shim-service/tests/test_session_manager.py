@@ -30,6 +30,7 @@ from utils import collection_utils
 from utils.date_utils import get_system_time_in_millis, get_system_time_in_seconds, EpochSeconds
 
 TENANT_ID = DEFAULT_TENANT_ID
+ORG_ID = "some-org-id"
 SESSION_ID = "some-session-id"
 USER_ID = "some-user-id"
 FCM_DEVICE_TOKEN = "some-token"
@@ -437,12 +438,14 @@ class SessionManagerTest(BaseTest):
 
     def create_session(self,
                        tenant_id: int = TENANT_ID,
+                       org_id: str = ORG_ID,
                        creation_time: Optional[int] = None,
                        user_id: Optional[str] = None,
                        fcm_device_token: str = FCM_DEVICE_TOKEN,
                        async_conn: bool = True,
                        ) -> Session:
         session = self.construct_session(
+            org_id=org_id,
             tenant_id=tenant_id,
             creation_time=creation_time,
             user_id=user_id,
@@ -465,6 +468,7 @@ class SessionManagerTest(BaseTest):
         return manager.keepalive(token, FakeLambdaRequest(creds=creds.to_credentials()))
 
     def construct_session(self,
+                          org_id: str = ORG_ID,
                           tenant_id: int = TENANT_ID,
                           platform_types: List[str] = [OMNI_PLATFORM.name, X1440_PLATFORM.name],
                           creation_time: Optional[int] = None,
@@ -473,6 +477,7 @@ class SessionManagerTest(BaseTest):
                           ) -> Session:
 
         return Session(
+            org_id=org_id,
             tenant_id=tenant_id,
             session_id=next_session_id(),
             time_created=creation_time or get_system_time_in_millis(),

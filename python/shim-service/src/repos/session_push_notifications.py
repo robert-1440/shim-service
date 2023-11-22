@@ -1,14 +1,23 @@
 import abc
-from typing import Iterable
+from typing import Iterable, List
 
 from push_notification import SessionPushNotification
-from session import SessionContext, SessionKey
+from session import SessionContext, SessionKey, SessionKeyAndUser, SessionIdAndUser
 
 
 class SessionPushNotificationsRepo(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def submit(self, context: SessionContext, platform_channel_type: str, message_type: str, message: str):
+    def submit(self, session_key: SessionKeyAndUser, platform_channel_type: str, message_type: str, message: str):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def submit_multiple(self,
+                        tenant_id: int,
+                        session_list: List[SessionIdAndUser],
+                        platform_channel_type: str,
+                        message_type: str,
+                        message: str):
         raise NotImplementedError()
 
     @abc.abstractmethod

@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, Iterable
+from typing import Dict, Any, Optional, Iterable, List
 
 from aws.dynamodb import DynamoDb, not_exists_filter, TransactionRequest
 from events.event_types import EventType
@@ -10,7 +10,7 @@ from repos.aws.abstract_range_table_repo import AwsVirtualRangeTableRepo
 from repos.aws.aws_sequence import AwsSequenceRepo
 from repos.aws.aws_session_contexts import AwsSessionContextsRepo
 from repos.session_push_notifications import SessionPushNotificationsRepo
-from session import SessionContext, SessionKey
+from session import SessionContext, SessionKey, SessionKeyAndUser, SessionIdAndUser
 from utils import string_utils, loghelper
 from utils.date_utils import EpochMilliseconds, get_system_time_in_millis, EpochSeconds, get_system_time_in_seconds
 
@@ -123,10 +123,10 @@ class AwsPushNotificationsRepo(AwsVirtualRangeTableRepo, SessionPushNotification
         self.lambda_invoker = lambda_invoker
         self.expiration_seconds = expiration_seconds
 
-    def submit(self, context: SessionContext, platform_channel_type: str, message_type: str, message: str):
+    def submit(self, session_key: SessionKeyAndUser, platform_channel_type: str, message_type: str, message: str):
         record = LocalRecord(
-            context.tenant_id,
-            context.session_id,
+            session_key.tenant_id,
+            session_key.session_id,
             0,
             channel_type=platform_channel_type,
             message_type=message_type,
@@ -142,12 +142,12 @@ class AwsPushNotificationsRepo(AwsVirtualRangeTableRepo, SessionPushNotification
             request_list[0] = self.create_put_item_request(record)
 
         bad_event: TransactionRequest = self.sequence_repo.execute_with_event(
-            context.tenant_id,
+            session_key.tenant_id,
             request_list,
             EventType.PUSH_NOTIFICATION,
             event_data={
-                'sessionId': context.session_id,
-                'userId': context.user_id,
+                'sessionId': session_key.session_id,
+                'userId': session_key.user_id,
                 'platformChannelType': platform_channel_type,
                 'messageType': message_type
             },
@@ -155,7 +155,15 @@ class AwsPushNotificationsRepo(AwsVirtualRangeTableRepo, SessionPushNotification
         )
         if bad_event is not None:
             raise ConflictException(f"Failed to submit push notification: {bad_event.cancel_reason}")
-        self.lambda_invoker.invoke_notification_poller(context)
+        self.lambda_invoker.invoke_notification_poller(session_key)
+
+    def submit_multiple(self,
+                        tenant_id: int,
+                        session_list: List[SessionIdAndUser],
+                        platform_channel_type: str,
+                        message_type: str,
+                        message: str):
+        raise NotImplementedError()
 
     def query_notifications(self,
                             session_key: SessionKey,

@@ -22,3 +22,5 @@ RESOURCE_LOCK_TABLE = VirtualTable('ResourceLock', 'f')
 PENDING_EVENT_TABLE = VirtualTable('PendingEvent', 'g')
 WORK_ID_MAP_TABLE = VirtualTable('WorkIdMap', 'h')
 PENDING_TENANT_EVENT_TABLE = VirtualTable('PendingTenantEvent', 'i')
+TENANT_CONTEXT_TABLE = VirtualTable('TenantContext', 'j')
+

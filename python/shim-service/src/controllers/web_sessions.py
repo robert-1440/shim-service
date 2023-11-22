@@ -42,6 +42,7 @@ def __build_session(instance: Instance, request: LambdaHttpRequest, org_id: str)
 
     tenant_id = get_tenant_id(instance, request, org_id)
     session = Session(
+        org_id=org_id,
         tenant_id=tenant_id,
         session_id=uuid(),
         time_created=get_system_time_in_millis(),

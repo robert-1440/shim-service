@@ -1,4 +1,4 @@
-from typing import Optional, Any, List, Union, Dict
+from typing import Optional, Any, List, Union, Dict, Callable
 
 from retry import retry
 
@@ -39,6 +39,12 @@ class Sequence:
         return cls(record['tenantId'], record['sequenceName'], record['nextValue'], record.get('timeoutAt'))
 
 
+class RequestData:
+    def __init__(self, request: TransactionRequest, event_data: dict):
+        self.request = request
+        self.event_data = event_data
+
+
 class AwsSequenceRepo(AwsVirtualTableRepo, SequenceRepo):
     __hash_key_attributes__ = {
         'tenantId': int,
@@ -52,23 +58,64 @@ class AwsSequenceRepo(AwsVirtualTableRepo, SequenceRepo):
         self.events_repo = events_repo
 
     @retry(exceptions=OptimisticLockException, tries=20, delay=.5, max_delay=30, backoff=.1, jitter=(.1, .9))
-    def __get_current_sequence(self, tenant_id: int, name: str, max_lock_seconds: int) -> Sequence:
+    def __get_current_sequence(self, tenant_id: int,
+                               name: str,
+                               max_lock_seconds: int,
+                               auto_increment: bool = True) -> Sequence:
         current: Optional[Sequence] = self.find(tenant_id, name, consistent=True)
         next_timeout = date_utils.get_epoch_seconds_in_future(max_lock_seconds)
         if current is None:
             current = Sequence(tenant_id, name, 2, next_timeout)
             if not self.create(current):
                 raise OptimisticLockException()
-            current.next_value = 1
+            current.next_value = 1 if auto_increment else 0
         else:
             if current.timeout_at > 0 and get_system_time_in_seconds() < current.timeout_at:
                 raise OptimisticLockException()
+            patches = {} if not auto_increment else {'nextValue': current.next_value + 1}
             self.patch_with_condition(
                 current,
                 "timeoutAt", next_timeout,
-                {'nextValue': current.next_value + 1}
+                patches
             )
         return Sequence(tenant_id, name, current.next_value, next_timeout)
+
+    def execute_with_events(self,
+                            tenant_id: int,
+                            event_type: EventType,
+                            num_requests: int,
+                            data_creator: Callable[[int], RequestData],
+                            max_lock_seconds: int = 30):
+        # Max is 100, we need an event for each request, so we can't allow more than 50 here.
+        assert num_requests < 50
+        seq_update = self.__get_current_sequence(tenant_id, 'EventSeq', max_lock_seconds)
+        original = seq_update.next_value
+        good = False
+        try:
+            request_list = []
+            for i in range(num_requests):
+                seq_update.next_value += 1
+                data = data_creator(seq_update.next_value)
+                event = Event(
+                    tenant_id,
+                    seq_update.next_value,
+                    event_type,
+                    uuid(),
+                    data.event_data
+                )
+                request_list.append(self.events_repo.create_put_item_request(event))
+                request_list.append(data.request)
+            bad_req = self.transact_write(request_list)
+            good = bad_req is None
+            return bad_req
+        finally:
+            if not good:
+                seq_update.next_value = original
+            self.patch_with_condition(
+                seq_update,
+                "timeoutAt",
+                0
+            )
 
     def execute_with_event(self, tenant_id: int,
                            request_list: List[TransactionRequest],

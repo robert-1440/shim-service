@@ -24,10 +24,17 @@ class QueryResult:
 
 
 class QueryResultSet(Generic[Record]):
-    def __init__(self, results: Iterable[Record],
+    def __init__(self,
+                 count: int,
+                 results: Iterable[Record],
                  token_getter: Callable[[], Any]):
+        self.__count = count
         self.__rows = results
         self.__token_getter = token_getter
+
+    @property
+    def count(self) -> int:
+        return self.__count
 
     @property
     def next_token(self) -> Any:

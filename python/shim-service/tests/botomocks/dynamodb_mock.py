@@ -594,7 +594,7 @@ class MockDynamoDbClient:
         kwargs = kwargs.copy()
         table_name = kwargs.pop('TableName')
         select = kwargs.pop('Select')
-        assert select == "ALL_ATTRIBUTES"
+        assert select in ('ALL_ATTRIBUTES', 'COUNT')
 
         key_condition_exp = kwargs.pop('KeyConditionExpression')
         exp_attributes: Dict[str, Any] = kwargs.pop('ExpressionAttributeValues').copy()
@@ -644,11 +644,15 @@ class MockDynamoDbClient:
             results = results[0:limit:]
             record['LastEvaluatedKey'] = t.build_key(next_one)
 
+        record['ScannedCount'] = len(results)
         if filter_conditions is not None:
             if expr_attribute_names is not None:
                 exp_attributes.update(expr_attribute_names)
             results = filter_conditions.filter_list(results, exp_attributes)
 
-        cloned = list(map(lambda row: row.copy(), results))
-        record['Items'] = cloned
+        record['Count'] = len(results)
+        if select != 'COUNT':
+            cloned = list(map(lambda row: row.copy(), results))
+            record['Items'] = cloned
+
         return record

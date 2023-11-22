@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Optional, List, Any, Dict, Callable
 
 from lambda_web_framework.web_exceptions import ConflictException
-from platform_channels import OMNI_PLATFORM, PlatformChannel
+from platform_channels import OMNI_PLATFORM, PlatformChannel, deserialize_platform_channels, serialize_platform_channels
 from utils import loghelper
 from utils.date_utils import EpochMilliseconds, get_system_time_in_millis, EpochSeconds
 from utils.dict_utils import set_if_not_none
@@ -103,6 +103,30 @@ class SessionKey:
         return cls.key_of(record['tenantId'], record['sessionId'])
 
 
+class SessionKeyAndUser(SessionKey):
+    user_id: str
+
+    @classmethod
+    def user_key_of(cls, tenant_id: int, session_id: str, user_id: str) -> 'SessionKeyAndUser':
+        v = SessionKeyAndUser()
+        v.tenant_id = tenant_id
+        v.session_id = session_id
+        v.user_id = user_id
+        return v
+
+
+class SessionIdAndUser:
+    session_id: str
+    user_id: str
+
+    @classmethod
+    def user_key_of(cls, session_id: str, user_id: str) -> 'SessionIdAndUser':
+        v = SessionIdAndUser()
+        v.session_id = session_id
+        v.user_id = user_id
+        return v
+
+
 class Session(SessionKey):
     time_created: int
     update_time: int
@@ -118,7 +142,9 @@ class Session(SessionKey):
     status: SessionStatus
     expiration_time: EpochSeconds
 
-    def __init__(self, tenant_id: int,
+    def __init__(self,
+                 org_id: str,
+                 tenant_id: int,
                  session_id: str,
                  time_created: Optional[EpochMilliseconds],
                  user_id: str,
@@ -133,6 +159,7 @@ class Session(SessionKey):
                  failure_message: str = None,
                  expiration_time: int = None):
         assert tenant_id is not None
+        self.org_id = org_id
         self.tenant_id = tenant_id
         self.session_id = session_id
         self.time_created = time_created or get_system_time_in_millis()
@@ -183,19 +210,22 @@ class Session(SessionKey):
 
     def to_record(self):
         record = {
+            'orgId': self.org_id,
             'tenantId': self.tenant_id,
             'sessionId': self.session_id,
             'timeCreated': self.time_created,
             'userId': self.user_id,
             'instanceUrl': self.instance_url,
             'accessToken': self.access_token,
-            'expirationSeconds': self.expiration_seconds,
-            'platformTypes': self.channel_platform_types,
+            'expSeconds': self.expiration_seconds,
             'stateCounter': self.state_counter,
             'updateTime': self.update_time,
             'sessionStatus': self.status.value,
             'expireTime': self.expiration_time
         }
+
+        serialize_platform_channels(self.channel_platform_types, record)
+
         set_if_not_none(record, 'fcmDeviceToken', self.fcm_device_token)
         set_if_not_none(record, 'failureMessage', self.failure_message)
         return record
@@ -211,13 +241,23 @@ class Session(SessionKey):
 
     @classmethod
     def from_record(cls, record: Dict[str, Any]):
-        return Session(record['tenantId'], record['sessionId'], record['timeCreated'], record['userId'],
-                       record['instanceUrl'], record['accessToken'], record.get('fcmDeviceToken'),
-                       record['expirationSeconds'], record['platformTypes'], record['stateCounter'],
-                       record['updateTime'],
-                       _map_session_status(record['sessionStatus']),
-                       record.get('failureMessage'),
-                       record.get('expireTime'))
+        return Session(
+            record['orgId'],
+            record['tenantId'],
+            record['sessionId'],
+            record['timeCreated'],
+            record['userId'],
+            record['instanceUrl'],
+            record['accessToken'],
+            record.get('fcmDeviceToken'),
+            record['expSeconds'],
+            deserialize_platform_channels(record),
+            record['stateCounter'],
+            record['updateTime'],
+            _map_session_status(record['sessionStatus']),
+            record.get('failureMessage'),
+            record.get('expireTime')
+        )
 
     def __eq__(self, other):
         if isinstance(other, Session):
@@ -232,6 +272,7 @@ class Session(SessionKey):
                     self.user_id == other.user_id and
                     self.session_id == other.session_id and
                     self.tenant_id == other.tenant_id and
+                    self.org_id == other.org_id and
                     self.channel_platform_types == other.channel_platform_types and
                     self.status == other.status
 
@@ -265,7 +306,7 @@ class ContextType(ReverseLookupEnum):
         return cls._value_of(string_value, 'context type')
 
 
-class SessionContext(SessionKey):
+class SessionContext(SessionKeyAndUser):
     def __init__(self,
                  tenant_id: int,
                  session_id: str,

@@ -740,7 +740,7 @@ class DynamoDb:
             else:
                 response = self.__client.scan(ExclusiveStartKey=next_key, **props)
             items = response["Items"]
-            return items, response.get("LastEvaluatedKey")
+            return items, response.get("LastEvaluatedKey"), response.get('Count')
 
         return ResultSet(query_function)
 
@@ -752,10 +752,11 @@ class DynamoDb:
               limit: int = None,
               last_evaluated_key: Any = None,
               consistent: bool = False,
-              filter_operations: Union[FilterOperation, Collection[FilterOperation]] = None):
+              filter_operations: Union[FilterOperation, Collection[FilterOperation]] = None,
+              count_only: bool = False) -> 'ResultSet':
         props = {'TableName': table_name}
         if select_attributes is None:
-            props['Select'] = "ALL_ATTRIBUTES"
+            props['Select'] = "ALL_ATTRIBUTES" if not count_only else "COUNT"
         else:
             props["ProjectionExpression"] = select_attributes
 
@@ -800,7 +801,7 @@ class DynamoDb:
             if limit is not None:
                 limit -= len(items)
 
-            return items, response.get("LastEvaluatedKey")
+            return items, response.get("LastEvaluatedKey"), response.get('Count')
 
         return ResultSet(query_function)
 
@@ -812,6 +813,11 @@ class ResultSet:
         self.__items = None
         self.__counter = 0
         self.__done = False
+        self.__count_returned = None
+
+    @property
+    def count_returned(self):
+        return self.__count_returned
 
     def __iter__(self):
         return self
@@ -831,11 +837,11 @@ class ResultSet:
         if self.__items is None or self.__counter == len(self.__items):
             if self.__items is None or self.__next_key is not None:
                 try:
-                    self.__items, self.__next_key = self.__query_function(self.__next_key)
+                    self.__items, self.__next_key, self.__count_returned = self.__query_function(self.__next_key)
                 except StopIteration:
                     self.__done = True
                     return False
-                if len(self.__items) > 0:
+                if len(self.__items) > 0 or self.__count_returned > 0:
                     self.__counter = 0
                     return True
             self.__done = True

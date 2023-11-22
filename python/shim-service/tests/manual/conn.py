@@ -47,7 +47,7 @@ setup.init(our_listener)
 auth_info = salesforce_auth.get_auth_info()
 uri = Uri.parse(auth_info.server_url).origin
 
-session = Session(1000, 'my-session-id', None, auth_info.user_id, instance_url=uri,
+session = Session("some-org-id",1000, 'my-session-id', None, auth_info.user_id, instance_url=uri,
                   access_token=auth_info.session_id,
                   fcm_device_token="skip::this-is-a-token", expiration_seconds=3600,
                   channel_platform_types=[OMNI_PLATFORM.name, X1440_PLATFORM.name])

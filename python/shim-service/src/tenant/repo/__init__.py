@@ -1,8 +1,8 @@
 import abc
-from typing import Any
+from typing import Any, Optional
 
 from repos import QueryResult
-from tenant import PendingTenantEvent, PendingTenantEventType
+from tenant import PendingTenantEvent, PendingTenantEventType, TenantContextType, TenantContext
 
 
 class PendingTenantEventRepo(metaclass=abc.ABCMeta):
@@ -23,3 +23,17 @@ class PendingTenantEventRepo(metaclass=abc.ABCMeta):
     def query_events(self, event_type: PendingTenantEventType, limit: int, next_token: Any) -> QueryResult:
         raise NotImplementedError()
 
+
+class TenantContextRepo(metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def find_context(self, context_type: TenantContextType, tenant_id: int) -> Optional[TenantContext]:
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def update_or_create_context(self, context: TenantContext):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def delete_context(self, context: TenantContext) -> bool:
+        raise NotImplementedError()

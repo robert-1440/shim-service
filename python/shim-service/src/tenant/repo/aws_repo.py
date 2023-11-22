@@ -27,14 +27,19 @@ class AwsPendingTenantEventRepo(AwsVirtualRangeTableRepo, PendingTenantEventRepo
     def __init__(self, ddb: DynamoDb):
         super().__init__(ddb)
 
-    @retry(exceptions=OptimisticLockException, tries=10, delay=0.1, backoff=2)
+    @retry(exceptions=OptimisticLockException, tries=10, delay=0.1, backoff=.1)
     def update_or_create(self, entry: PendingTenantEvent):
         current = self.find(entry.event_type.value, entry.tenant_id, consistent=True)
         if current is None:
             if not self.create(entry):
                 raise OptimisticLockException()
         else:
-            if not self.patch_with_condition(current, 'stateCounter', entry.state_counter + 1, {}):
+            if not self.patch_with_condition(
+                    current,
+                    'stateCounter',
+                    entry.state_counter + 1,
+                    {'accessToken': entry.access_token}
+            ):
                 raise OptimisticLockException()
 
     def update_action_time(self, event: PendingTenantEvent, seconds_in_future: int) -> bool:

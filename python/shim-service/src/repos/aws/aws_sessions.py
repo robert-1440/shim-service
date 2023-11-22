@@ -1,8 +1,9 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Iterable
 
-from aws.dynamodb import DynamoDb, TransactionRequest, GetItemRequest
+from aws.dynamodb import DynamoDb, TransactionRequest, GetItemRequest, le_filter, eq_filter
 from events.event_types import EventType
 from lambda_web_framework.web_exceptions import EntityExistsException
+from repos import QueryResultSet
 from repos.aws import SHIM_SERVICE_SESSION_TABLE
 from repos.aws.abstract_repo import AbstractAwsRepo
 from repos.aws.aws_events import AwsEventsRepo
@@ -10,10 +11,12 @@ from repos.aws.aws_sequence import AwsSequenceRepo
 from repos.aws.aws_sfdc_sessions_repo import AwsSfdcSessionsRepo
 from repos.aws.aws_user_sessions import AwsUserSessionsRepo
 from repos.sessions_repo import SessionsRepo, CreateSessionRequest, UserSessionExistsException
-from session import Session, SessionKey
+from session import Session, SessionKey, SessionStatus
 from utils import loghelper
 from utils.collection_utils import to_flat_list
 from utils.date_utils import get_system_time_in_seconds
+
+SESSION_ID = 'sessionId'
 
 _TENANT_ID = "tenantId"
 _SESSION_ID = "sessionId"
@@ -163,17 +166,31 @@ class AwsSessionsRepo(SessionsRepo, AbstractAwsRepo):
             attributes_to_get=attributes_to_get
         )
 
-    def find_most_recent_access_token(self, tenant_id: int) -> Optional[str]:
-        entry = None
+    def has_sessions_with_platform_channel_type(self, tenant_id: int, channel_type: str):
+        # where status = 'A' and p_channel_type = True
+        status_filter = eq_filter('sessionStatus', SessionStatus.ACTIVE.value)
+        channel_filter = eq_filter(f'pt_{channel_type}', True)
         result_set = self.query_set(
             tenant_id,
             consistent=True,
-            select_attributes=['accessToken', 'updateTime']
+            count_only=True,
+            filters=(status_filter, channel_filter)
         )
 
-        for row in result_set:
-            update_time = row['updateTime']
-            if entry is None or update_time > entry[0]:
-                entry = (update_time, row['accessToken'])
+        for _ in result_set:
+            return True
+        return False
 
-        return entry[1] if entry is not None else None
+    def query_session_ids_with_platform_channel_type(self,
+                                                     tenant_id: int,
+                                                     channel_type: str) -> Iterable[str]:
+
+        status_filter = eq_filter('sessionStatus', SessionStatus.ACTIVE.value)
+        channel_filter = eq_filter(f'pt_{channel_type}', True)
+        result_set = self.query_set(
+            tenant_id,
+            consistent=True,
+            select_attributes=[SESSION_ID],
+            filters=(status_filter, channel_filter)
+        )
+        return map(lambda r: r[SESSION_ID], result_set)

@@ -104,3 +104,4 @@ permissions:
 environment:
   variables:
     ACTIVE_PROFILES: live-agent-poller
+    PUBSUB_TOPIC: /event/RS_L__ConversationMessage__e
