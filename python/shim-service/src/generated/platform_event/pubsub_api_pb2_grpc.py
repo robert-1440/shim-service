@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import pubsub_api_pb2 as pubsub__api__pb2
+from generated.platform_event import pubsub_api_pb2 as pubsub__api__pb2
 
 
 class PubSubStub(object):
@@ -32,30 +32,30 @@ class PubSubStub(object):
             channel: A grpc.Channel.
         """
         self.Subscribe = channel.stream_stream(
-                '/eventbus.v1.PubSub/Subscribe',
-                request_serializer=pubsub__api__pb2.FetchRequest.SerializeToString,
-                response_deserializer=pubsub__api__pb2.FetchResponse.FromString,
-                )
+            '/eventbus.v1.PubSub/Subscribe',
+            request_serializer=pubsub__api__pb2.FetchRequest.SerializeToString,
+            response_deserializer=pubsub__api__pb2.FetchResponse.FromString,
+        )
         self.GetSchema = channel.unary_unary(
-                '/eventbus.v1.PubSub/GetSchema',
-                request_serializer=pubsub__api__pb2.SchemaRequest.SerializeToString,
-                response_deserializer=pubsub__api__pb2.SchemaInfo.FromString,
-                )
+            '/eventbus.v1.PubSub/GetSchema',
+            request_serializer=pubsub__api__pb2.SchemaRequest.SerializeToString,
+            response_deserializer=pubsub__api__pb2.SchemaInfo.FromString,
+        )
         self.GetTopic = channel.unary_unary(
-                '/eventbus.v1.PubSub/GetTopic',
-                request_serializer=pubsub__api__pb2.TopicRequest.SerializeToString,
-                response_deserializer=pubsub__api__pb2.TopicInfo.FromString,
-                )
+            '/eventbus.v1.PubSub/GetTopic',
+            request_serializer=pubsub__api__pb2.TopicRequest.SerializeToString,
+            response_deserializer=pubsub__api__pb2.TopicInfo.FromString,
+        )
         self.Publish = channel.unary_unary(
-                '/eventbus.v1.PubSub/Publish',
-                request_serializer=pubsub__api__pb2.PublishRequest.SerializeToString,
-                response_deserializer=pubsub__api__pb2.PublishResponse.FromString,
-                )
+            '/eventbus.v1.PubSub/Publish',
+            request_serializer=pubsub__api__pb2.PublishRequest.SerializeToString,
+            response_deserializer=pubsub__api__pb2.PublishResponse.FromString,
+        )
         self.PublishStream = channel.stream_stream(
-                '/eventbus.v1.PubSub/PublishStream',
-                request_serializer=pubsub__api__pb2.PublishRequest.SerializeToString,
-                response_deserializer=pubsub__api__pb2.PublishResponse.FromString,
-                )
+            '/eventbus.v1.PubSub/PublishStream',
+            request_serializer=pubsub__api__pb2.PublishRequest.SerializeToString,
+            response_deserializer=pubsub__api__pb2.PublishResponse.FromString,
+        )
 
 
 class PubSubServicer(object):
@@ -163,38 +163,38 @@ class PubSubServicer(object):
 
 def add_PubSubServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Subscribe': grpc.stream_stream_rpc_method_handler(
-                    servicer.Subscribe,
-                    request_deserializer=pubsub__api__pb2.FetchRequest.FromString,
-                    response_serializer=pubsub__api__pb2.FetchResponse.SerializeToString,
-            ),
-            'GetSchema': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetSchema,
-                    request_deserializer=pubsub__api__pb2.SchemaRequest.FromString,
-                    response_serializer=pubsub__api__pb2.SchemaInfo.SerializeToString,
-            ),
-            'GetTopic': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetTopic,
-                    request_deserializer=pubsub__api__pb2.TopicRequest.FromString,
-                    response_serializer=pubsub__api__pb2.TopicInfo.SerializeToString,
-            ),
-            'Publish': grpc.unary_unary_rpc_method_handler(
-                    servicer.Publish,
-                    request_deserializer=pubsub__api__pb2.PublishRequest.FromString,
-                    response_serializer=pubsub__api__pb2.PublishResponse.SerializeToString,
-            ),
-            'PublishStream': grpc.stream_stream_rpc_method_handler(
-                    servicer.PublishStream,
-                    request_deserializer=pubsub__api__pb2.PublishRequest.FromString,
-                    response_serializer=pubsub__api__pb2.PublishResponse.SerializeToString,
-            ),
+        'Subscribe': grpc.stream_stream_rpc_method_handler(
+            servicer.Subscribe,
+            request_deserializer=pubsub__api__pb2.FetchRequest.FromString,
+            response_serializer=pubsub__api__pb2.FetchResponse.SerializeToString,
+        ),
+        'GetSchema': grpc.unary_unary_rpc_method_handler(
+            servicer.GetSchema,
+            request_deserializer=pubsub__api__pb2.SchemaRequest.FromString,
+            response_serializer=pubsub__api__pb2.SchemaInfo.SerializeToString,
+        ),
+        'GetTopic': grpc.unary_unary_rpc_method_handler(
+            servicer.GetTopic,
+            request_deserializer=pubsub__api__pb2.TopicRequest.FromString,
+            response_serializer=pubsub__api__pb2.TopicInfo.SerializeToString,
+        ),
+        'Publish': grpc.unary_unary_rpc_method_handler(
+            servicer.Publish,
+            request_deserializer=pubsub__api__pb2.PublishRequest.FromString,
+            response_serializer=pubsub__api__pb2.PublishResponse.SerializeToString,
+        ),
+        'PublishStream': grpc.stream_stream_rpc_method_handler(
+            servicer.PublishStream,
+            request_deserializer=pubsub__api__pb2.PublishRequest.FromString,
+            response_serializer=pubsub__api__pb2.PublishResponse.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'eventbus.v1.PubSub', rpc_method_handlers)
+        'eventbus.v1.PubSub', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class PubSub(object):
     """
     The Pub/Sub API provides a single interface for publishing and subscribing to platform events, including real-time
@@ -217,85 +217,87 @@ class PubSub(object):
 
     @staticmethod
     def Subscribe(request_iterator,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+                  target,
+                  options=(),
+                  channel_credentials=None,
+                  call_credentials=None,
+                  insecure=False,
+                  compression=None,
+                  wait_for_ready=None,
+                  timeout=None,
+                  metadata=None):
         return grpc.experimental.stream_stream(request_iterator, target, '/eventbus.v1.PubSub/Subscribe',
-            pubsub__api__pb2.FetchRequest.SerializeToString,
-            pubsub__api__pb2.FetchResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+                                               pubsub__api__pb2.FetchRequest.SerializeToString,
+                                               pubsub__api__pb2.FetchResponse.FromString,
+                                               options, channel_credentials,
+                                               insecure, call_credentials, compression, wait_for_ready, timeout,
+                                               metadata)
 
     @staticmethod
     def GetSchema(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+                  target,
+                  options=(),
+                  channel_credentials=None,
+                  call_credentials=None,
+                  insecure=False,
+                  compression=None,
+                  wait_for_ready=None,
+                  timeout=None,
+                  metadata=None):
         return grpc.experimental.unary_unary(request, target, '/eventbus.v1.PubSub/GetSchema',
-            pubsub__api__pb2.SchemaRequest.SerializeToString,
-            pubsub__api__pb2.SchemaInfo.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+                                             pubsub__api__pb2.SchemaRequest.SerializeToString,
+                                             pubsub__api__pb2.SchemaInfo.FromString,
+                                             options, channel_credentials,
+                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def GetTopic(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+                 target,
+                 options=(),
+                 channel_credentials=None,
+                 call_credentials=None,
+                 insecure=False,
+                 compression=None,
+                 wait_for_ready=None,
+                 timeout=None,
+                 metadata=None):
         return grpc.experimental.unary_unary(request, target, '/eventbus.v1.PubSub/GetTopic',
-            pubsub__api__pb2.TopicRequest.SerializeToString,
-            pubsub__api__pb2.TopicInfo.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+                                             pubsub__api__pb2.TopicRequest.SerializeToString,
+                                             pubsub__api__pb2.TopicInfo.FromString,
+                                             options, channel_credentials,
+                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def Publish(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+                target,
+                options=(),
+                channel_credentials=None,
+                call_credentials=None,
+                insecure=False,
+                compression=None,
+                wait_for_ready=None,
+                timeout=None,
+                metadata=None):
         return grpc.experimental.unary_unary(request, target, '/eventbus.v1.PubSub/Publish',
-            pubsub__api__pb2.PublishRequest.SerializeToString,
-            pubsub__api__pb2.PublishResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+                                             pubsub__api__pb2.PublishRequest.SerializeToString,
+                                             pubsub__api__pb2.PublishResponse.FromString,
+                                             options, channel_credentials,
+                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def PublishStream(request_iterator,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
+                      target,
+                      options=(),
+                      channel_credentials=None,
+                      call_credentials=None,
+                      insecure=False,
+                      compression=None,
+                      wait_for_ready=None,
+                      timeout=None,
+                      metadata=None):
         return grpc.experimental.stream_stream(request_iterator, target, '/eventbus.v1.PubSub/PublishStream',
-            pubsub__api__pb2.PublishRequest.SerializeToString,
-            pubsub__api__pb2.PublishResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+                                               pubsub__api__pb2.PublishRequest.SerializeToString,
+                                               pubsub__api__pb2.PublishResponse.FromString,
+                                               options, channel_credentials,
+                                               insecure, call_credentials, compression, wait_for_ready, timeout,
+                                               metadata)

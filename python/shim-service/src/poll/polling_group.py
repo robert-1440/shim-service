@@ -22,6 +22,7 @@ class LockAndEvent:
         self.lock = lock
         self.failed = False
         self.after_release: Optional[Callable] = None
+        self.update_action_time = True
         self.user_object = None
 
     @property
@@ -119,6 +120,9 @@ class AbstractProcessorGroup(metaclass=abc.ABCMeta):
 
             try:
                 self.poll(le)
+                if le.update_action_time:
+                    self.update_action_time(le.event, 0)
+
             except BaseException as ex:
                 logger.severe(f"Failed during poll: {exception_utils.dump_ex(ex)}")
 

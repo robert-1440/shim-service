@@ -34,21 +34,22 @@ class AwsPendingTenantEventRepo(AwsVirtualRangeTableRepo, PendingTenantEventRepo
             if not self.create(entry):
                 raise OptimisticLockException()
         else:
-            if not self.patch_with_condition(
-                    current,
-                    'stateCounter',
-                    entry.state_counter + 1,
-                    {'accessToken': entry.access_token}
-            ):
-                raise OptimisticLockException()
+            self.patch_with_condition(
+                current,
+                'stateCounter',
+                entry.state_counter + 1,
+                {'accessToken': entry.access_token}
+            )
 
     def update_action_time(self, event: PendingTenantEvent, seconds_in_future: int) -> bool:
         now = get_system_time_in_millis()
         new_action_at = now + (seconds_in_future * 1000)
-        if self.patch_with_condition(event, ACTIVE_AT, new_action_at, {}):
+        try:
+            self.patch_with_condition(event, ACTIVE_AT, new_action_at, {})
             event.active_at = new_action_at
             return True
-        return False
+        except OptimisticLockException:
+            return False
 
     def delete_event(self, event: PendingTenantEvent) -> bool:
         return self.delete_with_condition(event, 'stateCounter', event.state_counter)

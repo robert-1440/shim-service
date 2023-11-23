@@ -4,7 +4,6 @@ from typing import Optional, Any, Dict, Iterable
 from bean import BeanName, inject
 from events import EventType
 from lambda_web_framework.web_exceptions import BadRequestException, GoneException
-from repos import QueryResultSet
 from session import Session, SessionStatus, verify_session_status, SessionKey
 from utils.date_utils import EpochSeconds
 

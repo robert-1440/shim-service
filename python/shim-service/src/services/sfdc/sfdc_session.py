@@ -78,6 +78,8 @@ class SfdcSession(SessionKey, metaclass=abc.ABCMeta):
         logger.info(f"Web request to {method} {uri} took {elapsed} ms.")
 
         event_data = dict(event_data) if event_data is not None else {}
+        event_data['userId'] = self.user_id
+        event_data['sessionId'] = self.session_id
         event_data['sfdcResponse'] = resp.status_code
         event_data['sfdcTime'] = elapsed
 

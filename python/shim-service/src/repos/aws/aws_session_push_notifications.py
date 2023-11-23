@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, Iterable, List
+from typing import Dict, Any, Optional, Iterable
 
 from aws.dynamodb import DynamoDb, not_exists_filter, TransactionRequest
 from events.event_types import EventType
@@ -10,7 +10,7 @@ from repos.aws.abstract_range_table_repo import AwsVirtualRangeTableRepo
 from repos.aws.aws_sequence import AwsSequenceRepo
 from repos.aws.aws_session_contexts import AwsSessionContextsRepo
 from repos.session_push_notifications import SessionPushNotificationsRepo
-from session import SessionContext, SessionKey, SessionKeyAndUser, SessionIdAndUser
+from session import SessionContext, SessionKey, SessionKeyAndUser
 from utils import string_utils, loghelper
 from utils.date_utils import EpochMilliseconds, get_system_time_in_millis, EpochSeconds, get_system_time_in_seconds
 
@@ -156,14 +156,6 @@ class AwsPushNotificationsRepo(AwsVirtualRangeTableRepo, SessionPushNotification
         if bad_event is not None:
             raise ConflictException(f"Failed to submit push notification: {bad_event.cancel_reason}")
         self.lambda_invoker.invoke_notification_poller(session_key)
-
-    def submit_multiple(self,
-                        tenant_id: int,
-                        session_list: List[SessionIdAndUser],
-                        platform_channel_type: str,
-                        message_type: str,
-                        message: str):
-        raise NotImplementedError()
 
     def query_notifications(self,
                             session_key: SessionKey,

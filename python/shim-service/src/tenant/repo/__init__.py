@@ -1,6 +1,8 @@
 import abc
+from copy import copy
 from typing import Any, Optional
 
+from bean import inject, BeanName
 from repos import QueryResult
 from tenant import PendingTenantEvent, PendingTenantEventType, TenantContextType, TenantContext
 
@@ -37,3 +39,10 @@ class TenantContextRepo(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def delete_context(self, context: TenantContext) -> bool:
         raise NotImplementedError()
+
+
+@inject(bean_instances=BeanName.TENANT_CONTEXT_REPO)
+def set_context_data(context: TenantContext, data: bytes, repo: TenantContextRepo):
+    new_context = copy(context)
+    new_context.data = data
+    repo.update_or_create_context(new_context)

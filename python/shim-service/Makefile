@@ -15,7 +15,8 @@ LAMBDA_ZIPS_DIR=$(DIST)lambda-zips/
 PROFILES = web pubsub-poller live-agent-poller notification-publisher scheduler table-listener
 LAYERS = requests common gcp crypto platform-events
 
-.PHONY: default qp fast-package package lambda-zips lambda-zip-files clean-lambda-zips layers clean build-all-layers service-keys
+.PHONY: default qp fast-package package lambda-zips lambda-zip-files clean-lambda-zips layers clean build-all-layers \
+protobuf service-keys
 
 
 default: all-tests
@@ -75,3 +76,9 @@ layers: build-all-layers
 
 clean:
 	@rm -fr $(DIST) ; mkdir $(DIST)
+
+
+protobuf:
+	protoc --python_out=src/generated/platform_event pubsub_api.proto
+
+

@@ -23,10 +23,11 @@ class AwsTenantContextRepo(AwsVirtualTableRepo, TenantContextRepo):
         return self.find(context_type.value, tenant_id, consistent=True)
 
     def update_or_create_context(self, context: TenantContext):
-        if not self.patch_with_condition(context, 'stateCounter', context.state_counter + 1,
-                                         {'contextData': context.data}):
+        if not self.patch_with_condition_bool(context, 'stateCounter', context.state_counter + 1,
+                                              {'contextData': context.data}):
             if not self.create(context):
                 raise OptimisticLockException()
+            return
         context.state_counter += 1
 
     def delete_context(self, context: TenantContext) -> bool:

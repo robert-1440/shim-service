@@ -4,19 +4,15 @@ from aws.dynamodb import DynamoDb, TransactionRequest
 from config import Config
 from events import Event, EventType
 from repos.aws import WORK_ID_MAP_TABLE
-from repos.aws.abstract_range_table_repo import AwsVirtualRangeTableRepo
+from repos.aws.abstract_table_repo import AwsVirtualTableRepo
 from repos.aws.aws_events import EventListener
 from repos.work_id_map_repo import WorkIdMapRepo, WorkIdMap
 from utils.date_utils import get_system_time_in_seconds
 
 
-class AwsWorkIdRepo(AwsVirtualRangeTableRepo, WorkIdMapRepo, EventListener):
+class AwsWorkIdRepo(AwsVirtualTableRepo, WorkIdMapRepo, EventListener):
     __hash_key_attributes__ = {
         'tenantId': int,
-        'userId': str
-    }
-
-    __range_key_attributes__ = {
         'workTargetId': str
     }
 
@@ -27,15 +23,22 @@ class AwsWorkIdRepo(AwsVirtualRangeTableRepo, WorkIdMapRepo, EventListener):
         super(AwsWorkIdRepo, self).__init__(ddb)
         self.ttl_seconds = config.max_work_id_map_seconds
 
-    def find_work_id(self, tenant_id: int, user_id: str, work_target_id: str) -> Optional[str]:
-        entry: WorkIdMap = self.find(tenant_id, user_id, work_target_id)
-        return entry.work_id if entry is not None else None
+    def find_work(self, tenant_id: int, work_target_id: str) -> Optional[WorkIdMap]:
+        return self.find(tenant_id, work_target_id)
 
     def create_put_item_request_from_event(self, event: Event):
         event_data = event.data_record
-        entry = WorkIdMap(event.tenant_id, event_data['userId'], event_data['workId'], event_data['workTargetId'])
+        entry = WorkIdMap(
+            event.tenant_id,
+            event_data['userId'],
+            event_data['workId'],
+            event_data['workTargetId'],
+            event_data['sessionId']
+        )
         patch = {
             'workId': entry.work_id,
+            'userId': entry.user_id,
+            'sessionId': event_data['sessionId'],
             'expireTime': get_system_time_in_seconds() + self.ttl_seconds
         }
 

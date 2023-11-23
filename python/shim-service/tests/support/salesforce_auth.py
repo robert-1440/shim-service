@@ -2,11 +2,13 @@ import json
 import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Optional
 
 import requests
 
 from support import xml_utils
 from support.persisted_cache import Expirable, PersistedCache
+from utils.uri_utils import Uri
 
 
 # url = "https://login.salesforce.com/services/Soap/u/55.0/"
@@ -24,6 +26,13 @@ class AuthInfo(Expirable):
         self.user_id = user_id
         self.org_id = org_id
         self.seconds_valid = seconds_valid
+        self.__origin: Optional[str] = None
+
+    @property
+    def origin(self):
+        if not hasattr(self, "AuthInfo__origin") or self.__origin is None:
+            self.__origin = Uri.parse(self.server_url).origin
+        return self.__origin
 
     def get_ttl_seconds(self) -> int:
         return self.seconds_valid

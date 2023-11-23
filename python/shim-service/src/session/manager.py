@@ -100,7 +100,7 @@ def __build_request(instance: Instance, session: Session) -> CreateSessionReques
 def __check_fcm_token(instance: Instance,
                       session: Session,
                       user_sessions_repo: UserSessionsRepo):
-    current_session = user_sessions_repo.find_user_session(session)
+    current_session = user_sessions_repo.find_by_session(session)
 
     # We'll assume we don't have to check the token if we've already done so
     if current_session is not None and current_session.fcm_device_token == session.fcm_device_token:

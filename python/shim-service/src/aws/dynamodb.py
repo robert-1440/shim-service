@@ -797,7 +797,7 @@ class DynamoDb:
                 response = self.__client.query(**props)
             else:
                 response = self.__client.query(ExclusiveStartKey=next_key, **props)
-            items = response["Items"]
+            items = response.get("Items", [])
             if limit is not None:
                 limit -= len(items)
 
@@ -838,6 +838,10 @@ class ResultSet:
             if self.__items is None or self.__next_key is not None:
                 try:
                     self.__items, self.__next_key, self.__count_returned = self.__query_function(self.__next_key)
+                    if len(self.__items) == 0 and self.__next_key is None:
+                        self.__done = True
+                        return False
+
                 except StopIteration:
                     self.__done = True
                     return False

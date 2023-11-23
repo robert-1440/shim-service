@@ -219,8 +219,9 @@ _BEANS: Dict[BeanName, _BeanImpl] = {
     BeanName.TABLE_LISTENER_PROCESSOR: _module(),
     BeanName.PENDING_TENANT_EVENTS_REPO: _module(),
     BeanName.TENANT_CONTEXT_REPO: _module(),
+    BeanName.PUBSUB_SERVICE: _module(),
     BeanName.PUBSUB_POLLER_PROCESSOR: _module(),
-    BeanName.SCHEMA_CACHE: _module()
+    BeanName.SECURE_CHANNEL_CREDENTIALS: _module()
 }
 
 

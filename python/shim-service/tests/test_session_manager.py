@@ -186,7 +186,7 @@ class SessionManagerTest(BaseTest):
         self.__verify_pending_events(session)
 
         # Ensure the child sessions are created
-        user_sess = self.user_sessions_repo.find_user_session(session)
+        user_sess = self.user_sessions_repo.find_by_session(session)
         self.assertEqual(user_sess.session_id, result.session.session_id)
 
         # Ensure we get the same session id back
@@ -221,7 +221,7 @@ class SessionManagerTest(BaseTest):
         self.assertTrue(self.sessions_repo.delete(current.tenant_id, current.session_id))
 
         # The user and worker session(s) should still be there
-        self.assertIsNotNone(self.user_sessions_repo.find_user_session(current))
+        self.assertIsNotNone(self.user_sessions_repo.find_by_session(current))
 
         session = self.construct_session()
         result = create_session(session)
@@ -332,7 +332,7 @@ class SessionManagerTest(BaseTest):
 
         # Let's make sure it deleted everything
         self.assertIsNone(self.sessions_repo.find_session(session))
-        self.assertIsNone(self.user_sessions_repo.find_user_session(session))
+        self.assertIsNone(self.user_sessions_repo.find_by_session(session))
 
     def test_create_with_user_already_logged_in(self):
         # Simulate user logged in with a different device token

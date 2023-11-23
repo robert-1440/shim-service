@@ -130,6 +130,7 @@ class _OmniChannelApi(OmniChannelApi):
             'workId': work_id,
             'workTargetId': work_target_id
         }
+
         self.__invoke_presence_request(
             "AcceptWork",
             EventType.WORK_ACCEPTED,

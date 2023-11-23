@@ -1,5 +1,4 @@
 from enum import Enum
-from enum import Enum
 from typing import Dict, Any, Tuple, Optional
 
 from utils.date_utils import EpochMilliseconds, get_system_time_in_millis
@@ -65,11 +64,11 @@ class PendingTenantEvent:
             PendingTenantEventType.value_of(record['eventType']),
             record['orgId'],
             record['tenantId'],
-            record['sessionCount'],
             record['accessToken'],
             record['instanceUrl'],
             record['eventTime'],
-            record['activeAt']
+            record['activeAt'],
+            record['stateCounter']
         )
 
 

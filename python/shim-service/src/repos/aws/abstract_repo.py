@@ -162,6 +162,16 @@ class AbstractAwsRepo(metaclass=abc.ABCMeta):
             virtual_table_name=self.__get_virtual_table_name()
         )
 
+    def patch_with_condition_bool(self, entry: Record,
+                                  condition_property: str,
+                                  new_value: Any,
+                                  patches: Dict[str, Any] = None):
+        try:
+            self.patch_with_condition(entry, condition_property, new_value, patches)
+            return True
+        except OptimisticLockException:
+            return False
+
     def patch_with_condition(self, entry: Record,
                              condition_property: str,
                              new_value: Any,
@@ -327,7 +337,7 @@ class AbstractAwsRepo(metaclass=abc.ABCMeta):
             count_only=count_only
         )
         results = rset if select_attributes is not None else map(self.deserialize_record, rset)
-        return QueryResultSet(rset.count_returned, results, lambda: rset.next_key)
+        return QueryResultSet(results, lambda: rset.next_key, lambda: rset.count_returned)
 
     def query(self,
               *args,

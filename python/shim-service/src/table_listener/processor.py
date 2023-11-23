@@ -2,7 +2,7 @@ import json
 import re
 from typing import Dict, Any, List, Optional, Collection
 
-from aws.dynamodb import DynamoDbRow, DynamoDbItem, from_ddb_item
+from aws.dynamodb import DynamoDbRow, DynamoDbItem, convert_value
 from lambda_pkg.functions import LambdaInvoker
 from lambda_web_framework import InvocableBeanRequestHandler, SUCCESS_RESPONSE
 from platform_channels import X1440_PLATFORM
@@ -19,8 +19,11 @@ _REGEX = re.compile(r"arn:aws:dynamodb:[^:]+:[^:]+:table/([^/]+)/stream/")
 
 
 def has_x1440_platform(record: DynamoDbItem):
-    entry = from_ddb_item(record['dynamodb']['NewImage'])
-    return X1440_PLATFORM.name in entry['platformTypes']
+    key = f'pt_{X1440_PLATFORM.name}'
+    v = record['dynamodb']['NewImage'].get(key)
+    if v is None:
+        return False
+    return v.get('BOOL', False)
 
 
 def _extract_table_name(arn: str) -> Optional[str]:
@@ -33,10 +36,10 @@ def _extract_table_name(arn: str) -> Optional[str]:
 
 class ReconstructedSession:
     def __init__(self, row: DynamoDbRow):
-        self.tenant_id = row['tenantId']
-        self.org_id = row['orgId']
-        self.access_token = row['accessToken']
-        self.instance_url = row['instanceUrl']
+        self.tenant_id: int = convert_value(row['tenantId'])
+        self.org_id = convert_value(row['orgId'])
+        self.access_token = convert_value(row['accessToken'])
+        self.instance_url = convert_value(row['instanceUrl'])
 
 
 class PendingEventHandler:
@@ -47,8 +50,8 @@ class PendingEventHandler:
         self.lambda_invoker = lambda_invoker
         self.new_sessions = new_sessions
         self.errors = False
-        self.thread = start_thread(self.process)
         self.good_count = 0
+        self.thread = start_thread(self.process)
 
     def process(self):
         for session in self.new_sessions:
@@ -97,7 +100,7 @@ class TableListenerProcessor(InvocableBeanRequestHandler):
         if records is None:
             return
         logger.info(f"Received event:\n{json.dumps(records, indent=2)}")
-        new_sessions: Dict[str, ReconstructedSession] = {}
+        new_sessions: Dict[int, ReconstructedSession] = {}
 
         def local_filter(record: Dict[str, Any]) -> bool:
             table = _extract_table_name(record['eventSourceARN'])

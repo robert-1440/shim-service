@@ -1,10 +1,20 @@
-from botomocks.scheduler_mock import MockSchedulerClient
+import os
 
+from botomocks.scheduler_mock import MockSchedulerClient
 from lambda_web_framework import app_handler
+
+# Protect us from accidentally hitting an actual AWS account
+os.environ['AWS_ACCESS_KEY_ID'] = "invalid"
+os.environ['AWS_SECRET_ACCESS_KEY'] = "invalid"
+os.environ['ERROR_TOPIC_ARN'] = 'error:topic:arn'
+os.environ['PUSH_NOTIFIER_GROUP_ROLE_ARN'] = 'push:role'
+os.environ['INTERNAL_TESTING'] = "true"
+
+PUBSUB_TOPIC = "pubsub/topic"
 
 SQS_LIVE_AGENT_QUEUE_URL_ENV_NAME = "SQS_SHIMSERVICELIVEAGENTPOLLER_QUEUE_URL"
 SQS_LIVE_AGENT_QUEUE_URL = "https://somewhere.1440.io/live-agent-poller-queue"
-import os
+os.environ['PUBSUB_TOPIC'] = PUBSUB_TOPIC
 
 os.environ[SQS_LIVE_AGENT_QUEUE_URL_ENV_NAME] = SQS_LIVE_AGENT_QUEUE_URL
 
@@ -16,14 +26,6 @@ from typing import Dict, Any, Optional, Union, Tuple, List, Callable
 import app
 from botomocks.sqs_mock import MockSqsClient
 from lambda_pkg.functions import LambdaFunction
-
-
-# Protect us from accidentally hitting an actual AWS account
-os.environ['AWS_ACCESS_KEY_ID'] = "invalid"
-os.environ['AWS_SECRET_ACCESS_KEY'] = "invalid"
-os.environ['ERROR_TOPIC_ARN'] = 'error:topic:arn'
-os.environ['PUSH_NOTIFIER_GROUP_ROLE_ARN'] = 'push:role'
-os.environ['INTERNAL_TESTING'] = "true"
 
 SQS_NOTIFICATION_PUBLISHER_ENV_NAME = "SQS_SHIMSERVICENOTIFICATIONPUBLISHER_QUEUE_URL"
 SQS_NOTIFICATION_PUBLISHER_QUEUE_URL = "https://somewhere.1440.io/notification-publisher-queue"

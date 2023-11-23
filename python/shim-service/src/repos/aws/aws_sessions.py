@@ -1,9 +1,8 @@
 from typing import Optional, List, Dict, Any, Iterable
 
-from aws.dynamodb import DynamoDb, TransactionRequest, GetItemRequest, le_filter, eq_filter
+from aws.dynamodb import DynamoDb, TransactionRequest, GetItemRequest, eq_filter
 from events.event_types import EventType
 from lambda_web_framework.web_exceptions import EntityExistsException
-from repos import QueryResultSet
 from repos.aws import SHIM_SERVICE_SESSION_TABLE
 from repos.aws.abstract_repo import AbstractAwsRepo
 from repos.aws.aws_events import AwsEventsRepo
@@ -69,7 +68,7 @@ class AwsSessionsRepo(SessionsRepo, AbstractAwsRepo):
         if bad_request is None:
             return None
         if id(bad_request) == id(user_session_put):
-            sess = self.user_sessions_repo.find_user_session(request.session)
+            sess = self.user_sessions_repo.find_by_session(request.session)
             if sess is not None:
                 raise UserSessionExistsException(sess.session_id)
         logger.warning(f"Failed to create session: {request.session.describe()}: {bad_request.describe()}")
@@ -177,9 +176,11 @@ class AwsSessionsRepo(SessionsRepo, AbstractAwsRepo):
             filters=(status_filter, channel_filter)
         )
 
+        # We need to iterate the result set to get the count
         for _ in result_set:
-            return True
-        return False
+            break
+
+        return result_set.count> 0
 
     def query_session_ids_with_platform_channel_type(self,
                                                      tenant_id: int,

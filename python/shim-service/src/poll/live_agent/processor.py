@@ -61,16 +61,17 @@ class ProcessorGroup(AbstractProcessorGroup):
         try:
             if inner_poll():
                 self.contexts_repo.update_session_context(context, settings)
-                self.pe_repo.update_action_time(le.event, 0)
                 le.after_release = self.invoke_again
             else:
                 logger.info(f"Polling was shut down for {context}.")
                 self.contexts_repo.set_failed(context, "Polling was shutdown.")
                 self.pe_repo.delete_event(le.event)
+                le.update_action_time = False
         except BaseException as ex:
             message_text = exception_utils.get_exception_message(ex)
             self.contexts_repo.set_failed(context, message_text)
             le.failed = True
+            le.update_action_time = False
 
     def should_poll(self, le: LockAndEvent) -> bool:
         sc: SfdcSessionAndContext = load_with_context(le.event, ContextType.LIVE_AGENT)
