@@ -243,7 +243,6 @@ class BaseTest(BetterTestCase):
 
     def setUp(self) -> None:
         self.started = False
-        beans.reset()
         self.http_session_mock = ExtendedHttpMockSession()
         secrets.install(self.http_session_mock)
         self.ddb_mock = MockDynamoDbClient()

@@ -81,7 +81,7 @@ class ProcessorGroup(AbstractProcessorGroup):
             for notification_record in stream:
                 for event in notification_record.events:
                     decoded = stream.decode_event(event)
-                    logger.info(f"Received message:\n{json.dumps(decoded, indent=True)}")
+                    logger.info(f"[{tenant_id}] Received message:\n{json.dumps(decoded, indent=True)}")
                     self.__dispatch(tenant_id, decoded)
                 stream.submit_next(notification_record.latest_replay_id)
 

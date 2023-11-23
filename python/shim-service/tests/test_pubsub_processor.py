@@ -1,11 +1,14 @@
 import json
 from copy import deepcopy
-from typing import List
+from queue import Queue
+from typing import List, Union, Dict, Any
 
 from aws.dynamodb import _to_ddb_item
-from base_test import BaseTest, AsyncMode, PUBSUB_TOPIC, DEFAULT_USER_ID
+from base_test import BaseTest, AsyncMode, PUBSUB_TOPIC, DEFAULT_USER_ID, generate_org_id
 from bean import beans, BeanName
-from mocks.pubsub_service_mock import PubSubServiceMock, MockResponder, convert_replay_id
+from botomocks.lambda_mock import Invocation
+from config import Config
+from mocks.pubsub_service_mock import PubSubServiceMock, MockResponder, convert_replay_id, Controller
 from poll.base_processor import BasePollingProcessor
 from poll.platform_event import ContextSettings
 from push_notification import SessionPushNotification
@@ -62,7 +65,7 @@ class PubSubProcessorSuite(BaseTest):
         token = self.create_web_session(async_mode=AsyncMode.NONE)
         sess = self.get_session_from_token(token)
         self.__add_response(user_id=DEFAULT_USER_ID, message_type='MESSAGE', message="Hello!")
-        self.invoke(token)
+        self.__invoke(token)
 
         stub = self.pubsub_service_mock.pop_stub()
         self.assertTrue(stub.channel.closed)
@@ -87,7 +90,7 @@ class PubSubProcessorSuite(BaseTest):
 
         # Call again, we should see only the new notification
         self.__add_response(user_id=DEFAULT_USER_ID, message_type='MESSAGE', message="Hello Again!")
-        self.invoke(token)
+        self.__invoke(token)
         stub = self.pubsub_service_mock.pop_stub()
         self.assertTrue(stub.channel.closed)
         notifications = self.__query_notifications(sess)
@@ -100,7 +103,7 @@ class PubSubProcessorSuite(BaseTest):
         self.assertEqual(DEFAULT_USER_ID, decoded[_USER_ID_FIELD])
 
         # Call invoke again, it should not notify because the replay id is now 2
-        self.invoke(token)
+        self.__invoke(token)
         stub = self.pubsub_service_mock.pop_stub()
         self.assertTrue(stub.channel.closed)
 
@@ -115,7 +118,7 @@ class PubSubProcessorSuite(BaseTest):
         work = WorkIdMap(sess.tenant_id, DEFAULT_USER_ID, 'workId', 'conversationId', sess.session_id)
         work_id_map_repo.create(work)
         self.__add_response(conversation_id='conversationId', message_type='MESSAGE', message="Hello!")
-        self.invoke(token)
+        self.__invoke(token)
         stub = self.pubsub_service_mock.pop_stub()
         self.assertTrue(stub.channel.closed)
 
@@ -125,14 +128,66 @@ class PubSubProcessorSuite(BaseTest):
         decoded = json.loads(n.message)
         self.assertEqual("Hello!", decoded[_MESSAGE_FIELD])
 
+    def test_multiple_orgs(self):
+        org_id, creds = self.provision_organization(1000)
+        token1 = self.create_web_session(async_mode=AsyncMode.NONE)
+        token2 = self.create_web_session(
+            async_mode=AsyncMode.NONE,
+            org_id=org_id,
+            creds=creds
+        )
+        sess1 = self.get_session_from_token(token1)
+        sess2 = self.get_session_from_token(token2, creds=creds)
+        queue = Queue()
+
+        # We're going to track the events that are sent to the lambda
+        # We should get 1 for each response we add
+        events: Dict[int, Dict[str, Any]] = {}
+
+        # Setting up a listener to listen for lambda invocations
+        def listener(invocation: Invocation):
+            if invocation.function_name == "ShimServiceNotificationPublisher":
+                record = json.loads(invocation.payload)['parameters']
+                events[record['tenantId']] = record
+                queue.put(True)
+
+        self.lambda_mock.set_invoke_listener(listener)
+
+        with self.__invoke_async(sess1, sess2):
+            self.__add_response(user_id=DEFAULT_USER_ID, message_type='MESSAGE', message=f"Hello {sess1.tenant_id}!",
+                                tenant_id=sess1.tenant_id)
+            self.__add_response(user_id=DEFAULT_USER_ID, message_type='MESSAGE', message=f"Hello {sess2.tenant_id}!",
+                                tenant_id=sess2.tenant_id)
+
+            # Here we wait for each notification
+            for i in range(2):
+                queue.get(timeout=5)
+
+        # Make sure the invocations were for the correct tenant id / session id combinations
+        self.assertHasLength(2, events)
+        for sess in [sess1, sess2]:
+            event = events[sess.tenant_id]
+            self.assertEqual(sess.session_id, event['sessionId'])
+            notifications = self.__query_notifications(sess)
+            self.assertHasLength(1, notifications)
+            n = notifications[0]
+            decoded = json.loads(n.message)
+            self.assertEqual(f"Hello {sess.tenant_id}!", decoded[_MESSAGE_FIELD])
+
+    def test_timeout(self):
+        token = self.create_web_session(async_mode=AsyncMode.NONE)
+        sess = self.get_session_from_token(token)
+        with self.__invoke_async(sess) as controller:
+            controller.wait(10)
+
     @staticmethod
     def __query_notifications(sess: Session) -> List[SessionPushNotification]:
         repo: SessionPushNotificationsRepo = beans.get_bean_instance(BeanName.PUSH_NOTIFICATION_REPO)
         return list(repo.query_notifications(sess))
 
-    def __add_response(self, user_id: str = None, conversation_id: str = None, message_type: str = None,
-                       message: str = None, **kwargs):
-        record = {}
+    def __create_response(self, user_id: str = None, conversation_id: str = None, message_type: str = None,
+                          message: str = None, **kwargs):
+        record = {'TestingMessageId': uuid()}
         if user_id is not None:
             record[_USER_ID_FIELD] = user_id
         if conversation_id is not None:
@@ -141,11 +196,20 @@ class PubSubProcessorSuite(BaseTest):
             record[_MESSAGE_TYPE_FIELD] = message_type
         if message is not None:
             record[_MESSAGE_FIELD] = message
-        record.update(kwargs)
-        self.responder.add_notification(PUBSUB_TOPIC, record)
 
-    def invoke(self, token: str):
-        sess = self.get_session_from_token(token)
+        record.update(kwargs)
+        return record
+
+    def __add_response(self, user_id: str = None, conversation_id: str = None, message_type: str = None,
+                       message: str = None, tenant_id: int = None, **kwargs):
+        record = self.__create_response(user_id, conversation_id, message_type, message, **kwargs)
+        org_id = generate_org_id(tenant_id) if tenant_id is not None else None
+        if org_id is not None:
+            record['TestOrgId'] = org_id
+        self.responder.add_notification(PUBSUB_TOPIC, record, org_id=org_id)
+
+    def __prepare_invoke(self, token: Union[str, Session]):
+        sess = self.get_session_from_token(token) if isinstance(token, str) else token
         record = deepcopy(RECORD_TEMPLATE)
         record = replace_properties_in_dict(record,
                                             {
@@ -156,9 +220,23 @@ class PubSubProcessorSuite(BaseTest):
         item = _to_ddb_item(sess.to_record())
         record['dynamodb']['NewImage'].update(item)
         self.table_listener_processor.invoke({'Records': [record]})
+        return sess
+
+    def __invoke(self, token: str):
+        self.__prepare_invoke(token)
         self.processor.invoke({})
 
+    def __invoke_async(self, *args) -> Controller:
+        controller = self.pubsub_service_mock.create_controller()
+        for sess in args:
+            self.__prepare_invoke(sess)
+            controller.add_org(generate_org_id(sess.tenant_id))
+        controller.invoke(lambda: self.processor.invoke({}))
+        return controller
+
     def setUp(self) -> None:
+        config: Config = beans.get_bean_instance(BeanName.CONFIG)
+        config.pubsub_poll_session_seconds = 3
         super().setUp()
         self.pubsub_service_mock = PubSubServiceMock()
         beans.override_bean(BeanName.PUBSUB_SERVICE, self.pubsub_service_mock)

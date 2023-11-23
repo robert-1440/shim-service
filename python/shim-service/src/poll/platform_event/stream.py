@@ -8,9 +8,12 @@ from poll.platform_event import ContextSettings, SubscriptionEvent
 from poll.platform_event.pubsub_service import PubSubChannel, AbstractPubSubStub, PubSubService, PubSubStream
 from tenant import PendingTenantEvent, TenantContext
 from tenant.repo import set_context_data
+from utils import loghelper
 from utils.byte_utils import EMPTY_BYTES
 from utils.signal_event import SignalEvent
 from utils.timer_utils import Timer
+
+logger = loghelper.get_logger(__name__)
 
 
 class PubSubStreamImpl(PubSubStream):
@@ -38,6 +41,7 @@ class PubSubStreamImpl(PubSubStream):
         self.closed = False
 
     def __fetch(self):
+        logger.info(f"[{self.tenant_id}] Starting fetch loop, timeout is {self.timeout_seconds} seconds.")
         timer = Timer(self.timeout_seconds)
         while not self.closed and timer.has_time_left():
             if self.settings.replay_id is None:
@@ -57,6 +61,7 @@ class PubSubStreamImpl(PubSubStream):
                 time_left = int(timer.get_delay_time(self.timeout_seconds))
                 if self.event_signal.wait(time_left * 1000):
                     break
+        logger.info(f"[{self.tenant_id}] Fetch loop ended.")
 
     def submit_next(self, replay_id: Optional[bytes]):
         self.settings.replay_id = replay_id

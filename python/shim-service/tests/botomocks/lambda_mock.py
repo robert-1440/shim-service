@@ -60,10 +60,14 @@ class MockLambdaClient:
         self.allow_all = allow_all
         self.invoke_callback: Optional[LambdaCallback] = None
         self.invocations: List[Invocation] = []
+        self.invoke_listener: Optional[LambdaCallback, None] = None
         self.mutex = RLock()
 
     def set_invoke_callback(self, callback: Optional[LambdaCallback]):
         self.invoke_callback = callback
+
+    def set_invoke_listener(self, listener: Optional[LambdaCallback]):
+        self.invoke_listener = listener
 
     def add_function(self, name: str, handler: LambdaFunctionHandler):
         self.functions[name] = _LambdaFunction(name, handler)
@@ -117,6 +121,9 @@ class MockLambdaClient:
             c = self.invoke_callback
             self.invoke_callback = None
             c(invocation)
+
+        if self.invoke_listener is not None:
+            self.invoke_listener(invocation)
 
         handler = self.functions.get(function_name)
         if handler is not None:

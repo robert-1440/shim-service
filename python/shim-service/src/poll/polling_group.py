@@ -106,6 +106,7 @@ class AbstractProcessorGroup(metaclass=abc.ABCMeta):
                 self.dec_submit_count()
         if le is None:
             return
+        logger.info("Worker starting.")
         with le:
             le.after_release = self.invoke_again
 
@@ -125,6 +126,8 @@ class AbstractProcessorGroup(metaclass=abc.ABCMeta):
 
             except BaseException as ex:
                 logger.severe(f"Failed during poll: {exception_utils.dump_ex(ex)}")
+
+        logger.info("Worker ending.")
 
     def add(self, event: E) -> bool:
         """
