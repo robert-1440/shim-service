@@ -131,10 +131,30 @@ class SessionsTest(BaseWebTest):
         )
 
     def test_create_with_invalid_args(self):
+
+        self.create_web_session(
+            creds=None,
+            expected_status_code=400,
+            expected_error_message="Missing header 'Authorization'."
+        )
+
+
+        self.create_web_session(
+            extra_params={'foo': 'bar'},
+            expected_status_code=400,
+            expected_error_message="The following properties are not recognized: foo."
+        )
+
         self.create_web_session(
             user_id=None,
             expected_status_code=400,
             expected_error_message="Missing parameter 'userId'."
+        )
+
+        self.create_web_session(
+            instance_url="",
+            expected_status_code=400,
+            expected_error_message="'instanceUrl' cannot be empty."
         )
 
         self.create_web_session(

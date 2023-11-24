@@ -294,35 +294,3 @@ def session_try_auto_lock(lock_type: str,
         return _inner_wrapper
 
     return decorator
-
-
-def session_try_lock(lock_type: str,
-                     expire_seconds: int = 15,
-                     lambda_function: Optional[LambdaFunction] = None,
-                     schedule_minutes: int = None):
-    """
-    Use this to decorate functions that want exclusive access to a session. The first argument
-    of the function must be a SessionKey.
-
-    :param lock_type: the lock type name used when forming the lock name. It will be of the form {lock_type}/tenant_id/session_id
-    :param expire_seconds: the number of seconds it is expected the lock will be needed.
-    :param lambda_function: Optional lambda function to schedule if the lock cannot be obtained
-    :param schedule_minutes: Ignored unless lambda_function is specified, and is the number of minutes in the
-    future to schedule the lambda. If not provided, 1 is assumed.
-    """
-
-    def decorator(wrapped_function):
-        @functools.wraps(wrapped_function)
-        def _inner_wrapper(*args):
-            return __attempt_session_lock(
-                lock_type,
-                lambda repo, name: repo.try_acquire(name, expire_seconds),
-                lambda_function,
-                schedule_minutes,
-                wrapped_function,
-                *args
-            )
-
-        return _inner_wrapper
-
-    return decorator

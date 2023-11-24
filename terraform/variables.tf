@@ -34,6 +34,12 @@ variable "live_agent_poller_lambda_memory_size" {
   description = "Memory size to allocate for the live agent poller lambda (in megabytes)"
 }
 
+variable "pubsub_poller_lambda_memory_size" {
+  type        = number
+  default     = 1024
+  description = "Memory size to allocate for the pubsub poller lambda (in megabytes)"
+}
+
 variable "notification_publisher_lambda_memory_size" {
   type        = number
   default     = 1024

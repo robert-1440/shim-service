@@ -23,7 +23,7 @@ class Invocation:
         self.payload = payload
 
 
-LambdaCallback = Callable[[Invocation], None]
+LambdaCallback = Callable[[Invocation], Optional[dict]]
 
 
 class _LambdaFunction:
@@ -123,7 +123,9 @@ class MockLambdaClient:
             c(invocation)
 
         if self.invoke_listener is not None:
-            self.invoke_listener(invocation)
+            result = self.invoke_listener(invocation)
+            if result is not None:
+                return result
 
         handler = self.functions.get(function_name)
         if handler is not None:

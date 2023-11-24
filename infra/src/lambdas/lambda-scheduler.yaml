@@ -59,6 +59,7 @@ permissions:
     - ShimServiceLiveAgentPoller
     - ShimServiceNotificationPublisher
     - ShimServiceWeb
+    - ShimServicePubSubPoller
 
   topics:
     - name: shim-error

@@ -11,7 +11,7 @@ description: "Shim Service PubSub Poller"
 #
 # The zip file that contains the code.
 #
-zip-file: "${lambda-zips-dir}/live-agent-poller.zip"
+zip-file: "${lambda-zips-dir}/pubsub-poller.zip"
 
 runtime: python3.11
 
@@ -77,6 +77,7 @@ permissions:
         - PutItem
         - UpdateItem
         - DeleteItem
+        - Query
 
     - table: ShimServiceVirtualRangeTable
       actions:
@@ -103,5 +104,5 @@ permissions:
 
 environment:
   variables:
-    ACTIVE_PROFILES: live-agent-poller
+    ACTIVE_PROFILES: pubsub-poller
     PUBSUB_TOPIC: /event/RS_L__ConversationMessage__e

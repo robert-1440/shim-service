@@ -10,7 +10,6 @@ from constants import SQS_PUSH_NOTIFICATION_QUEUE_URL
 from utils import exception_utils
 from utils.code_utils import import_module_and_get_attribute
 from utils.collection_utils import to_collection
-from utils.enum_utils import NameLookupEnum
 
 T = TypeVar("T")
 
@@ -47,7 +46,7 @@ EVENTS_PROFILES = ALL_PROFILES ^ SCHEDULER_PROFILE ^ TABLE_LISTENER_PROFILE
 LAMBDA_PROFILES = ALL_PROFILES ^ SCHEDULER_PROFILE
 
 
-class BeanName(NameLookupEnum):
+class BeanName(Enum):
     SECRETS_MANAGER_CLIENT = 0, WEB_PROFILE
     HTTP_CLIENT = 1, HTTP_CLIENT_PROFILES
     DYNAMODB_CLIENT = 2, ALL_PROFILES
@@ -79,7 +78,7 @@ class BeanName(NameLookupEnum):
     SESSION_CONNECTOR = 28, WEB_PROFILE, {'type': BeanType.REQUEST_HANDLER}
     LAMBDA_CLIENT = 29, LAMBDA_PROFILES
     LIVE_AGENT_PROCESSOR = 30, LIVE_AGENT_PROCESSOR_PROFILE, {'type': BeanType.REQUEST_HANDLER}
-    SFDC_PUBSUB_POLLER = 31, PUBSUB_POLLER_PROFILE
+    PUBSUB_POLLER_PROCESSOR = 31, PUBSUB_POLLER_PROFILE, {'type': BeanType.REQUEST_HANDLER}
     SQS_CLIENT = 32, EVENTS_PROFILES
     SCHEDULER = 33, EVENTS_PROFILES
     LIVE_AGENT_MESSAGE_DISPATCHER = 34, LIVE_AGENT_PROCESSOR_PROFILE
@@ -88,15 +87,14 @@ class BeanName(NameLookupEnum):
     SQS_PUSH_NOTIFIER = 37, WEB_PROFILE | PUSH_NOTIFIER_PROFILE, {'type': BeanType.PUSH_NOTIFIER,
                                                                   'var': SQS_PUSH_NOTIFICATION_QUEUE_URL}
     PUSH_NOTIFICATION_MANAGER = 38, WEB_PROFILE | PUSH_NOTIFIER_PROFILE
-    WORK_ID_MAP_REPO = 39, WEB_PROFILE, {'type': BeanType.EVENT_LISTENER}
+    WORK_ID_MAP_REPO = 39, WEB_PROFILE | PUBSUB_POLLER_PROFILE, {'type': BeanType.EVENT_LISTENER}
     SCHEDULER_CLIENT = 40, EVENTS_PROFILES
     LAMBDA_SCHEDULER_PROCESSOR = 41, SCHEDULER_PROFILE, {'type': BeanType.REQUEST_HANDLER}
     TABLE_LISTENER_PROCESSOR = 42, TABLE_LISTENER_PROFILE, {'type': BeanType.REQUEST_HANDLER}
     PENDING_TENANT_EVENTS_REPO = 43, TABLE_LISTENER_PROFILE | PUBSUB_POLLER_PROFILE
     TENANT_CONTEXT_REPO = 44, PUBSUB_POLLER_PROFILE
-    PUBSUB_POLLER_PROCESSOR = 45, PUBSUB_POLLER_PROFILE, {'type': BeanType.REQUEST_HANDLER}
-    SECURE_CHANNEL_CREDENTIALS = 46, PUBSUB_POLLER_PROFILE
-    PUBSUB_SERVICE = 47, PUBSUB_POLLER_PROFILE
+    SECURE_CHANNEL_CREDENTIALS = 45, PUBSUB_POLLER_PROFILE
+    PUBSUB_SERVICE = 46, PUBSUB_POLLER_PROFILE
 
 
 BeanSupplier = Supplier[T]
@@ -121,16 +119,6 @@ class Bean(metaclass=abc.ABCMeta):
 
 
 class BeanRegistry(metaclass=abc.ABCMeta):
-
-    def find_bean_by_name(self, name: str) -> Optional[Bean]:
-        bean_name = BeanName._value_of(name, "Bean")
-        return self.find_bean(bean_name)
-
-    def get_bean_by_name(self, name: str) -> Bean:
-        bean = self.find_bean_by_name(name)
-        if bean is None:
-            raise ValueError(f"No bean with name '{name}' found.")
-        return bean
 
     @abc.abstractmethod
     def find_bean(self, bean_name: BeanName) -> Optional[Bean]:
@@ -203,11 +191,6 @@ def inject(bean_instances: Union[BeanName, Collection[BeanName]] = None,
         return _inner_wrapper
 
     return decorator
-
-
-def invoke_bean_by_name(name: str, parameters: Dict[str, Any]) -> Any:
-    b: InvocableBean = registry_supplier.get().get_bean_by_name(name).get_instance()
-    return b.invoke(parameters)
 
 
 def get_bean_instance(name: BeanName) -> Any:

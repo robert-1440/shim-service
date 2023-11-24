@@ -1,4 +1,4 @@
-from lambda_pkg.lamba_scheduler import LambdaSchedulerProcessor
+from lambda_pkg.lambda_scheduler import LambdaSchedulerProcessor
 
 
 def init():

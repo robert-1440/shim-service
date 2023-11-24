@@ -2,7 +2,6 @@ import hashlib
 import os
 import sys
 
-
 os.environ['TZ'] = 'UTC'  # Set the time zone to UTC for consistency
 os.environ['SOURCE_DATE_EPOCH'] = '0'  # Set the source date epoch to a fixed value (e.g., 0)
 os.environ['IGNORE_VARS'] = 'true'
@@ -34,6 +33,7 @@ if src_name not in sys.path:
     sys.path.insert(0, src_name)
 
 from bean import set_resettable
+
 set_resettable(False)
 
 import app
@@ -176,9 +176,8 @@ def zip_python_files(source_module: ModuleType,
         if t is not ModuleType:
             if hasattr(m, "__module__"):
                 m = m.__module__
-            else:
-                return None
-            m = sys.modules[m]
+                return module_map(m)
+            return None
 
         file_name = m.__dict__.get('__file__')
         if file_name is None or not file_name.startswith(root_dir):

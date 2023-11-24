@@ -1,7 +1,20 @@
 import os
 
 import bean
-from bean.profiles import describe_profiles, ALL_PROFILES
+from bean import profiles
+from bean.profiles import ALL_PROFILES
+
+
+def describe_profiles(bits: int):
+    output = ""
+    entries: dict = getattr(profiles, '__profile_entries')
+    for key, value in entries.items():
+        if value & bits != 0:
+            if len(output) > 0:
+                output += ","
+            output += key
+    return output
+
 
 os.environ['ACTIVE_PROFILES'] = describe_profiles(ALL_PROFILES)
 
@@ -47,7 +60,7 @@ setup.init(our_listener)
 auth_info = salesforce_auth.get_auth_info()
 uri = Uri.parse(auth_info.server_url).origin
 
-session = Session("some-org-id",1000, 'my-session-id', None, auth_info.user_id, instance_url=uri,
+session = Session("some-org-id", 1000, 'my-session-id', None, auth_info.user_id, instance_url=uri,
                   access_token=auth_info.session_id,
                   fcm_device_token="skip::this-is-a-token", expiration_seconds=3600,
                   channel_platform_types=[OMNI_PLATFORM.name, X1440_PLATFORM.name])

@@ -3,10 +3,13 @@ import os
 from botomocks.scheduler_mock import MockSchedulerClient
 from lambda_web_framework import app_handler
 
+ERROR_TOPIC_ARN = "error:topic:arn"
 # Protect us from accidentally hitting an actual AWS account
-os.environ['AWS_ACCESS_KEY_ID'] = "invalid"
-os.environ['AWS_SECRET_ACCESS_KEY'] = "invalid"
-os.environ['ERROR_TOPIC_ARN'] = 'error:topic:arn'
+os.environ['AWS_ACCESS_KEY_ID'] = "accessKeyId"
+os.environ['AWS_SECRET_ACCESS_KEY'] = "accessKey"
+os.environ['AWS_SESSION_TOKEN'] = 'sessionToken'
+os.environ['AWS_REGION'] = 'us-west-1'
+os.environ['ERROR_TOPIC_ARN'] = ERROR_TOPIC_ARN
 os.environ['PUSH_NOTIFIER_GROUP_ROLE_ARN'] = 'push:role'
 os.environ['INTERNAL_TESTING'] = "true"
 
@@ -211,6 +214,7 @@ class BaseTest(BetterTestCase):
     ddb_mock: MockDynamoDbClient
     disable_notification_check: bool
     sqs_mock: MockSqsClient
+    sns_mock: MockSnsClient
     instance: Instance
     http_session_mock: ExtendedHttpMockSession
     config: Config
@@ -458,12 +462,13 @@ class BaseTest(BetterTestCase):
                            access_token: Optional[str] = DEFAULT_ACCESS_TOKEN,
                            channel_platform_types: Optional[Tuple] = ('omni', 'x1440'),
                            async_mode: AsyncMode = AsyncMode.ASYNC_WAIT,
-                           creds: TestCredentials = GOOD_CREDS,
+                           creds: Optional[TestCredentials] = GOOD_CREDS,
                            expected_status_code: int = 202,
                            expected_error_message: str = None,
                            expected_error_code: str = None,
                            expected_message: str = None,
                            return_full_response: bool = False,
+                           extra_params: Dict[str, Any] = None,
                            ) -> Optional[Union[str, InvokeResponse]]:
         body = {}
         set_if_not_none(body, "instanceUrl", instance_url)
@@ -482,6 +487,8 @@ class BaseTest(BetterTestCase):
             self.prepare_sfdc_connection()
             expected_status_code = 201 if expected_status_code == 202 else expected_status_code
 
+        if extra_params:
+            body.update(extra_params)
         resp = self.put(
             f"organizations/{org_id}/sessions",
             creds=creds,

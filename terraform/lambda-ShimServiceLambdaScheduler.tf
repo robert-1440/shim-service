@@ -57,6 +57,15 @@ data "aws_iam_policy_document" "shim_service_lambda_scheduler" {
 
   statement {
     effect    = "Allow"
+    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServicePubSubPoller" ]
+    actions   = [
+      "lambda:InvokeFunction",
+      "lambda:GetFunction"
+    ]
+  }
+
+  statement {
+    effect    = "Allow"
     resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceWeb" ]
     actions   = [
       "lambda:InvokeFunction",
@@ -103,6 +112,13 @@ resource "aws_cloudwatch_log_group" "shim_service_lambda_scheduler" {
   retention_in_days = 30
 }
 
+resource "aws_lambda_permission" "shim_service_lambda_scheduler_shim_service_pub_sub_poller" {
+  principal     = "lambda.amazonaws.com"
+  action        = "lambda:InvokeFunction"
+  source_arn    = "${aws_lambda_function.shim_service_pub_sub_poller.arn}"
+  function_name = aws_lambda_function.shim_service_lambda_scheduler.function_name
+}
+
 resource "aws_lambda_permission" "shim_service_lambda_scheduler_shim_service_notification_publisher" {
   principal     = "lambda.amazonaws.com"
   action        = "lambda:InvokeFunction"
@@ -114,6 +130,13 @@ resource "aws_lambda_permission" "shim_service_lambda_scheduler_shim_service_liv
   principal     = "lambda.amazonaws.com"
   action        = "lambda:InvokeFunction"
   source_arn    = "${aws_lambda_function.shim_service_live_agent_poller.arn}"
+  function_name = aws_lambda_function.shim_service_lambda_scheduler.function_name
+}
+
+resource "aws_lambda_permission" "shim_service_lambda_scheduler_shim_service_table_listener" {
+  principal     = "lambda.amazonaws.com"
+  action        = "lambda:InvokeFunction"
+  source_arn    = "${aws_lambda_function.shim_service_table_listener.arn}"
   function_name = aws_lambda_function.shim_service_lambda_scheduler.function_name
 }
 

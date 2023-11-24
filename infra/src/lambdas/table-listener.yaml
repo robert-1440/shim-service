@@ -57,14 +57,18 @@ permissions:
   dynamodb-tables:
     - table: ShimServiceVirtualRangeTable
       actions:
+        - GetItem
         - BatchWriteItem
         - PutItem
+        - UpdateItem
 
   topics:
     - name: shim-error
       actions:
         - "sns:Publish"
 
+  lambdas:
+    - ShimServiceLambdaScheduler
 
 environment:
   variables:

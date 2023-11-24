@@ -15,8 +15,9 @@ class LambdaFunction(ReverseLookupEnum):
         BeanName.LIVE_AGENT_PROCESSOR)
 
     SfdcPubSubPoller = LambdaFunctionParameters(
-        "ShimSfdcPubSubPoller",
-        BeanName.SFDC_PUBSUB_POLLER)
+        "ShimServicePubSubPoller",
+        BeanName.PUBSUB_POLLER_PROCESSOR
+    )
 
     PushNotifier = LambdaFunctionParameters(
         "ShimServiceNotificationPublisher",

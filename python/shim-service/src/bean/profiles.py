@@ -63,11 +63,3 @@ def get_active_profiles() -> int:
     return _active_profiles
 
 
-def describe_profiles(bits: int):
-    output = ""
-    for key, value in __profile_entries.items():
-        if value & bits != 0:
-            if len(output) > 0:
-                output += ","
-            output += key
-    return output

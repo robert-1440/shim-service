@@ -23,7 +23,16 @@ class PresenceTests(BaseTest):
     sequence_counter: int
 
     def test_set_presence(self):
+
         session_token = self.create_web_session(async_mode=AsyncMode.NONE)
+
+        # Let's test with invalid JSON to get some code coverage
+        self.set_presence_status(
+            session_token=session_token,
+            raw_body="no good",
+            expected_status_code=400,
+            expected_error_message="Malformed JSON."
+        )
 
         self.set_presence_status(
             session_token,
@@ -503,8 +512,9 @@ class PresenceTests(BaseTest):
         return mock
 
     def set_presence_status(self,
-                            session_token: str,
-                            status_id: str,
+                            session_token: str = None,
+                            status_id: str = None,
+                            raw_body: str = None,
                             expected_status_code: int = 204,
                             expected_error_message: str = None,
                             expected_error_code: str = None,
@@ -515,10 +525,12 @@ class PresenceTests(BaseTest):
         headers = {
             'x-1440-session-token': session_token
         }
+        body = {'id': status_id} if raw_body is None else raw_body
+
         self.post(
             "presence/actions/set-status",
             headers=headers,
-            body={'id': status_id},
+            body=body,
             expected_status_code=expected_status_code,
             expected_error_message=expected_error_message,
             expected_message=expected_message,

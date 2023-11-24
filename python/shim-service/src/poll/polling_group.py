@@ -96,7 +96,7 @@ class AbstractProcessorGroup(metaclass=abc.ABCMeta):
     def should_poll(self, le: LockAndEvent) -> bool:
         raise NotImplementedError()
 
-    def worker(self, event: E):
+    def __inner_worker(self, event: E):
         # First, try to lock the resource for the event
         le = None
         try:
@@ -128,6 +128,12 @@ class AbstractProcessorGroup(metaclass=abc.ABCMeta):
                 logger.severe(f"Failed during poll: {exception_utils.dump_ex(ex)}")
 
         logger.info("Worker ending.")
+
+    def worker(self, event: E):
+        try:
+            self.__inner_worker(event)
+        except BaseException as ex:
+            logger.severe("Exception invoking worker", ex=ex)
 
     def add(self, event: E) -> bool:
         """

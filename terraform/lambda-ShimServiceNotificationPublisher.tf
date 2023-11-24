@@ -159,6 +159,13 @@ resource "aws_lambda_permission" "shim_service_notification_publisher_shim_servi
   function_name = aws_lambda_function.shim_service_notification_publisher.function_name
 }
 
+resource "aws_lambda_permission" "shim_service_notification_publisher_shim_service_pub_sub_poller" {
+  principal     = "lambda.amazonaws.com"
+  action        = "lambda:InvokeFunction"
+  source_arn    = "${aws_lambda_function.shim_service_pub_sub_poller.arn}"
+  function_name = aws_lambda_function.shim_service_notification_publisher.function_name
+}
+
 resource "aws_lambda_permission" "shim_service_notification_publisher_shim_service_live_agent_poller" {
   principal     = "lambda.amazonaws.com"
   action        = "lambda:InvokeFunction"

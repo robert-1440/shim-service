@@ -41,8 +41,10 @@ data "aws_iam_policy_document" "shim_service_table_listener" {
     effect    = "Allow"
     resources = [ aws_dynamodb_table.shim_service_virtual_range_table.arn ]
     actions   = [
+      "dynamodb:GetItem",
       "dynamodb:BatchWriteItem",
-      "dynamodb:PutItem"
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem"
     ]
   }
 
@@ -54,6 +56,15 @@ data "aws_iam_policy_document" "shim_service_table_listener" {
       "dynamodb:GetShardIterator",
       "dynamodb:DescribeStream",
       "dynamodb:ListStreams"
+    ]
+  }
+
+  statement {
+    effect    = "Allow"
+    resources = [ "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:ShimServiceLambdaScheduler" ]
+    actions   = [
+      "lambda:InvokeFunction",
+      "lambda:GetFunction"
     ]
   }
 }
