@@ -30,3 +30,4 @@ class CookieSuite(BetterTestCase):
 
         new_jar = RequestsCookieJar()
         cookie_utils.deserialize_to_jar(new_jar, serialized)
+

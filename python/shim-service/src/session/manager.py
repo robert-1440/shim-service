@@ -46,6 +46,14 @@ class RetryCounter:
         return False
 
 
+def set_logging_session(session: Session):
+    loghelper.update_logging_info({
+        'tenantId': session.tenant_id,
+        'sessionId': session.session_id,
+        'userId': session.user_id
+    })
+
+
 def __check_replace_session(sessions_repo: SessionsRepo,
                             session_request: CreateSessionRequest,
                             existing_session_id: str,
@@ -256,4 +264,5 @@ def __load_session(sessions_repo: SessionsRepo,
         raise NotAuthorizedException("User id mismatch in token.")
     if not allow_pending or not allow_failure:
         verify_session_status(session, pending_ok=allow_pending)
+    set_logging_session(session)
     return session

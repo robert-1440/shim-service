@@ -20,9 +20,10 @@ def __find_route(path: str) -> Optional[Route]:
 
 
 def __find_full_route(path: str, method: str) -> Optional[Tuple[Route, Dict[str, str]]]:
+    parts = path_utils.split_path(path)
     for r in filter(lambda r: r.method.name == method, _routes.values()):
         r: Route
-        v = r.path_matches(path)
+        v = r.path_matches(path, parts)
         if v is not None:
             return r, v
     return None

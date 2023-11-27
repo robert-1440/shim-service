@@ -8,7 +8,7 @@ from typing import Union, Dict, Any, Callable, Optional
 
 from bean import BeanName, inject
 from notification import Notifier
-from utils import exception_utils
+from utils import exception_utils, json_logger
 from utils.exception_utils import never_raise
 
 logging.basicConfig(level=logging.INFO,
@@ -20,17 +20,24 @@ formatter = Formatter('%(asctime)s.%(msecs)03d [%(process)6d] %(levelname)-7s:  
 
 handler = StreamHandler()
 handler.setLevel(logging.INFO)
-handler.setFormatter(formatter)
+__thread_local = threading.local()
+
+json_logger.setup(handler, __thread_local)
 
 LoggingHook = Callable[[str], None]
 
 INFO_LOGGING_HOOK: Optional[LoggingHook] = None
 
-__thread_local = threading.local()
-
 
 def set_logging_info(data: Dict[str, Any]):
     __thread_local.data = data
+
+
+def update_logging_info(data: Dict[str, Any]):
+    if not hasattr(__thread_local, 'data'):
+        __thread_local.data = dict(data)
+        return
+    __thread_local.data.update(data)
 
 
 def clear_logging_info():
@@ -39,14 +46,14 @@ def clear_logging_info():
 
 
 def _add_logging_info(msg: str) -> str:
-    if hasattr(__thread_local, 'data'):
-        data: dict = __thread_local.data
-        prefix = ""
-        for key, value in data.items():
-            if len(prefix) > 0:
-                prefix += ' '
-            prefix += f'[{key}={value}]'
-        return f"<<{prefix}>> {msg}"
+    # if hasattr(__thread_local, 'data'):
+    #     data: dict = __thread_local.data
+    #     prefix = ""
+    #     for key, value in data.items():
+    #         if len(prefix) > 0:
+    #             prefix += ' '
+    #         prefix += f'[{key}={value}]'
+    #     return f"<<{prefix}>> {msg}"
     return msg
 
 
